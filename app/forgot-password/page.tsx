@@ -3,8 +3,8 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Icon } from '@iconify/react';
+import AuthLayout from '../components/AuthLayout';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -66,25 +66,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="auth-container">
-      <header className="dost-header">
-        <div className="logo-section">
-          <div className="logo-circle">
-            <Image src="/Logo1.png" alt="DOST Logo" width={48} height={48} />
-          </div>
-          <div className="header-text">
-            <div className="header-subtitle">Provincial Science and Technology Office in Misamis Oriental</div>
-            <div className="header-title">Department of Science and Technology</div>
-          </div>
-        </div>
-      </header>
-
-      <div className="background-blur">
-        <div className="blur-circle blur-blue-1"></div>
-        <div className="blur-circle blur-yellow"></div>
-        <div className="blur-circle blur-blue-2"></div>
-      </div>
-
+    <AuthLayout>
       <div className="auth-card" style={{ textAlign: 'center' }}>
         <h2 className="auth-title" style={{ textAlign: 'center' }}>Forgot Password</h2>
         <p className="auth-subtitle" style={{ textAlign: 'center' }}>Check your email for the link</p>
@@ -190,6 +172,6 @@ export default function ForgotPasswordPage() {
           </div>
         </div>
       )}
-    </div>
+    </AuthLayout>
   );
 }

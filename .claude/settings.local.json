@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx next build:*)",
+      "Bash(npm install:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:nominatim.openstreetmap.org)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:polygons.openstreetmap.fr)",
+      "Bash(node -e:*)",
+      "WebFetch(domain:en.wikipedia.org)"
+    ]
+  }
+}

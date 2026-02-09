@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+import AuthLayout from './components/AuthLayout';
 
 const DEMO_ACCOUNT = {
   email: 'admin@dost.gov.ph',
@@ -28,25 +28,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="auth-container">
-      <header className="dost-header">
-        <div className="logo-section">
-          <div className="logo-circle">
-            <Image src="/Logo1.png" alt="DOST Logo" width={48} height={48} />
-          </div>
-          <div className="header-text">
-            <div className="header-subtitle">Provincial Science and Technology Office in Misamis Oriental</div>
-            <div className="header-title">Department of Science and Technology</div>
-          </div>
-        </div>
-      </header>
-
-      <div className="background-blur">
-        <div className="blur-circle blur-blue-1"></div>
-        <div className="blur-circle blur-yellow"></div>
-        <div className="blur-circle blur-blue-2"></div>
-      </div>
-
+    <AuthLayout>
       <div className="auth-card">
         <h2 className="auth-title">Log In</h2>
         <p className="auth-subtitle">
@@ -83,6 +65,6 @@ export default function LoginPage() {
           </button>
         </form>
       </div>
-    </div>
+    </AuthLayout>
   );
 }

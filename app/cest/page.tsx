@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
 import { Icon } from '@iconify/react';
+import DashboardLayout from '../components/DashboardLayout';
 
 const filterCards = [
   { id: 'approved-amount', label: 'Total Approved Amount', value: '₱200,000.00', isAmount: true },
@@ -138,166 +137,120 @@ const projectData = [
 ];
 
 export default function CestPage() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
-    <div className="dashboard-container">
-      <header className="dashboard-header">
-        <div className="header-left">
-          <div className="logo-circle">
-            <Image src="/Logo1.png" alt="DOST Logo" width={48} height={48} />
+    <DashboardLayout activePath="/cest">
+      <main className="setup-main">
+        {/* CEST Header */}
+        <div className="setup-header">
+          <div className="setup-title-section">
+            <div className="cest-logo-icon">
+              <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="25" cy="25" r="23" stroke="#2e7d32" strokeWidth="2" fill="none"/>
+                <path d="M25 10 L25 25 L35 35" stroke="#4caf50" strokeWidth="3" fill="none"/>
+                <circle cx="25" cy="25" r="5" fill="#8bc34a"/>
+                <path d="M15 20 Q25 5 35 20" stroke="#2e7d32" strokeWidth="2" fill="none"/>
+                <path d="M20 35 Q25 45 30 35" stroke="#4caf50" strokeWidth="2" fill="none"/>
+              </svg>
+            </div>
+            <div className="setup-title-text">
+              <h1 className="setup-title cest-title">CEST</h1>
+              <p className="setup-subtitle">Community Empowerment thru<br/>Science and Technology</p>
+            </div>
           </div>
-          <div className="header-text">
-            <div className="header-subtitle">Provincial Science and Technology Office in Misamis Oriental</div>
-            <div className="header-title">Department of Science and Technology</div>
+          <div className="setup-search-section">
+            <div className="setup-search-container">
+              <Icon icon="mdi:magnify" className="setup-search-icon" width={20} height={20} />
+              <input
+                type="text"
+                className="setup-search-input"
+                placeholder="Search here"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
           </div>
-        </div>
-        <div className="header-right">
-          <button className="header-icon-btn"><Icon icon="mdi:link-variant" width={24} height={24} /></button>
-          <button className="header-icon-btn"><Icon icon="mdi:bell-outline" width={24} height={24} /></button>
-          <div className="user-info">
-            <Icon icon="mdi:account-circle" width={36} height={36} color="#666" />
-            <span className="user-name">Jane Doe</span>
-          </div>
-        </div>
-      </header>
-
-      <div className="dashboard-layout">
-        <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
-          <button className="sidebar-toggle" onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>
-            <Icon icon={sidebarCollapsed ? "mdi:chevron-right" : "mdi:chevron-left"} width={20} height={20} color="#fff" />
+          <button className="add-project-btn">
+            <Icon icon="mdi:plus" width={20} height={20} />
+            Add New Project
           </button>
-          <nav className="sidebar-nav">
-            <Link href="/dashboard" className="nav-item">
-              <Icon icon="mdi:view-grid" width={24} height={24} />
-            </Link>
-            <Link href="/dashboard" className="nav-item">
-              <Icon icon="mdi:magnify" width={24} height={24} />
-            </Link>
-            <Link href="/setup" className="nav-item">
-              <Icon icon="mdi:office-building" width={24} height={24} />
-            </Link>
-            <Link href="/cest" className="nav-item active">
-              <Icon icon="mdi:leaf" width={24} height={24} />
-            </Link>
-            <button className="nav-item">
-              <Icon icon="mdi:clock-outline" width={24} height={24} />
-            </button>
-          </nav>
-        </aside>
+        </div>
 
-        <main className="setup-main">
-          {/* CEST Header */}
-          <div className="setup-header">
-            <div className="setup-title-section">
-              <div className="cest-logo-icon">
-                <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="25" cy="25" r="23" stroke="#2e7d32" strokeWidth="2" fill="none"/>
-                  <path d="M25 10 L25 25 L35 35" stroke="#4caf50" strokeWidth="3" fill="none"/>
-                  <circle cx="25" cy="25" r="5" fill="#8bc34a"/>
-                  <path d="M15 20 Q25 5 35 20" stroke="#2e7d32" strokeWidth="2" fill="none"/>
-                  <path d="M20 35 Q25 45 30 35" stroke="#4caf50" strokeWidth="2" fill="none"/>
-                </svg>
-              </div>
-              <div className="setup-title-text">
-                <h1 className="setup-title cest-title">CEST</h1>
-                <p className="setup-subtitle">Community Empowerment thru<br/>Science and Technology</p>
-              </div>
+        {/* Filter Cards */}
+        <div className="cest-filter-cards">
+          {filterCards.map(card => (
+            <div key={card.id} className="cest-filter-card">
+              <span className="cest-card-label">{card.label}</span>
+              <span className={`cest-card-value ${card.isAmount ? 'amount' : ''}`}>{card.value}</span>
             </div>
-            <div className="setup-search-section">
-              <div className="setup-search-container">
-                <Icon icon="mdi:magnify" className="setup-search-icon" width={20} height={20} />
-                <input
-                  type="text"
-                  className="setup-search-input"
-                  placeholder="Search here"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
+          ))}
+        </div>
+
+        {/* Approved Section */}
+        <div className="masterlist-section">
+          <div className="masterlist-header">
+            <h2 className="masterlist-title approved-title">
+              <Icon icon="mdi:check-circle" width={24} height={24} color="#2e7d32" />
+              APPROVED
+            </h2>
+            <div className="masterlist-actions">
+              <button className="masterlist-btn">
+                <Icon icon="mdi:sort" width={16} height={16} />
+                Sort
+              </button>
+              <button className="masterlist-btn">
+                <Icon icon="mdi:filter-variant" width={16} height={16} />
+                Filter
+              </button>
+              <button className="masterlist-btn export">
+                <Icon icon="mdi:file-pdf-box" width={16} height={16} />
+                Export PDF
+              </button>
             </div>
-            <button className="add-project-btn">
-              <Icon icon="mdi:plus" width={20} height={20} />
-              Add New Project
-            </button>
           </div>
 
-          {/* Filter Cards */}
-          <div className="cest-filter-cards">
-            {filterCards.map(card => (
-              <div key={card.id} className="cest-filter-card">
-                <span className="cest-card-label">{card.label}</span>
-                <span className={`cest-card-value ${card.isAmount ? 'amount' : ''}`}>{card.value}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Approved Section */}
-          <div className="masterlist-section">
-            <div className="masterlist-header">
-              <h2 className="masterlist-title approved-title">
-                <Icon icon="mdi:check-circle" width={24} height={24} color="#2e7d32" />
-                APPROVED
-              </h2>
-              <div className="masterlist-actions">
-                <button className="masterlist-btn">
-                  <Icon icon="mdi:sort" width={16} height={16} />
-                  Sort
-                </button>
-                <button className="masterlist-btn">
-                  <Icon icon="mdi:filter-variant" width={16} height={16} />
-                  Filter
-                </button>
-                <button className="masterlist-btn export">
-                  <Icon icon="mdi:file-pdf-box" width={16} height={16} />
-                  Export PDF
-                </button>
-              </div>
-            </div>
-
-            {/* Table */}
-            <div className="table-container">
-              <table className="masterlist-table">
-                <thead>
-                  <tr>
-                    <th>Code</th>
-                    <th>Project Title</th>
-                    <th>Location</th>
-                    <th>Beneficiaries</th>
-                    <th>Program/<br/>Funding</th>
-                    <th>Status</th>
-                    <th>Approved<br/>Amount</th>
-                    <th>Released Amount</th>
-                    <th>Project Duration</th>
-                    <th>Staff<br/>Assigned</th>
-                    <th>Year</th>
-                    <th>Date of Approval (Ref.<br/>Approval Letter)</th>
+          {/* Table */}
+          <div className="table-container">
+            <table className="masterlist-table">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Project Title</th>
+                  <th>Location</th>
+                  <th>Beneficiaries</th>
+                  <th>Program/<br/>Funding</th>
+                  <th>Status</th>
+                  <th>Approved<br/>Amount</th>
+                  <th>Released Amount</th>
+                  <th>Project Duration</th>
+                  <th>Staff<br/>Assigned</th>
+                  <th>Year</th>
+                  <th>Date of Approval (Ref.<br/>Approval Letter)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {projectData.map((project) => (
+                  <tr key={project.id}>
+                    <td className="code-cell">{project.code}</td>
+                    <td className="project-title-cell">{project.projectTitle}</td>
+                    <td>{project.location}</td>
+                    <td>{project.beneficiaries}</td>
+                    <td><span className="program-badge">{project.programFunding}</span></td>
+                    <td><span className="status-badge status-approved">{project.status}</span></td>
+                    <td>{project.approvedAmount}</td>
+                    <td>{project.releasedAmount}</td>
+                    <td>{project.projectDuration}</td>
+                    <td>{project.staffAssigned}</td>
+                    <td>{project.year}</td>
+                    <td>{project.dateOfApproval}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {projectData.map((project) => (
-                    <tr key={project.id}>
-                      <td className="code-cell">{project.code}</td>
-                      <td className="project-title-cell">{project.projectTitle}</td>
-                      <td>{project.location}</td>
-                      <td>{project.beneficiaries}</td>
-                      <td><span className="program-badge">{project.programFunding}</span></td>
-                      <td><span className="status-badge status-approved">{project.status}</span></td>
-                      <td>{project.approvedAmount}</td>
-                      <td>{project.releasedAmount}</td>
-                      <td>{project.projectDuration}</td>
-                      <td>{project.staffAssigned}</td>
-                      <td>{project.year}</td>
-                      <td>{project.dateOfApproval}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </main>
-      </div>
-    </div>
+        </div>
+      </main>
+    </DashboardLayout>
   );
 }
