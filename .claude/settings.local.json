@@ -9,7 +9,8 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:polygons.openstreetmap.fr)",
       "Bash(node -e:*)",
-      "WebFetch(domain:en.wikipedia.org)"
+      "WebFetch(domain:en.wikipedia.org)",
+      "Bash(ls:*)"
     ]
   }
 }

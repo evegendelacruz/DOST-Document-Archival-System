@@ -87,11 +87,11 @@ export default function DashboardPage() {
   const calendarDays = generateCalendarDays();
 
   const sidebarItems: NavItem[] = [
-    { type: 'button', icon: 'mdi:view-grid', active: activeNav === 'calendar', onClick: () => setActiveNav('calendar') },
-    { type: 'button', icon: 'mdi:magnify', active: activeNav === 'archival', onClick: () => { setActiveNav('archival'); setShowResults(false); } },
-    { type: 'link', href: '/setup', icon: 'mdi:office-building', logo: '/setup-logo.png' },
-    { type: 'link', href: '/cest', icon: 'mdi:leaf', logo: '/cest-logo.png' },
-    { type: 'button', icon: 'mdi:clock-outline' },
+    { type: 'button', icon: 'mdi:view-grid', label: 'Dashboard', active: activeNav === 'calendar', onClick: () => setActiveNav('calendar') },
+    { type: 'button', icon: 'mdi:magnify', label: 'Archival', active: activeNav === 'archival', onClick: () => { setActiveNav('archival'); setShowResults(false); } },
+    { type: 'link', href: '/setup', icon: 'mdi:office-building', logo: '/setup-logo.png', label: 'SETUP 4.0' },
+    { type: 'link', href: '/cest', icon: 'mdi:leaf', logo: '/cest-logo.png', label: 'CEST' },
+    { type: 'button', icon: 'mdi:clock-outline', label: 'Recent Activity' },
   ];
 
   return (
