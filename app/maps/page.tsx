@@ -128,7 +128,7 @@ function MapComponent({ activePrograms, activeDistrict }: { activePrograms: stri
   }, []);
 
   if (!components || !leaflet) {
-    return <div className="maps-loading">Loading map...</div>;
+    return <div className="w-full h-full flex items-center justify-center text-base text-[#666] bg-[#f5f5f5]">Loading map...</div>;
   }
 
   const { MapContainer, TileLayer, Polygon, Marker, Popup, useMap } = components;
@@ -297,28 +297,28 @@ export default function MapsPage() {
 
   return (
     <DashboardLayout activePath="/maps">
-      <main className="maps-main">
+      <main className="flex-1 relative overflow-hidden">
         {/* Map View */}
-        <div className="maps-container">
+        <div className="w-full h-full">
           <MapComponent activePrograms={activePrograms} activeDistrict={activeDistrict} />
         </div>
 
         {/* District Tabs - overlay on top of map */}
-        <div className="maps-district-tabs">
+        <div className="absolute top-[15px] left-1/2 -translate-x-1/2 flex bg-white rounded-[25px] shadow-[0_2px_10px_rgba(0,0,0,0.15)] z-[1000] overflow-hidden pointer-events-auto">
           <button
-            className={`district-tab ${activeDistrict === 'district1' ? 'active' : ''}`}
+            className={`py-2.5 px-[22px] border-none text-[13px] font-semibold cursor-pointer transition-all duration-200 font-sans ${activeDistrict === 'district1' ? 'bg-primary text-white' : 'bg-white text-[#666] hover:bg-[#f0f0f0]'}`}
             onClick={() => setActiveDistrict('district1')}
           >
             District 1
           </button>
           <button
-            className={`district-tab ${activeDistrict === 'district2' ? 'active' : ''}`}
+            className={`py-2.5 px-[22px] border-none text-[13px] font-semibold cursor-pointer transition-all duration-200 font-sans ${activeDistrict === 'district2' ? 'bg-primary text-white' : 'bg-white text-[#666] hover:bg-[#f0f0f0]'}`}
             onClick={() => setActiveDistrict('district2')}
           >
             District 2
           </button>
           <button
-            className={`district-tab ${activeDistrict === 'all' ? 'active' : ''}`}
+            className={`py-2.5 px-[22px] border-none text-[13px] font-semibold cursor-pointer transition-all duration-200 font-sans ${activeDistrict === 'all' ? 'bg-primary text-white' : 'bg-white text-[#666] hover:bg-[#f0f0f0]'}`}
             onClick={() => setActiveDistrict('all')}
           >
             All
@@ -326,16 +326,16 @@ export default function MapsPage() {
         </div>
 
         {/* Program Filter Sidebar - overlay on top of map */}
-        <div className="maps-program-filters">
+        <div className="absolute top-[70px] left-[15px] flex flex-col gap-2 z-[1000] pointer-events-auto">
           {programFilters.map(prog => (
             <button
               key={prog.id}
-              className={`program-filter-btn ${activePrograms.includes(prog.id) ? 'active' : ''}`}
+              className={`program-filter-btn flex items-center gap-2 py-2.5 px-5 border-none rounded-[25px] text-white text-sm font-bold cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] font-sans shadow-[0_2px_8px_rgba(0,0,0,0.2)] opacity-0 [animation:slideInLeft_0.4s_ease-out_forwards] hover:opacity-100 hover:translate-x-[5px] hover:scale-105 hover:shadow-[0_4px_16px_rgba(0,0,0,0.35)] active:translate-x-[2px] active:scale-95 active:transition-all active:duration-100 ${activePrograms.includes(prog.id) ? 'opacity-100 translate-x-2 scale-105 shadow-[0_3px_12px_rgba(0,0,0,0.3)] [animation:slideInLeft_0.4s_ease-out_forwards,pulseGlow_2s_ease-in-out_infinite]' : ''}`}
               style={{ background: prog.color }}
               onClick={() => toggleProgram(prog.id)}
             >
               {prog.logo ? (
-                <img src={prog.logo} alt={prog.label} className="program-filter-logo" />
+                <img src={prog.logo} alt={prog.label} className="w-[22px] h-[22px] object-contain rounded-full" />
               ) : (
                 <Icon icon={prog.icon} width={18} height={18} />
               )}

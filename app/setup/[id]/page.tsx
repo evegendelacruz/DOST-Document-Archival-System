@@ -102,29 +102,29 @@ function DocumentTable({ title, docs }: { title: string; docs: DocRow[] }) {
   let itemCounter = 0;
 
   return (
-    <div className="doc-section">
-      <h2 className="doc-section-title">{title}</h2>
-      <div className="doc-info-banner">
-        <Icon icon="mdi:information-outline" width={16} height={16} />
+    <div className="bg-white rounded-xl mb-8 shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+      <h2 className="text-base font-bold text-primary pt-5 px-7 m-0 mb-3">{title}</h2>
+      <div className="flex items-start gap-2 bg-[#e1f5fe] border border-[#b3e5fc] rounded-lg py-2.5 px-4 mx-7 mb-4 text-xs text-[#0277bd] leading-[1.4]">
+        <Icon icon="mdi:information-outline" width={16} height={16} className="min-w-4 mt-px" />
         <span>To ensure that the document you uploaded is viewable in our system, click the View button below and check the document you uploaded. If it is not viewable, re-upload the document</span>
       </div>
-      <div className="doc-table-container">
-        <table className="doc-table">
+      <div className="overflow-x-auto px-7">
+        <table className="w-full border-collapse text-[13px]">
           <thead>
-            <tr>
-              <th className="doc-th-num">#</th>
-              <th className="doc-th-name">Documentary Requirements</th>
-              <th className="doc-th-file">File</th>
-              <th className="doc-th-date">Date Uploaded</th>
-              <th className="doc-th-action">Action</th>
+            <tr className="bg-primary text-white">
+              <th className="w-9 py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">#</th>
+              <th className="min-w-[240px] py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">Documentary Requirements</th>
+              <th className="w-40 py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">File</th>
+              <th className="w-[120px] py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">Date Uploaded</th>
+              <th className="w-[120px] py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">Action</th>
             </tr>
           </thead>
           <tbody>
             {docs.map((doc, idx) => {
               if (doc.type === 'section') {
                 return (
-                  <tr key={`section-${idx}`} className="doc-section-row">
-                    <td colSpan={5}>
+                  <tr key={`section-${idx}`}>
+                    <td colSpan={5} className="py-2.5 px-3 bg-[#f0f0f0] border-b border-[#ddd] text-[13px] text-primary">
                       <strong>{doc.label}</strong>
                     </td>
                   </tr>
@@ -134,9 +134,9 @@ function DocumentTable({ title, docs }: { title: string; docs: DocRow[] }) {
               if (doc.type === 'dropdown') {
                 const key = `dropdown-${idx}`;
                 return (
-                  <tr key={key} className="doc-dropdown-row">
-                    <td colSpan={5}>
-                      <button className="doc-dropdown-btn" onClick={() => toggleDropdown(key)}>
+                  <tr key={key}>
+                    <td colSpan={5} className="p-0 border-b border-[#eee]">
+                      <button className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" onClick={() => toggleDropdown(key)}>
                         <Icon icon={expandedDropdowns[key] ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
                         <span>{doc.label}</span>
                       </button>
@@ -149,22 +149,22 @@ function DocumentTable({ title, docs }: { title: string; docs: DocRow[] }) {
               const rowKey = `${title}-${doc.id}-${idx}`;
 
               return (
-                <tr key={rowKey} className="doc-item-row">
-                  <td className="doc-td-num">{itemCounter}</td>
-                  <td className="doc-td-name">{doc.label}</td>
-                  <td className="doc-td-file">
-                    <span className="doc-no-file">No file uploaded</span>
+                <tr key={rowKey}>
+                  <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#888] font-medium">{itemCounter}</td>
+                  <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#333]">{doc.label}</td>
+                  <td className="py-2.5 px-3 border-b border-[#eee] align-middle">
+                    <span className="text-[#bbb] italic text-xs">No file uploaded</span>
                   </td>
-                  <td className="doc-td-date">—</td>
-                  <td className="doc-td-action">
-                    <div className="doc-action-btns">
-                      <button className="doc-action-btn upload" title="Upload">
+                  <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#999] text-xs">—</td>
+                  <td className="py-2.5 px-3 border-b border-[#eee] align-middle">
+                    <div className="flex gap-1.5">
+                      <button className="w-7 h-7 border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 text-white bg-[#f5a623] hover:opacity-80" title="Upload">
                         <Icon icon="mdi:upload" width={14} height={14} />
                       </button>
-                      <button className="doc-action-btn view" title="View">
+                      <button className="w-7 h-7 border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 text-white bg-[#2e7d32] hover:opacity-80" title="View">
                         <Icon icon="mdi:eye-outline" width={14} height={14} />
                       </button>
-                      <button className="doc-action-btn delete" title="Delete">
+                      <button className="w-7 h-7 border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 text-white bg-[#c62828] hover:opacity-80" title="Delete">
                         <Icon icon="mdi:delete-outline" width={14} height={14} />
                       </button>
                     </div>
@@ -175,8 +175,8 @@ function DocumentTable({ title, docs }: { title: string; docs: DocRow[] }) {
           </tbody>
         </table>
       </div>
-      <div className="doc-save-container">
-        <button className="doc-save-btn">Save</button>
+      <div className="flex justify-center py-5 px-7">
+        <button className="bg-accent text-white border-none rounded-[20px] py-2.5 px-12 text-sm font-semibold cursor-pointer transition-colors duration-200 hover:bg-accent-hover">Save</button>
       </div>
     </div>
   );
@@ -190,9 +190,9 @@ export default function ProjectDetailPage() {
   if (!project) {
     return (
       <DashboardLayout activePath="/setup">
-        <main className="project-detail-main">
+        <main className="flex-1 py-6 px-10 pb-[60px] overflow-y-auto bg-[#f4f6f8]">
           <p>Project not found.</p>
-          <Link href="/setup" className="back-link">
+          <Link href="/setup" className="inline-flex items-center gap-1.5 text-primary text-sm font-medium no-underline mb-4 hover:text-accent">
             <Icon icon="mdi:arrow-left" width={18} height={18} />
             Back
           </Link>
@@ -203,39 +203,39 @@ export default function ProjectDetailPage() {
 
   return (
     <DashboardLayout activePath="/setup">
-      <main className="project-detail-main">
+      <main className="flex-1 py-6 px-10 pb-[60px] overflow-y-auto bg-[#f4f6f8]">
         {/* Back Button */}
-        <Link href="/setup" className="back-link">
+        <Link href="/setup" className="inline-flex items-center gap-1.5 text-primary text-sm font-medium no-underline mb-4 hover:text-accent">
           <Icon icon="mdi:arrow-left" width={18} height={18} />
           <span>Back</span>
         </Link>
 
         {/* SETUP 4.0 Header */}
-        <div className="pd-setup-header">
-          <div className="setup-logo-icon">
-            <img src="/setup-logo.png" alt="SETUP" className="pd-setup-logo" />
+        <div className="flex items-center gap-3.5 mb-5">
+          <div className="w-[50px] h-[50px] flex items-center justify-center">
+            <img src="/setup-logo.png" alt="SETUP" className="w-[50px] h-[50px] object-contain bg-primary rounded-full p-2" />
           </div>
-          <div className="setup-title-text">
-            <h1 className="setup-title">SETUP 4.0</h1>
-            <p className="setup-subtitle">Small Enterprise Technology<br/>Upgrading Program</p>
+          <div className="flex flex-col">
+            <h1 className="text-[28px] font-bold text-primary m-0 leading-none">SETUP 4.0</h1>
+            <p className="text-[10px] text-[#666] m-0 leading-[1.3]">Small Enterprise Technology<br/>Upgrading Program</p>
           </div>
         </div>
 
         {/* Project Info Card */}
-        <div className="pd-info-card">
-          <div className="pd-info-left">
-            <div className="pd-company-logo">
+        <div className="bg-white rounded-xl py-6 px-7 flex justify-between items-start mb-8 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+          <div className="flex gap-5 flex-1">
+            <div className="w-[70px] h-[70px] min-w-[70px] rounded-full bg-[#e3f2fd] flex items-center justify-center overflow-hidden">
               <Icon icon="mdi:store" width={48} height={48} color="#146184" />
             </div>
-            <div className="pd-info-text">
-              <div className="pd-status-line">
-                <span className="pd-firm-name">{project.firm}</span>
-                <span className="pd-divider">|</span>
-                <span className="pd-firm-size">{project.firmSize}</span>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 text-[13px] text-[#888] mb-1">
+                <span className="text-[#c62828] font-semibold">{project.firm}</span>
+                <span className="text-[#ccc]">|</span>
+                <span className="text-[#555]">{project.firmSize}</span>
               </div>
-              <h2 className="pd-project-title">{project.title}</h2>
-              <p className="pd-project-subtitle">Acquisition of Equipment for the Mass</p>
-              <div className="pd-details">
+              <h2 className="text-lg font-bold text-[#222] m-0 mb-0.5 leading-[1.3]">{project.title}</h2>
+              <p className="text-sm text-[#555] m-0 mb-3">Acquisition of Equipment for the Mass</p>
+              <div className="[&_p]:my-0.5 [&_p]:text-[13px] [&_p]:text-[#555] [&_strong]:text-[#c62828] [&_strong]:font-semibold">
                 <p><strong>Cooperator&apos;s Name:</strong> {project.cooperatorName}</p>
                 <p><strong>Address:</strong> {project.address}</p>
                 <p><strong>Priority Sector:</strong> {project.prioritySector}</p>
@@ -244,8 +244,8 @@ export default function ProjectDetailPage() {
               </div>
             </div>
           </div>
-          <div className="pd-info-right">
-            <button className="pd-edit-mode-btn">
+          <div className="flex items-start">
+            <button className="flex items-center gap-1.5 bg-accent text-white border-none rounded-[20px] py-2 px-5 text-[13px] font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover">
               <Icon icon="mdi:pencil-outline" width={16} height={16} />
               Edit Mode
             </button>

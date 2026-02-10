@@ -70,127 +70,27 @@ const filterTabs = [
 ];
 
 const projectData = [
-  {
-    id: 1,
-    code: '001',
-    title: 'Acquisition of Equipment for the Mass Production',
-    firm: 'Best Friend Goodies',
-    typeOfFirm: 'Agri-processing',
-    address: 'Purok 4, Dansolihon, Cagayan de Oro City',
-    corporatorName: 'Sergio Maria Lucia Sanico',
-    contactNo: '09123456789',
-    email: 'sample@gmail.com',
-    status: 'Proposal',
-    prioritySector: 'Food Processing',
-    firmSize: 'Small',
-    assignee: 'Jane Doe',
-  },
-  {
-    id: 2,
-    code: '002',
-    title: 'Acquisition of Equipment for the Mass Production',
-    firm: 'Best Friend Goodies',
-    typeOfFirm: 'Agri-processing',
-    address: 'Purok 4, Dansolihon, Cagayan de Oro City',
-    corporatorName: 'Sergio Maria Lucia Sanico',
-    contactNo: '09123456789',
-    email: 'sample@gmail.com',
-    status: 'Proposal',
-    prioritySector: 'Food Processing',
-    firmSize: 'Small',
-    assignee: 'Jane Doe',
-  },
-  {
-    id: 3,
-    code: '003',
-    title: 'Acquisition of Equipment for the Mass Production',
-    firm: 'Best Friend Goodies',
-    typeOfFirm: 'Agri-processing',
-    address: 'Purok 4, Dansolihon, Cagayan de Oro City',
-    corporatorName: 'Sergio Maria Lucia Sanico',
-    contactNo: '09123456789',
-    email: 'sample@gmail.com',
-    status: 'Approved',
-    prioritySector: 'Food Processing',
-    firmSize: 'Small',
-    assignee: 'Jane Doe',
-  },
-  {
-    id: 4,
-    code: '004',
-    title: 'Acquisition of Equipment for the Mass Production',
-    firm: 'Best Friend Goodies',
-    typeOfFirm: 'Agri-processing',
-    address: 'Purok 4, Dansolihon, Cagayan de Oro City',
-    corporatorName: 'Sergio Maria Lucia Sanico',
-    contactNo: '09123456789',
-    email: 'sample@gmail.com',
-    status: 'Ongoing',
-    prioritySector: 'Food Processing',
-    firmSize: 'Medium',
-    assignee: 'Jane Doe',
-  },
-  {
-    id: 5,
-    code: '005',
-    title: 'Acquisition of Equipment for the Mass Production',
-    firm: 'Best Friend Goodies',
-    typeOfFirm: 'Agri-processing',
-    address: 'Purok 4, Dansolihon, Cagayan de Oro City',
-    corporatorName: 'Sergio Maria Lucia Sanico',
-    contactNo: '09123456789',
-    email: 'sample@gmail.com',
-    status: 'Withdrawn',
-    prioritySector: 'Food Processing',
-    firmSize: 'Small',
-    assignee: 'Jane Doe',
-  },
-  {
-    id: 6,
-    code: '006',
-    title: 'Acquisition of Equipment for the Mass Production',
-    firm: 'Best Friend Goodies',
-    typeOfFirm: 'Agri-processing',
-    address: 'Purok 4, Dansolihon, Cagayan de Oro City',
-    corporatorName: 'Sergio Maria Lucia Sanico',
-    contactNo: '09123456789',
-    email: 'sample@gmail.com',
-    status: 'Terminated',
-    prioritySector: 'Food Processing',
-    firmSize: 'Small',
-    assignee: 'Jane Doe',
-  },
-  {
-    id: 7,
-    code: '007',
-    title: 'Acquisition of Equipment for the Mass Production',
-    firm: 'Best Friend Goodies',
-    typeOfFirm: 'Agri-processing',
-    address: 'Purok 4, Dansolihon, Cagayan de Oro City',
-    corporatorName: 'Sergio Maria Lucia Sanico',
-    contactNo: '09123456789',
-    email: 'sample@gmail.com',
-    status: 'Evaluated',
-    prioritySector: 'Food Processing',
-    firmSize: 'Large',
-    assignee: 'Jane Doe',
-  },
-  {
-    id: 8,
-    code: '008',
-    title: 'Acquisition of Equipment for the Mass Production',
-    firm: 'Best Friend Goodies',
-    typeOfFirm: 'Agri-processing',
-    address: 'Purok 4, Dansolihon, Cagayan de Oro City',
-    corporatorName: 'Sergio Maria Lucia Sanico',
-    contactNo: '09123456789',
-    email: 'sample@gmail.com',
-    status: 'Proposal',
-    prioritySector: 'Food Processing',
-    firmSize: 'Small',
-    assignee: 'Jane Doe',
-  },
+  { id: 1, code: '001', title: 'Acquisition of Equipment for the Mass Production', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 4, Dansolihon, Cagayan de Oro City', corporatorName: 'Sergio Maria Lucia Sanico', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Proposal', prioritySector: 'Food Processing', firmSize: 'Small', assignee: 'Jane Doe' },
+  { id: 2, code: '002', title: 'Acquisition of Equipment for the Mass Production', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 4, Dansolihon, Cagayan de Oro City', corporatorName: 'Sergio Maria Lucia Sanico', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Proposal', prioritySector: 'Food Processing', firmSize: 'Small', assignee: 'Jane Doe' },
+  { id: 3, code: '003', title: 'Acquisition of Equipment for the Mass Production', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 4, Dansolihon, Cagayan de Oro City', corporatorName: 'Sergio Maria Lucia Sanico', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Approved', prioritySector: 'Food Processing', firmSize: 'Small', assignee: 'Jane Doe' },
+  { id: 4, code: '004', title: 'Acquisition of Equipment for the Mass Production', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 4, Dansolihon, Cagayan de Oro City', corporatorName: 'Sergio Maria Lucia Sanico', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Ongoing', prioritySector: 'Food Processing', firmSize: 'Medium', assignee: 'Jane Doe' },
+  { id: 5, code: '005', title: 'Acquisition of Equipment for the Mass Production', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 4, Dansolihon, Cagayan de Oro City', corporatorName: 'Sergio Maria Lucia Sanico', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Withdrawn', prioritySector: 'Food Processing', firmSize: 'Small', assignee: 'Jane Doe' },
+  { id: 6, code: '006', title: 'Acquisition of Equipment for the Mass Production', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 4, Dansolihon, Cagayan de Oro City', corporatorName: 'Sergio Maria Lucia Sanico', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Terminated', prioritySector: 'Food Processing', firmSize: 'Small', assignee: 'Jane Doe' },
+  { id: 7, code: '007', title: 'Acquisition of Equipment for the Mass Production', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 4, Dansolihon, Cagayan de Oro City', corporatorName: 'Sergio Maria Lucia Sanico', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Evaluated', prioritySector: 'Food Processing', firmSize: 'Large', assignee: 'Jane Doe' },
+  { id: 8, code: '008', title: 'Acquisition of Equipment for the Mass Production', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 4, Dansolihon, Cagayan de Oro City', corporatorName: 'Sergio Maria Lucia Sanico', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Proposal', prioritySector: 'Food Processing', firmSize: 'Small', assignee: 'Jane Doe' },
 ];
+
+const statusColors: Record<string, string> = {
+  proposal: 'bg-[#e3f2fd] text-[#1565c0]',
+  approved: 'bg-[#e8f5e9] text-[#2e7d32]',
+  ongoing: 'bg-[#fff8e1] text-[#f57f17]',
+  withdrawal: 'bg-[#ffebee] text-[#c62828]',
+  terminated: 'bg-[#fce4ec] text-[#ad1457]',
+  graduated: 'bg-[#e0f2f1] text-[#00695c]',
+};
+
+const modalInputCls = "w-full py-2 px-3 border border-[#d0d0d0] rounded-lg text-[13px] font-[inherit] text-[#333] bg-white transition-all duration-200 placeholder:text-[#aaa] focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(20,97,132,0.1)]";
+const modalSelectCls = `${modalInputCls} modal-select`;
 
 export default function SetupPage() {
   const [activeFilter, setActiveFilter] = useState('proposal');
@@ -200,72 +100,31 @@ export default function SetupPage() {
   const [emails, setEmails] = useState(['']);
   const [contactNumbers, setContactNumbers] = useState(['']);
   const [formData, setFormData] = useState({
-    projectTitle: '',
-    fund: '',
-    typeOfFund: '',
-    firmSize: '',
-    province: '',
-    municipality: '',
-    barangay: '',
-    coordinates: '',
-    firmName: '',
-    firmType: '',
-    cooperatorName: '',
-    projectStatus: '',
-    prioritySector: '',
-    companyLogo: null as File | null,
+    projectTitle: '', fund: '', typeOfFund: '', firmSize: '',
+    province: '', municipality: '', barangay: '', coordinates: '',
+    firmName: '', firmType: '', cooperatorName: '',
+    projectStatus: '', prioritySector: '', companyLogo: null as File | null,
   });
   const [showMapPicker, setShowMapPicker] = useState(false);
 
   const handleFormChange = (field: string, value: string) => {
     setFormData(prev => {
       const updated = { ...prev, [field]: value };
-      if (field === 'province') {
-        updated.municipality = '';
-        updated.barangay = '';
-      }
-      if (field === 'municipality') {
-        updated.barangay = '';
-      }
+      if (field === 'province') { updated.municipality = ''; updated.barangay = ''; }
+      if (field === 'municipality') { updated.barangay = ''; }
       return updated;
     });
   };
 
-  const municipalities = formData.province && addressData[formData.province]
-    ? Object.keys(addressData[formData.province])
-    : [];
+  const municipalities = formData.province && addressData[formData.province] ? Object.keys(addressData[formData.province]) : [];
+  const barangays = formData.province && formData.municipality && addressData[formData.province]?.[formData.municipality] ? addressData[formData.province][formData.municipality] : [];
 
-  const barangays = formData.province && formData.municipality && addressData[formData.province]?.[formData.municipality]
-    ? addressData[formData.province][formData.municipality]
-    : [];
-
-  const handleEmailChange = (index: number, value: string) => {
-    const updated = [...emails];
-    updated[index] = value;
-    setEmails(updated);
-  };
-
-  const addEmail = () => {
-    setEmails(prev => [...prev, '']);
-  };
-
-  const removeEmail = (index: number) => {
-    setEmails(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleContactChange = (index: number, value: string) => {
-    const updated = [...contactNumbers];
-    updated[index] = value;
-    setContactNumbers(updated);
-  };
-
-  const addContact = () => {
-    setContactNumbers(prev => [...prev, '']);
-  };
-
-  const removeContact = (index: number) => {
-    setContactNumbers(prev => prev.filter((_, i) => i !== index));
-  };
+  const handleEmailChange = (index: number, value: string) => { const updated = [...emails]; updated[index] = value; setEmails(updated); };
+  const addEmail = () => { setEmails(prev => [...prev, '']); };
+  const removeEmail = (index: number) => { setEmails(prev => prev.filter((_, i) => i !== index)); };
+  const handleContactChange = (index: number, value: string) => { const updated = [...contactNumbers]; updated[index] = value; setContactNumbers(updated); };
+  const addContact = () => { setContactNumbers(prev => [...prev, '']); };
+  const removeContact = (index: number) => { setContactNumbers(prev => prev.filter((_, i) => i !== index)); };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -274,38 +133,20 @@ export default function SetupPage() {
   };
 
   const handleSaveProject = () => {
-    // TODO: handle save logic
     setShowAddModal(false);
-    setFormData({
-      projectTitle: '', fund: '', typeOfFund: '', firmSize: '',
-      province: '', municipality: '', barangay: '',
-      coordinates: '',
-      firmName: '', firmType: '', cooperatorName: '',
-      projectStatus: '', prioritySector: '', companyLogo: null,
-    });
-    setEmails(['']);
-    setContactNumbers(['']);
+    setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', companyLogo: null });
+    setEmails(['']); setContactNumbers(['']);
   };
 
-  const getStatusClass = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'proposal': return 'status-proposal';
-      case 'approved': return 'status-approved';
-      case 'ongoing': return 'status-ongoing';
-      case 'withdrawal': return 'status-withdrawal';
-      case 'terminated': return 'status-terminated';
-      case 'graduated': return 'status-graduated';
-      default: return 'status-proposal';
-    }
-  };
+  const getStatusClass = (status: string) => statusColors[status.toLowerCase()] || statusColors.proposal;
 
   return (
     <DashboardLayout activePath="/setup">
-      <main className="setup-main">
+      <main className="flex-1 py-5 px-[30px] bg-[#f5f5f5] overflow-x-auto">
         {/* SETUP Header */}
-        <div className="setup-header">
-          <div className="setup-title-section">
-            <div className="setup-logo-icon">
+        <div className="flex justify-between items-center bg-white py-[15px] px-[25px] rounded-[15px] mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.05)] gap-[30px]">
+          <div className="flex items-center gap-[15px]">
+            <div className="w-[50px] h-[50px] flex items-center justify-center">
               <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="25" cy="25" r="23" stroke="#146184" strokeWidth="3" fill="none"/>
                 <circle cx="25" cy="25" r="15" stroke="#00AEEF" strokeWidth="3" fill="none"/>
@@ -316,118 +157,92 @@ export default function SetupPage() {
                 <path d="M40 25 L48 25" stroke="#146184" strokeWidth="3"/>
               </svg>
             </div>
-            <div className="setup-title-text">
-              <h1 className="setup-title">SETUP 4.0</h1>
-              <p className="setup-subtitle">Small Enterprise Technology<br/>Upgrading Program</p>
+            <div className="flex flex-col">
+              <h1 className="text-[28px] font-bold text-primary m-0 leading-none">SETUP 4.0</h1>
+              <p className="text-[10px] text-[#666] m-0 leading-[1.3]">Small Enterprise Technology<br/>Upgrading Program</p>
             </div>
           </div>
-          <div className="setup-search-section">
-            <div className="setup-search-container">
-              <Icon icon="mdi:magnify" className="setup-search-icon" width={20} height={20} />
-              <input
-                type="text"
-                className="setup-search-input"
-                placeholder="Search here"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+          <div className="flex-1 flex justify-center items-center">
+            <div className="relative w-[600px] h-[50px]">
+              <Icon icon="mdi:magnify" className="absolute left-[15px] top-1/2 -translate-y-1/2 text-[#999] w-5 h-5" width={20} height={20} />
+              <input type="text" className="w-full h-full pl-[50px] pr-[25px] border border-[#e0e0e0] rounded-[25px] text-[15px] bg-[#f5f5f5] transition-all duration-200 focus:outline-none focus:border-primary focus:bg-white focus:shadow-[0_2px_8px_rgba(20,97,132,0.1)] placeholder:text-[#999]" placeholder="Search here" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
           </div>
-          <button className="add-project-btn" onClick={() => setShowAddModal(true)}>
+          <button className="flex items-center gap-2 py-3 px-5 bg-accent text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover" onClick={() => setShowAddModal(true)}>
             <Icon icon="mdi:plus" width={20} height={20} />
             Add New Project
           </button>
         </div>
 
         {/* Filter Tabs */}
-        <div className="filter-tabs">
+        <div className="flex gap-[15px] mb-5 w-full">
           {filterTabs.map(tab => (
-            <button
-              key={tab.id}
-              className={`filter-tab ${activeFilter === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveFilter(tab.id)}
-            >
-              <div className="filter-label-row">
-                <span className="filter-label">{tab.label}</span>
-                <span className="filter-dot" style={{ backgroundColor: tab.color }}></span>
+            <button key={tab.id} className={`flex-1 flex flex-col items-center justify-center py-5 px-[15px] border-none rounded-xl cursor-pointer transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.06)] ${activeFilter === tab.id ? 'bg-primary' : 'bg-white hover:bg-[#f0f8ff] hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)]'}`} onClick={() => setActiveFilter(tab.id)}>
+              <div className="inline-flex items-center gap-[5px] mb-2">
+                <span className={`text-[13px] font-medium leading-none ${activeFilter === tab.id ? 'text-white' : 'text-[#666]'}`}>{tab.label}</span>
+                <span className="w-1.5 h-1.5 rounded-full inline-block align-middle" style={{ backgroundColor: tab.color }}></span>
               </div>
-              <span className="filter-count">{tab.count}</span>
+              <span className={`text-[32px] font-bold ${activeFilter === tab.id ? 'text-white' : 'text-primary'}`}>{tab.count}</span>
             </button>
           ))}
         </div>
 
         {/* Masterlist Section */}
-        <div className="masterlist-section">
-          <div className="masterlist-header">
-            <h2 className="masterlist-title">MASTERLIST</h2>
-            <div className="masterlist-actions">
-              <button className="masterlist-btn">
-                <Icon icon="mdi:sort" width={16} height={16} />
-                Sort
+        <div className="bg-white rounded-[15px] p-5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+          <div className="flex justify-between items-center mb-5 pb-[15px] border-b border-[#e0e0e0]">
+            <h2 className="text-lg font-bold text-primary m-0">MASTERLIST</h2>
+            <div className="flex gap-2.5">
+              <button className="flex items-center gap-[5px] py-2 px-[15px] bg-white border border-[#d0d0d0] rounded-lg text-[13px] text-[#333] cursor-pointer transition-all duration-200 hover:bg-[#f5f5f5] hover:border-primary">
+                <Icon icon="mdi:sort" width={16} height={16} /> Sort
               </button>
-              <button className="masterlist-btn">
-                <Icon icon="mdi:filter-variant" width={16} height={16} />
-                Filter
+              <button className="flex items-center gap-[5px] py-2 px-[15px] bg-white border border-[#d0d0d0] rounded-lg text-[13px] text-[#333] cursor-pointer transition-all duration-200 hover:bg-[#f5f5f5] hover:border-primary">
+                <Icon icon="mdi:filter-variant" width={16} height={16} /> Filter
               </button>
-              <button className="masterlist-btn export">
-                <Icon icon="mdi:file-pdf-box" width={16} height={16} />
-                Export PDF
+              <button className="flex items-center gap-[5px] py-2 px-[15px] bg-[#dc3545] text-white border border-[#dc3545] rounded-lg text-[13px] cursor-pointer transition-all duration-200 hover:bg-[#c82333]">
+                <Icon icon="mdi:file-pdf-box" width={16} height={16} /> Export PDF
               </button>
             </div>
           </div>
 
-          {/* Table */}
-          <div className="table-container">
-            <table className="masterlist-table">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-xs">
               <thead>
                 <tr>
-                  <th className="th-check">
-                    <input
-                      type="checkbox"
-                      className="masterlist-checkbox"
-                      checked={selectedProjects.length === projectData.length && projectData.length > 0}
-                      onChange={(e) => setSelectedProjects(e.target.checked ? projectData.map(p => p.id) : [])}
-                    />
+                  <th className="w-9 min-w-[36px] text-center py-3 px-2.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">
+                    <input type="checkbox" className="w-4 h-4 accent-accent cursor-pointer" checked={selectedProjects.length === projectData.length && projectData.length > 0} onChange={(e) => setSelectedProjects(e.target.checked ? projectData.map(p => p.id) : [])} />
                   </th>
-                  <th>Code</th>
-                  <th>Project Title</th>
-                  <th>Firm</th>
-                  <th>Type of Firm</th>
-                  <th>Address</th>
-                  <th>Corporator&apos;s Name</th>
-                  <th>Contact No.</th>
-                  <th>Email</th>
-                  <th>Status</th>
-                  <th>Priority Sector</th>
-                  <th>Firm Size</th>
-                  <th>Assignee</th>
+                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Code</th>
+                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Project Title</th>
+                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Firm</th>
+                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Type of Firm</th>
+                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Address</th>
+                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Corporator&apos;s Name</th>
+                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Contact No.</th>
+                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Email</th>
+                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Status</th>
+                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Priority Sector</th>
+                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Firm Size</th>
+                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Assignee</th>
                 </tr>
               </thead>
               <tbody>
                 {projectData.map((project) => (
-                  <tr key={project.id}>
-                    <td className="td-check">
-                      <input
-                        type="checkbox"
-                        className="masterlist-checkbox"
-                        checked={selectedProjects.includes(project.id)}
-                        onChange={(e) => setSelectedProjects(prev =>
-                          e.target.checked ? [...prev, project.id] : prev.filter(id => id !== project.id)
-                        )}
-                      />
+                  <tr key={project.id} className="hover:bg-[#f9f9f9]">
+                    <td className="w-9 min-w-[36px] text-center py-3 px-2.5 text-left border-b border-[#e0e0e0]">
+                      <input type="checkbox" className="w-4 h-4 accent-accent cursor-pointer" checked={selectedProjects.includes(project.id)} onChange={(e) => setSelectedProjects(prev => e.target.checked ? [...prev, project.id] : prev.filter(id => id !== project.id))} />
                     </td>
-                    <td className="code-cell">{project.code}</td>
-                    <td className="project-title-cell"><Link href={`/setup/${project.id}`}>{project.title}</Link></td>
-                    <td>{project.firm}</td>
-                    <td><span className="firm-badge">{project.typeOfFirm}</span></td>
-                    <td>{project.address}</td>
-                    <td>{project.corporatorName}</td>
-                    <td>{project.contactNo}</td>
-                    <td>{project.email}</td>
-                    <td><span className={`status-badge ${getStatusClass(project.status)}`}>{project.status}</span></td>
-                    <td>{project.prioritySector}</td>
-                    <td>{project.firmSize}</td>
-                    <td>{project.assignee}</td>
+                    <td className="text-primary font-semibold whitespace-nowrap py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.code}</td>
+                    <td className="max-w-[250px] text-[#333] font-medium whitespace-normal break-words py-3 px-2.5 text-left border-b border-[#e0e0e0]"><Link href={`/setup/${project.id}`} className="text-primary no-underline font-medium hover:text-accent hover:underline">{project.title}</Link></td>
+                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.firm}</td>
+                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]"><span className="inline-block py-1 px-2.5 bg-[#fff3cd] text-[#856404] rounded-[15px] text-[11px] font-medium">{project.typeOfFirm}</span></td>
+                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.address}</td>
+                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.corporatorName}</td>
+                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.contactNo}</td>
+                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.email}</td>
+                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]"><span className={`inline-block py-1 px-3 rounded-[15px] text-[11px] font-medium ${getStatusClass(project.status)}`}>{project.status}</span></td>
+                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.prioritySector}</td>
+                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.firmSize}</td>
+                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.assignee}</td>
                   </tr>
                 ))}
               </tbody>
@@ -438,55 +253,39 @@ export default function SetupPage() {
 
       {/* Add New Project Modal */}
       {showAddModal && (
-        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-          <div className="add-project-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close-btn" onClick={() => setShowAddModal(false)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => setShowAddModal(false)}>
+          <div className="add-project-modal bg-white rounded-[20px] py-[25px] px-[35px] w-full max-w-[680px] max-h-[85vh] overflow-y-auto relative shadow-[0_10px_40px_rgba(0,0,0,0.3)]" onClick={(e) => e.stopPropagation()}>
+            <button className="absolute top-[15px] right-[15px] bg-transparent border-none cursor-pointer text-[#999] p-[5px] flex items-center justify-center rounded-full transition-all duration-200 hover:bg-[#f0f0f0] hover:text-[#333]" onClick={() => setShowAddModal(false)}>
               <Icon icon="mdi:close" width={20} height={20} />
             </button>
-            <h2 className="add-modal-title">Add New Project</h2>
-            <p className="add-modal-subtitle">Complete the form to register a new project</p>
+            <h2 className="text-xl font-bold text-primary m-0 mb-[3px]">Add New Project</h2>
+            <p className="text-xs text-[#888] m-0 mb-[15px]">Complete the form to register a new project</p>
 
-            <div className="add-modal-form">
+            <div className="flex flex-col gap-3">
               {/* Project Title */}
-              <div className="modal-form-group full-width">
-                <label>Project Title<span className="required">*</span></label>
-                <input
-                  type="text"
-                  placeholder="Enter project title"
-                  value={formData.projectTitle}
-                  onChange={(e) => handleFormChange('projectTitle', e.target.value)}
-                />
+              <div className="flex flex-col gap-1 w-full">
+                <label className="text-[13px] font-semibold text-[#333]">Project Title<span className="text-[#dc3545] ml-0.5">*</span></label>
+                <input type="text" placeholder="Enter project title" value={formData.projectTitle} onChange={(e) => handleFormChange('projectTitle', e.target.value)} className={modalInputCls} />
               </div>
 
               {/* Fund Row */}
-              <div className="modal-form-row three-col">
-                <div className="modal-form-group">
-                  <label>Fund<span className="required">*</span></label>
-                  <input
-                    type="text"
-                    placeholder="Enter fund"
-                    value={formData.fund}
-                    onChange={(e) => handleFormChange('fund', e.target.value)}
-                  />
+              <div className="grid grid-cols-3 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-semibold text-[#333]">Fund<span className="text-[#dc3545] ml-0.5">*</span></label>
+                  <input type="text" placeholder="Enter fund" value={formData.fund} onChange={(e) => handleFormChange('fund', e.target.value)} className={modalInputCls} />
                 </div>
-                <div className="modal-form-group">
-                  <label>Type of Fund<span className="required">*</span></label>
-                  <select
-                    value={formData.typeOfFund}
-                    onChange={(e) => handleFormChange('typeOfFund', e.target.value)}
-                  >
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-semibold text-[#333]">Type of Fund<span className="text-[#dc3545] ml-0.5">*</span></label>
+                  <select value={formData.typeOfFund} onChange={(e) => handleFormChange('typeOfFund', e.target.value)} className={modalSelectCls}>
                     <option value="">Select Type</option>
                     <option value="GIA">GIA</option>
                     <option value="Loan">Loan</option>
                     <option value="Grant">Grant</option>
                   </select>
                 </div>
-                <div className="modal-form-group">
-                  <label>Firm Size<span className="required">*</span></label>
-                  <select
-                    value={formData.firmSize}
-                    onChange={(e) => handleFormChange('firmSize', e.target.value)}
-                  >
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-semibold text-[#333]">Firm Size<span className="text-[#dc3545] ml-0.5">*</span></label>
+                  <select value={formData.firmSize} onChange={(e) => handleFormChange('firmSize', e.target.value)} className={modalSelectCls}>
                     <option value="">Select Size</option>
                     <option value="Small">Small</option>
                     <option value="Medium">Medium</option>
@@ -496,193 +295,117 @@ export default function SetupPage() {
               </div>
 
               {/* Address Row */}
-              <div className="modal-form-row three-col">
-                <div className="modal-form-group">
-                  <label>Province<span className="required">*</span></label>
-                  <select
-                    value={formData.province}
-                    onChange={(e) => handleFormChange('province', e.target.value)}
-                  >
+              <div className="grid grid-cols-3 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-semibold text-[#333]">Province<span className="text-[#dc3545] ml-0.5">*</span></label>
+                  <select value={formData.province} onChange={(e) => handleFormChange('province', e.target.value)} className={modalSelectCls}>
                     <option value="">Select Province</option>
-                    {Object.keys(addressData).map(prov => (
-                      <option key={prov} value={prov}>{prov}</option>
-                    ))}
+                    {Object.keys(addressData).map(prov => (<option key={prov} value={prov}>{prov}</option>))}
                   </select>
                 </div>
-                <div className="modal-form-group">
-                  <label>Municipality/City<span className="required">*</span></label>
-                  <select
-                    value={formData.municipality}
-                    onChange={(e) => handleFormChange('municipality', e.target.value)}
-                    disabled={!formData.province}
-                  >
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-semibold text-[#333]">Municipality/City<span className="text-[#dc3545] ml-0.5">*</span></label>
+                  <select value={formData.municipality} onChange={(e) => handleFormChange('municipality', e.target.value)} disabled={!formData.province} className={modalSelectCls}>
                     <option value="">Select Municipality</option>
-                    {municipalities.map(mun => (
-                      <option key={mun} value={mun}>{mun}</option>
-                    ))}
+                    {municipalities.map(mun => (<option key={mun} value={mun}>{mun}</option>))}
                   </select>
                 </div>
-                <div className="modal-form-group">
-                  <label>Barangay<span className="required">*</span></label>
-                  <select
-                    value={formData.barangay}
-                    onChange={(e) => handleFormChange('barangay', e.target.value)}
-                    disabled={!formData.municipality}
-                  >
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-semibold text-[#333]">Barangay<span className="text-[#dc3545] ml-0.5">*</span></label>
+                  <select value={formData.barangay} onChange={(e) => handleFormChange('barangay', e.target.value)} disabled={!formData.municipality} className={modalSelectCls}>
                     <option value="">Select Barangay</option>
-                    {barangays.map(brgy => (
-                      <option key={brgy} value={brgy}>{brgy}</option>
-                    ))}
+                    {barangays.map(brgy => (<option key={brgy} value={brgy}>{brgy}</option>))}
                   </select>
                 </div>
               </div>
 
               {/* Coordinates */}
-              <div className="modal-form-group full-width">
-                <label>Coordinates</label>
-                <div className="coordinates-input-wrapper">
-                  <input
-                    type="text"
-                    placeholder="e.g. 8.465281,124.623238"
-                    value={formData.coordinates}
-                    readOnly
-                    className="coordinates-input"
-                  />
-                  <button
-                    type="button"
-                    className="coordinates-map-btn"
-                    onClick={() => setShowMapPicker(true)}
-                    title="Pick on Map"
-                  >
+              <div className="flex flex-col gap-1 w-full">
+                <label className="text-[13px] font-semibold text-[#333]">Coordinates</label>
+                <div className="relative flex items-center">
+                  <input type="text" placeholder="e.g. 8.465281,124.623238" value={formData.coordinates} readOnly className={`${modalInputCls} pr-9!`} />
+                  <button type="button" className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-none border-none p-0 m-0 text-[#999] flex items-center justify-center cursor-pointer transition-colors duration-200 hover:text-accent" onClick={() => setShowMapPicker(true)} title="Pick on Map">
                     <Icon icon="mdi:map-marker-plus-outline" width={20} height={20} />
                   </button>
                 </div>
               </div>
 
               {/* Firm Row */}
-              <div className="modal-form-row two-col">
-                <div className="modal-form-group">
-                  <label>Firm Name <span className="optional">(optional)</span></label>
-                  <input
-                    type="text"
-                    placeholder="Enter firm/establishment name"
-                    value={formData.firmName}
-                    onChange={(e) => handleFormChange('firmName', e.target.value)}
-                  />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-semibold text-[#333]">Firm Name <span className="text-[#999] font-normal text-xs">(optional)</span></label>
+                  <input type="text" placeholder="Enter firm/establishment name" value={formData.firmName} onChange={(e) => handleFormChange('firmName', e.target.value)} className={modalInputCls} />
                 </div>
-                <div className="modal-form-group">
-                  <label>Firm/Establishment Type</label>
-                  <input
-                    type="text"
-                    placeholder="Enter firm type/municipality"
-                    value={formData.firmType}
-                    onChange={(e) => handleFormChange('firmType', e.target.value)}
-                  />
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-semibold text-[#333]">Firm/Establishment Type</label>
+                  <input type="text" placeholder="Enter firm type/municipality" value={formData.firmType} onChange={(e) => handleFormChange('firmType', e.target.value)} className={modalInputCls} />
                 </div>
               </div>
 
               {/* Cooperator Row */}
-              <div className="modal-form-row two-col">
-                <div className="modal-form-group">
-                  <label>Cooperator&apos;s Name<span className="required">*</span></label>
-                  <input
-                    type="text"
-                    placeholder="Enter cooperator's name"
-                    value={formData.cooperatorName}
-                    onChange={(e) => handleFormChange('cooperatorName', e.target.value)}
-                  />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-semibold text-[#333]">Cooperator&apos;s Name<span className="text-[#dc3545] ml-0.5">*</span></label>
+                  <input type="text" placeholder="Enter cooperator's name" value={formData.cooperatorName} onChange={(e) => handleFormChange('cooperatorName', e.target.value)} className={modalInputCls} />
                 </div>
-                <div className="modal-form-group">
-                  <label>Contact Number<span className="required">*</span></label>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-semibold text-[#333]">Contact Number<span className="text-[#dc3545] ml-0.5">*</span></label>
                   {contactNumbers.map((num, idx) => (
-                    <div key={idx} className={`multi-input-row ${idx > 0 ? 'mt-8' : ''}`}>
-                      <input
-                        type="text"
-                        placeholder="Enter contact number"
-                        value={num}
-                        onChange={(e) => handleContactChange(idx, e.target.value)}
-                      />
+                    <div key={idx} className={`flex items-center gap-1.5 ${idx > 0 ? 'mt-2' : ''}`}>
+                      <input type="text" placeholder="Enter contact number" value={num} onChange={(e) => handleContactChange(idx, e.target.value)} className={`${modalInputCls} flex-1`} />
                       {contactNumbers.length > 1 && (
-                        <button type="button" className="remove-input-btn" onClick={() => removeContact(idx)}>
+                        <button type="button" className="w-[22px] h-[22px] min-w-[22px] bg-[#f5f5f5] border border-[#ddd] rounded-full flex items-center justify-center cursor-pointer text-[#c62828] p-0 transition-all duration-200 hover:bg-[#fce4ec] hover:border-[#c62828]" onClick={() => removeContact(idx)}>
                           <Icon icon="mdi:close" width={14} height={14} />
                         </button>
                       )}
                     </div>
                   ))}
-                  <button type="button" className="add-email-btn" onClick={addContact}>
-                    <Icon icon="mdi:plus" width={14} height={14} />
-                    Add More Number
+                  <button type="button" className="inline-flex items-center gap-1 bg-transparent border-none text-accent text-xs font-semibold cursor-pointer p-0 py-1 mt-1 font-[inherit] hover:text-accent-hover hover:underline" onClick={addContact}>
+                    <Icon icon="mdi:plus" width={14} height={14} /> Add More Number
                   </button>
                 </div>
               </div>
 
               {/* Email + Status + Priority Row */}
-              <div className="modal-form-row three-col">
-                <div className="modal-form-group">
-                  <label>Email<span className="required">*</span></label>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-semibold text-[#333]">Email<span className="text-[#dc3545] ml-0.5">*</span></label>
                   {emails.map((email, idx) => (
-                    <div key={idx} className={`multi-input-row ${idx > 0 ? 'mt-8' : ''}`}>
-                      <input
-                        type="email"
-                        placeholder="Enter email"
-                        value={email}
-                        onChange={(e) => handleEmailChange(idx, e.target.value)}
-                      />
+                    <div key={idx} className={`flex items-center gap-1.5 ${idx > 0 ? 'mt-2' : ''}`}>
+                      <input type="email" placeholder="Enter email" value={email} onChange={(e) => handleEmailChange(idx, e.target.value)} className={`${modalInputCls} flex-1`} />
                       {emails.length > 1 && (
-                        <button type="button" className="remove-input-btn" onClick={() => removeEmail(idx)}>
+                        <button type="button" className="w-[22px] h-[22px] min-w-[22px] bg-[#f5f5f5] border border-[#ddd] rounded-full flex items-center justify-center cursor-pointer text-[#c62828] p-0 transition-all duration-200 hover:bg-[#fce4ec] hover:border-[#c62828]" onClick={() => removeEmail(idx)}>
                           <Icon icon="mdi:close" width={14} height={14} />
                         </button>
                       )}
                     </div>
                   ))}
-                  <button type="button" className="add-email-btn" onClick={addEmail}>
-                    <Icon icon="mdi:plus" width={14} height={14} />
-                    Add More Email
+                  <button type="button" className="inline-flex items-center gap-1 bg-transparent border-none text-accent text-xs font-semibold cursor-pointer p-0 py-1 mt-1 font-[inherit] hover:text-accent-hover hover:underline" onClick={addEmail}>
+                    <Icon icon="mdi:plus" width={14} height={14} /> Add More Email
                   </button>
                 </div>
-                <div className="modal-form-group">
-                  <label>Project Status<span className="required">*</span></label>
-                  <select
-                    value={formData.projectStatus}
-                    onChange={(e) => handleFormChange('projectStatus', e.target.value)}
-                  >
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-semibold text-[#333]">Project Status<span className="text-[#dc3545] ml-0.5">*</span></label>
+                  <select value={formData.projectStatus} onChange={(e) => handleFormChange('projectStatus', e.target.value)} className={modalSelectCls}>
                     <option value="">Select Status</option>
-                    <option value="Proposal">Proposal</option>
-                    <option value="Approved">Approved</option>
-                    <option value="Ongoing">Ongoing</option>
-                    <option value="Withdrawal">Withdrawal</option>
-                    <option value="Terminated">Terminated</option>
-                    <option value="Graduated">Graduated</option>
+                    <option value="Proposal">Proposal</option><option value="Approved">Approved</option><option value="Ongoing">Ongoing</option><option value="Withdrawal">Withdrawal</option><option value="Terminated">Terminated</option><option value="Graduated">Graduated</option>
                   </select>
                 </div>
-                <div className="modal-form-group">
-                  <label>Priority Sector<span className="required">*</span></label>
-                  <select
-                    value={formData.prioritySector}
-                    onChange={(e) => handleFormChange('prioritySector', e.target.value)}
-                  >
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-semibold text-[#333]">Priority Sector<span className="text-[#dc3545] ml-0.5">*</span></label>
+                  <select value={formData.prioritySector} onChange={(e) => handleFormChange('prioritySector', e.target.value)} className={modalSelectCls}>
                     <option value="">Select Sector</option>
-                    <option value="Food Processing">Food Processing</option>
-                    <option value="Agriculture">Agriculture</option>
-                    <option value="Aquaculture">Aquaculture</option>
-                    <option value="Furniture">Furniture</option>
-                    <option value="Gifts & Housewares">Gifts & Housewares</option>
+                    <option value="Food Processing">Food Processing</option><option value="Agriculture">Agriculture</option><option value="Aquaculture">Aquaculture</option><option value="Furniture">Furniture</option><option value="Gifts & Housewares">Gifts & Housewares</option>
                   </select>
                 </div>
               </div>
 
               {/* Company Logo */}
-              <div className="modal-form-group full-width">
-                <label>Company Logo</label>
-                <div className="logo-upload-area">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoChange}
-                    id="logo-upload"
-                    className="logo-upload-input"
-                  />
-                  <label htmlFor="logo-upload" className="logo-upload-label">
+              <div className="flex flex-col gap-1 w-full">
+                <label className="text-[13px] font-semibold text-[#333]">Company Logo</label>
+                <div className="relative">
+                  <input type="file" accept="image/*" onChange={handleLogoChange} id="logo-upload" className="absolute opacity-0 w-0 h-0" />
+                  <label htmlFor="logo-upload" className="flex flex-row items-center justify-center gap-2 p-3 border-2 border-dashed border-[#d0d0d0] rounded-[10px] cursor-pointer text-[#999] text-[13px] transition-all duration-200 hover:border-primary hover:text-primary hover:bg-[#f0f8ff]">
                     <Icon icon="mdi:cloud-upload-outline" width={28} height={28} />
                     <span>{formData.companyLogo ? formData.companyLogo.name : 'Click to upload logo'}</span>
                   </label>
@@ -690,8 +413,8 @@ export default function SetupPage() {
               </div>
 
               {/* Save Button */}
-              <div className="modal-form-actions">
-                <button className="save-project-btn" onClick={handleSaveProject}>
+              <div className="flex justify-center mt-0.5">
+                <button className="py-2.5 px-[50px] bg-accent text-white border-none rounded-[10px] text-[15px] font-semibold cursor-pointer transition-colors duration-200 font-[inherit] hover:bg-accent-hover active:translate-y-px" onClick={handleSaveProject}>
                   Save Project
                 </button>
               </div>
@@ -702,32 +425,27 @@ export default function SetupPage() {
 
       {/* Map Picker Modal */}
       {showMapPicker && (
-        <div className="modal-overlay map-picker-overlay" onClick={() => setShowMapPicker(false)}>
-          <div className="map-picker-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="map-picker-header">
-              <h3>Pick Location on Map</h3>
-              <button className="modal-close-btn" onClick={() => setShowMapPicker(false)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1100]" onClick={() => setShowMapPicker(false)}>
+          <div className="bg-white rounded-2xl w-[700px] max-w-[95vw] max-h-[90vh] overflow-hidden flex flex-col shadow-[0_12px_40px_rgba(0,0,0,0.25)]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between py-4 px-6 border-b border-[#eee]">
+              <h3 className="m-0 text-base text-primary font-bold">Pick Location on Map</h3>
+              <button className="absolute top-[15px] right-[15px] bg-transparent border-none cursor-pointer text-[#999] p-[5px] flex items-center justify-center rounded-full transition-all duration-200 hover:bg-[#f0f0f0] hover:text-[#333]" onClick={() => setShowMapPicker(false)}>
                 <Icon icon="mdi:close" width={20} height={20} />
               </button>
             </div>
-            <p className="map-picker-hint">Click on the map to place a pin and auto-generate coordinates</p>
-            <div className="map-picker-coords">
-              <span>Coordinates: <strong>{formData.coordinates || '—'}</strong></span>
+            <p className="m-0 py-2 px-6 text-xs text-[#888]">Click on the map to place a pin and auto-generate coordinates</p>
+            <div className="flex gap-6 px-6 pb-3 text-[13px] text-[#555]">
+              <span>Coordinates: <strong className="text-primary">{formData.coordinates || '—'}</strong></span>
             </div>
-            <div className="map-picker-container">
+            <div className="map-picker-container w-full h-[400px] relative">
               <MapPickerInner
                 lat={formData.coordinates ? parseFloat(formData.coordinates.split(',')[0]) : null}
                 lng={formData.coordinates ? parseFloat(formData.coordinates.split(',')[1]) : null}
-                onPick={(lat, lng) => {
-                  setFormData(prev => ({
-                    ...prev,
-                    coordinates: `${lat.toFixed(6)},${lng.toFixed(6)}`,
-                  }));
-                }}
+                onPick={(lat, lng) => { setFormData(prev => ({ ...prev, coordinates: `${lat.toFixed(6)},${lng.toFixed(6)}` })); }}
               />
             </div>
-            <div className="map-picker-actions">
-              <button className="map-picker-confirm" onClick={() => setShowMapPicker(false)}>
+            <div className="flex justify-center py-4 px-6 border-t border-[#eee]">
+              <button className="bg-accent text-white border-none rounded-[20px] py-2.5 px-10 text-sm font-semibold cursor-pointer transition-colors duration-200 hover:bg-accent-hover" onClick={() => setShowMapPicker(false)}>
                 Confirm Location
               </button>
             </div>
@@ -756,7 +474,7 @@ function MapPickerInner({ lat, lng, onPick }: { lat: number | null; lng: number 
   }, []);
 
   if (!comps || !L) {
-    return <div className="maps-loading">Loading map...</div>;
+    return <div className="w-full h-full flex items-center justify-center text-base text-[#666] bg-[#f5f5f5]">Loading map...</div>;
   }
 
   const { MapContainer, TileLayer, Marker, useMapEvents } = comps;
@@ -783,20 +501,10 @@ function MapPickerInner({ lat, lng, onPick }: { lat: number | null; lng: number 
   }
 
   return (
-    <MapContainer
-      center={[lat || 8.477, lng || 124.646]}
-      zoom={12}
-      style={{ width: '100%', height: '100%' }}
-      zoomControl={true}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+    <MapContainer center={[lat || 8.477, lng || 124.646]} zoom={12} style={{ width: '100%', height: '100%' }} zoomControl={true}>
+      <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
       <ClickHandler />
-      {lat !== null && lng !== null && (
-        <Marker position={[lat, lng]} icon={markerIcon} />
-      )}
+      {lat !== null && lng !== null && (<Marker position={[lat, lng]} icon={markerIcon} />)}
     </MapContainer>
   );
 }
