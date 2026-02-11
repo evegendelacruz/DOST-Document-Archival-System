@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import prisma from '@/lib/prisma';
 import { sendOtpEmail } from '@/lib/email';
 
@@ -28,8 +28,10 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Send OTP email in a separate process (doesn't block)
-  sendOtpEmail(email, otp);
+  // Send email after response (keeps function alive but responds instantly)
+  after(async () => {
+    await sendOtpEmail(email, otp);
+  });
 
   return NextResponse.json({ message: 'Verification code sent to your email' });
 }
