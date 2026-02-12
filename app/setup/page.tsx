@@ -61,42 +61,66 @@ const addressData: Record<string, Record<string, string[]>> = {
 };
 
 const filterTabs = [
-  { id: 'proposal', label: 'Proposal', count: 5, color: '#1565c0' },
-  { id: 'approved', label: 'Approved', count: 5, color: '#2e7d32' },
-  { id: 'ongoing', label: 'Ongoing', count: 5, color: '#f57f17' },
-  { id: 'withdrawal', label: 'Withdrawal', count: 5, color: '#c62828' },
-  { id: 'terminated', label: 'Terminated', count: 5, color: '#ad1457' },
-  { id: 'graduated', label: 'Graduated', count: 5, color: '#00695c' },
+  { id: 'PROPOSAL', label: 'Proposal', color: '#1565c0' },
+  { id: 'APPROVED', label: 'Approved', color: '#2e7d32' },
+  { id: 'ONGOING', label: 'Ongoing', color: '#f57f17' },
+  { id: 'WITHDRAWN', label: 'Withdrawal', color: '#c62828' },
+  { id: 'TERMINATED', label: 'Terminated', color: '#ad1457' },
+  { id: 'GRADUATED', label: 'Graduated', color: '#00695c' },
 ];
 
-const projectData = [
-  { id: 1, code: '001', title: 'Acquisition of Equipment for the Mass Production', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 4, Dansolihon, Cagayan de Oro City', corporatorName: 'Sergio Maria Lucia Sanico', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Proposal', prioritySector: 'Food Processing', firmSize: 'Small', assignee: 'Jane Doe' },
-  { id: 2, code: '002', title: 'Acquisition of Equipment for the Mass Production', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 4, Dansolihon, Cagayan de Oro City', corporatorName: 'Sergio Maria Lucia Sanico', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Proposal', prioritySector: 'Food Processing', firmSize: 'Small', assignee: 'Jane Doe' },
-  { id: 3, code: '003', title: 'Acquisition of Equipment for the Mass Production', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 4, Dansolihon, Cagayan de Oro City', corporatorName: 'Sergio Maria Lucia Sanico', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Approved', prioritySector: 'Food Processing', firmSize: 'Small', assignee: 'Jane Doe' },
-  { id: 4, code: '004', title: 'Acquisition of Equipment for the Mass Production', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 4, Dansolihon, Cagayan de Oro City', corporatorName: 'Sergio Maria Lucia Sanico', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Ongoing', prioritySector: 'Food Processing', firmSize: 'Medium', assignee: 'Jane Doe' },
-  { id: 5, code: '005', title: 'Acquisition of Equipment for the Mass Production', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 4, Dansolihon, Cagayan de Oro City', corporatorName: 'Sergio Maria Lucia Sanico', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Withdrawn', prioritySector: 'Food Processing', firmSize: 'Small', assignee: 'Jane Doe' },
-  { id: 6, code: '006', title: 'Acquisition of Equipment for the Mass Production', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 4, Dansolihon, Cagayan de Oro City', corporatorName: 'Sergio Maria Lucia Sanico', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Terminated', prioritySector: 'Food Processing', firmSize: 'Small', assignee: 'Jane Doe' },
-  { id: 7, code: '007', title: 'Acquisition of Equipment for the Mass Production', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 4, Dansolihon, Cagayan de Oro City', corporatorName: 'Sergio Maria Lucia Sanico', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Evaluated', prioritySector: 'Food Processing', firmSize: 'Large', assignee: 'Jane Doe' },
-  { id: 8, code: '008', title: 'Acquisition of Equipment for the Mass Production', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 4, Dansolihon, Cagayan de Oro City', corporatorName: 'Sergio Maria Lucia Sanico', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Proposal', prioritySector: 'Food Processing', firmSize: 'Small', assignee: 'Jane Doe' },
-];
+interface Project {
+  id: string;
+  code: string;
+  title: string;
+  firm: string | null;
+  typeOfFirm: string | null;
+  address: string | null;
+  coordinates: string | null;
+  corporatorName: string | null;
+  contactNumbers: string[];
+  emails: string[];
+  status: string;
+  prioritySector: string | null;
+  firmSize: string | null;
+  fund: string | null;
+  typeOfFund: string | null;
+  assignee: string | null;
+  companyLogoUrl: string | null;
+}
+
+const statusDisplay: Record<string, string> = {
+  PROPOSAL: 'Proposal',
+  APPROVED: 'Approved',
+  ONGOING: 'Ongoing',
+  WITHDRAWN: 'Withdrawal',
+  TERMINATED: 'Terminated',
+  GRADUATED: 'Graduated',
+  EVALUATED: 'Evaluated',
+};
 
 const statusColors: Record<string, string> = {
-  proposal: 'bg-[#e3f2fd] text-[#1565c0]',
-  approved: 'bg-[#e8f5e9] text-[#2e7d32]',
-  ongoing: 'bg-[#fff8e1] text-[#f57f17]',
-  withdrawal: 'bg-[#ffebee] text-[#c62828]',
-  terminated: 'bg-[#fce4ec] text-[#ad1457]',
-  graduated: 'bg-[#e0f2f1] text-[#00695c]',
+  PROPOSAL: 'bg-[#e3f2fd] text-[#1565c0]',
+  APPROVED: 'bg-[#e8f5e9] text-[#2e7d32]',
+  ONGOING: 'bg-[#fff8e1] text-[#f57f17]',
+  WITHDRAWN: 'bg-[#ffebee] text-[#c62828]',
+  TERMINATED: 'bg-[#fce4ec] text-[#ad1457]',
+  GRADUATED: 'bg-[#e0f2f1] text-[#00695c]',
+  EVALUATED: 'bg-[#e3f2fd] text-[#1565c0]',
 };
 
 const modalInputCls = "w-full py-2 px-3 border border-[#d0d0d0] rounded-lg text-[13px] font-[inherit] text-[#333] bg-white transition-all duration-200 placeholder:text-[#aaa] focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(20,97,132,0.1)]";
 const modalSelectCls = `${modalInputCls} modal-select`;
 
 export default function SetupPage() {
-  const [activeFilter, setActiveFilter] = useState('proposal');
+  const [activeFilter, setActiveFilter] = useState('PROPOSAL');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedProjects, setSelectedProjects] = useState<number[]>([]);
+  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [emails, setEmails] = useState(['']);
   const [contactNumbers, setContactNumbers] = useState(['']);
   const [formData, setFormData] = useState({
@@ -107,6 +131,41 @@ export default function SetupPage() {
   });
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/setup-projects');
+      if (!res.ok) throw new Error('Failed to fetch projects');
+      const data = await res.json();
+      setProjects(data);
+    } catch {
+      console.error('Failed to fetch projects');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchProjects(); }, []);
+
+  // Filter projects by active tab and search query
+  const filteredProjects = projects
+    .filter(p => p.status === activeFilter)
+    .filter(p => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        p.title.toLowerCase().includes(q) ||
+        (p.firm?.toLowerCase().includes(q)) ||
+        p.code.toLowerCase().includes(q)
+      );
+    });
+
+  // Compute counts per status from all projects
+  const statusCounts = projects.reduce<Record<string, number>>((acc, p) => {
+    acc[p.status] = (acc[p.status] || 0) + 1;
+    return acc;
+  }, {});
 
   const handleFormChange = (field: string, value: string) => {
     setFormData(prev => {
@@ -137,7 +196,7 @@ export default function SetupPage() {
     }
   };
 
-  const handleSaveProject = () => {
+  const handleSaveProject = async () => {
     const errors: Record<string, string> = {};
 
     if (!formData.projectTitle.trim()) errors.projectTitle = 'Project title is required';
@@ -168,12 +227,47 @@ export default function SetupPage() {
     }
 
     setFormErrors({});
-    setShowAddModal(false);
-    setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', companyLogo: null });
-    setEmails(['']); setContactNumbers(['']);
+    setSaveError('');
+    setSaving(true);
+
+    try {
+      const res = await fetch('/api/setup-projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: formData.projectTitle,
+          fund: formData.fund,
+          typeOfFund: formData.typeOfFund,
+          firmSize: formData.firmSize,
+          address: `${formData.barangay}, ${formData.municipality}, ${formData.province}`,
+          coordinates: formData.coordinates || null,
+          firm: formData.firmName || null,
+          typeOfFirm: formData.firmType || null,
+          corporatorName: formData.cooperatorName,
+          contactNumbers: contactNumbers.filter(c => c.trim()),
+          emails: emails.filter(e => e.trim()),
+          status: formData.projectStatus,
+          prioritySector: formData.prioritySector,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || 'Failed to save project');
+      }
+
+      setShowAddModal(false);
+      setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', companyLogo: null });
+      setEmails(['']); setContactNumbers(['']);
+      await fetchProjects();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to save project');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const getStatusClass = (status: string) => statusColors[status.toLowerCase()] || statusColors.proposal;
+  const getStatusClass = (status: string) => statusColors[status] || statusColors.PROPOSAL;
 
   return (
     <DashboardLayout activePath="/setup">
@@ -217,7 +311,7 @@ export default function SetupPage() {
                 <span className={`text-[13px] font-medium leading-none ${activeFilter === tab.id ? 'text-white' : 'text-[#666]'}`}>{tab.label}</span>
                 <span className="w-1.5 h-1.5 rounded-full inline-block align-middle" style={{ backgroundColor: tab.color }}></span>
               </div>
-              <span className={`text-[32px] font-bold ${activeFilter === tab.id ? 'text-white' : 'text-primary'}`}>{tab.count}</span>
+              <span className={`text-[32px] font-bold ${activeFilter === tab.id ? 'text-white' : 'text-primary'}`}>{statusCounts[tab.id] || 0}</span>
             </button>
           ))}
         </div>
@@ -244,7 +338,7 @@ export default function SetupPage() {
               <thead>
                 <tr>
                   <th className="w-9 min-w-[36px] text-center py-3 px-2.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">
-                    <input type="checkbox" className="w-4 h-4 accent-accent cursor-pointer" checked={selectedProjects.length === projectData.length && projectData.length > 0} onChange={(e) => setSelectedProjects(e.target.checked ? projectData.map(p => p.id) : [])} />
+                    <input type="checkbox" className="w-4 h-4 accent-accent cursor-pointer" checked={selectedProjects.length === filteredProjects.length && filteredProjects.length > 0} onChange={(e) => setSelectedProjects(e.target.checked ? filteredProjects.map(p => p.id) : [])} />
                   </th>
                   <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Code</th>
                   <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Project Title</th>
@@ -261,7 +355,11 @@ export default function SetupPage() {
                 </tr>
               </thead>
               <tbody>
-                {projectData.map((project) => (
+                {loading ? (
+                  <tr><td colSpan={13} className="py-8 text-center text-[#999] text-sm">Loading projects...</td></tr>
+                ) : filteredProjects.length === 0 ? (
+                  <tr><td colSpan={13} className="py-8 text-center text-[#999] text-sm">No projects found</td></tr>
+                ) : filteredProjects.map((project) => (
                   <tr key={project.id} className="hover:bg-[#f9f9f9]">
                     <td className="w-9 min-w-[36px] text-center py-3 px-2.5 text-left border-b border-[#e0e0e0]">
                       <input type="checkbox" className="w-4 h-4 accent-accent cursor-pointer" checked={selectedProjects.includes(project.id)} onChange={(e) => setSelectedProjects(prev => e.target.checked ? [...prev, project.id] : prev.filter(id => id !== project.id))} />
@@ -269,12 +367,12 @@ export default function SetupPage() {
                     <td className="text-primary font-semibold whitespace-nowrap py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.code}</td>
                     <td className="max-w-[250px] text-[#333] font-medium whitespace-normal break-words py-3 px-2.5 text-left border-b border-[#e0e0e0]"><Link href={`/setup/${project.id}`} className="text-primary no-underline font-medium hover:text-accent hover:underline">{project.title}</Link></td>
                     <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.firm}</td>
-                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]"><span className="inline-block py-1 px-2.5 bg-[#fff3cd] text-[#856404] rounded-[15px] text-[11px] font-medium">{project.typeOfFirm}</span></td>
+                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.typeOfFirm && <span className="inline-block py-1 px-2.5 bg-[#fff3cd] text-[#856404] rounded-[15px] text-[11px] font-medium">{project.typeOfFirm}</span>}</td>
                     <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.address}</td>
                     <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.corporatorName}</td>
-                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.contactNo}</td>
-                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.email}</td>
-                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]"><span className={`inline-block py-1 px-3 rounded-[15px] text-[11px] font-medium ${getStatusClass(project.status)}`}>{project.status}</span></td>
+                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.contactNumbers.join(', ')}</td>
+                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.emails.join(', ')}</td>
+                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]"><span className={`inline-block py-1 px-3 rounded-[15px] text-[11px] font-medium ${getStatusClass(project.status)}`}>{statusDisplay[project.status] || project.status}</span></td>
                     <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.prioritySector}</td>
                     <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.firmSize}</td>
                     <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.assignee}</td>
@@ -436,7 +534,7 @@ export default function SetupPage() {
                   <label className="text-[13px] font-semibold text-[#333]">Project Status<span className="text-[#dc3545] ml-0.5">*</span></label>
                   <select value={formData.projectStatus} onChange={(e) => handleFormChange('projectStatus', e.target.value)} className={`${modalSelectCls} ${formErrors.projectStatus ? 'border-[#dc3545]! focus:border-[#dc3545]! focus:shadow-[0_0_0_3px_rgba(220,53,69,0.1)]!' : ''}`}>
                     <option value="">Select Status</option>
-                    <option value="Proposal">Proposal</option><option value="Approved">Approved</option><option value="Ongoing">Ongoing</option><option value="Withdrawal">Withdrawal</option><option value="Terminated">Terminated</option><option value="Graduated">Graduated</option>
+                    <option value="PROPOSAL">Proposal</option><option value="APPROVED">Approved</option><option value="ONGOING">Ongoing</option><option value="WITHDRAWN">Withdrawal</option><option value="TERMINATED">Terminated</option><option value="GRADUATED">Graduated</option>
                   </select>
                   {formErrors.projectStatus && <span className="text-[#dc3545] text-[11px]">{formErrors.projectStatus}</span>}
                 </div>
@@ -463,9 +561,10 @@ export default function SetupPage() {
               </div>
 
               {/* Save Button */}
+              {saveError && <p className="text-[#dc3545] text-[13px] text-center m-0">{saveError}</p>}
               <div className="flex justify-center mt-0.5">
-                <button className="py-2.5 px-[50px] bg-accent text-white border-none rounded-[10px] text-[15px] font-semibold cursor-pointer transition-colors duration-200 font-[inherit] hover:bg-accent-hover active:translate-y-px" onClick={handleSaveProject}>
-                  Save Project
+                <button className="py-2.5 px-[50px] bg-accent text-white border-none rounded-[10px] text-[15px] font-semibold cursor-pointer transition-colors duration-200 font-[inherit] hover:bg-accent-hover active:translate-y-px disabled:opacity-60 disabled:cursor-not-allowed" onClick={handleSaveProject} disabled={saving}>
+                  {saving ? 'Saving...' : 'Save Project'}
                 </button>
               </div>
             </div>

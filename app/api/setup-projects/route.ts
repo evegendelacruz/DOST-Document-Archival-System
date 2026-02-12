@@ -27,7 +27,13 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const data = await req.json();
 
-  const project = await prisma.setupProject.create({ data });
+  // Auto-generate project code as zero-padded string
+  const count = await prisma.setupProject.count();
+  const code = String(count + 1).padStart(3, '0');
+
+  const project = await prisma.setupProject.create({
+    data: { ...data, code },
+  });
 
   return NextResponse.json(project, { status: 201 });
 }
