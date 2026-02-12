@@ -11,11 +11,13 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, activePath, sidebarItems }: DashboardLayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col bg-[#f5f5f5]">
+    <div className="h-screen flex flex-col bg-[#f5f5f5] overflow-hidden">
       <Header />
-      <div className="flex flex-1">
+      <div className="flex flex-1 min-h-0">
         <Sidebar activePath={activePath} items={sidebarItems} />
-        {children}
+        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
+          {children}
+        </div>
       </div>
     </div>
   );

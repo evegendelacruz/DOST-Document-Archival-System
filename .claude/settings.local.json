@@ -21,7 +21,9 @@
       "Bash(npm pack:*)",
       "Bash(tar -xzf:*)",
       "Bash(psql:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm rebuild:*)",
+      "Bash(tar xzf:*)"
     ]
   }
 }

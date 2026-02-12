@@ -22,29 +22,14 @@ const misamisOrientalBoundary = boundaryData[0] as [number, number][];
 // CDO = Highly Urbanized City (lone district), shown in both/all
 type Pin = { lat: number; lng: number; label: string; district: 1 | 2 | 0 };
 
-// SETUP program pins
-const setupPins: Pin[] = [
-  { lat: 8.4756, lng: 124.6422, label: 'Cagayan de Oro City', district: 0 },
-  { lat: 8.4470, lng: 124.5363, label: 'Opol', district: 2 },
-  { lat: 8.5597, lng: 124.5271, label: 'El Salvador', district: 2 },
-  { lat: 8.5705, lng: 124.4712, label: 'Alubijid', district: 2 },
-  { lat: 8.5747, lng: 124.4409, label: 'Laguindingan', district: 2 },
-  { lat: 8.5944, lng: 124.4058, label: 'Gitagum', district: 2 },
-  { lat: 8.5627, lng: 124.3523, label: 'Libertad', district: 2 },
-  { lat: 8.4975, lng: 124.3056, label: 'Initao', district: 2 },
-  { lat: 8.4033, lng: 124.2888, label: 'Manticao', district: 2 },
-  { lat: 8.3432, lng: 124.2598, label: 'Lugait', district: 2 },
-  { lat: 8.5387, lng: 124.7544, label: 'Tagoloan', district: 2 },
-  { lat: 8.5837, lng: 124.7699, label: 'Villanueva', district: 2 },
-  { lat: 8.6504, lng: 124.7547, label: 'Jasaan', district: 2 },
-  { lat: 8.7429, lng: 124.7756, label: 'Balingasag', district: 1 },
-  { lat: 8.8059, lng: 124.7877, label: 'Lagonglong', district: 1 },
-  { lat: 8.8589, lng: 124.7868, label: 'Salay', district: 1 },
-  { lat: 8.9211, lng: 124.7850, label: 'Binuangan', district: 1 },
-  { lat: 8.9563, lng: 124.7881, label: 'Sugbongcogon', district: 1 },
-  { lat: 8.9840, lng: 124.7911, label: 'Kinoguitan', district: 1 },
-  { lat: 8.6119, lng: 124.8934, label: 'Claveria', district: 2 },
-];
+// SETUP projects fetched from DB (with coordinates)
+type SetupProjectPin = {
+  id: string;
+  title: string;
+  firm: string | null;
+  address: string | null;
+  coordinates: string | null;
+};
 
 // CEST program pins - real coordinates
 const cestPins: Pin[] = [
@@ -111,7 +96,7 @@ const filterByDistrict = (pins: Pin[], district: string) => {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function MapComponent({ activePrograms, activeDistrict }: { activePrograms: string[]; activeDistrict: string }) {
+function MapComponent({ activePrograms, activeDistrict, setupProjects }: { activePrograms: string[]; activeDistrict: string; setupProjects: SetupProjectPin[] }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [components, setComponents] = useState<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -245,15 +230,23 @@ function MapComponent({ activePrograms, activeDistrict }: { activePrograms: stri
           fill: false,
         }}
       />
-      {showSetup && filterByDistrict(setupPins, activeDistrict).map((pin, idx) => (
-        <Marker key={`setup-${idx}`} position={[pin.lat, pin.lng]} icon={setupIcon}>
-          <Popup>
-            <a href={`/setup/${(idx % 8) + 1}`} style={{ color: '#00838f', fontWeight: 600, textDecoration: 'none' }}>
-              {pin.label}
-            </a>
-          </Popup>
-        </Marker>
-      ))}
+      {showSetup && setupProjects.map((project) => {
+        const [lat, lng] = project.coordinates!.split(',').map(s => parseFloat(s.trim()));
+        if (isNaN(lat) || isNaN(lng)) return null;
+        return (
+          <Marker key={`setup-${project.id}`} position={[lat, lng]} icon={setupIcon}>
+            <Popup>
+              <div>
+                <a href={`/setup/${project.id}`} style={{ color: '#00838f', fontWeight: 600, textDecoration: 'none', fontSize: '13px' }}>
+                  {project.title}
+                </a>
+                {project.firm && <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#666' }}>{project.firm}</p>}
+                {project.address && <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#888' }}>{project.address}</p>}
+              </div>
+            </Popup>
+          </Marker>
+        );
+      })}
       {showCest && filterByDistrict(cestPins, activeDistrict).map((pin, idx) => (
         <Marker key={`cest-${idx}`} position={[pin.lat, pin.lng]} icon={cestIcon}>
           <Popup>
@@ -288,6 +281,14 @@ function MapComponent({ activePrograms, activeDistrict }: { activePrograms: stri
 export default function MapsPage() {
   const [activeDistrict, setActiveDistrict] = useState('all');
   const [activePrograms, setActivePrograms] = useState<string[]>([]);
+  const [setupProjects, setSetupProjects] = useState<SetupProjectPin[]>([]);
+
+  useEffect(() => {
+    fetch('/api/setup-projects')
+      .then(res => res.json())
+      .then((data: SetupProjectPin[]) => setSetupProjects(data.filter(p => p.coordinates)))
+      .catch(() => {});
+  }, []);
 
   const toggleProgram = (id: string) => {
     setActivePrograms(prev =>
@@ -297,10 +298,10 @@ export default function MapsPage() {
 
   return (
     <DashboardLayout activePath="/maps">
-      <main className="flex-1 relative overflow-hidden">
+      <main className="flex-1 relative overflow-hidden min-h-0">
         {/* Map View */}
         <div className="w-full h-full">
-          <MapComponent activePrograms={activePrograms} activeDistrict={activeDistrict} />
+          <MapComponent activePrograms={activePrograms} activeDistrict={activeDistrict} setupProjects={setupProjects} />
         </div>
 
         {/* District Tabs - overlay on top of map */}

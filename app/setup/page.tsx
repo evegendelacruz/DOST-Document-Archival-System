@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Icon } from '@iconify/react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import DashboardLayout from '../components/DashboardLayout';
 import 'leaflet/dist/leaflet.css';
 
@@ -87,6 +89,7 @@ interface Project {
   typeOfFund: string | null;
   assignee: string | null;
   companyLogoUrl: string | null;
+  createdAt: string;
 }
 
 const statusDisplay: Record<string, string> = {
@@ -109,11 +112,23 @@ const statusColors: Record<string, string> = {
   EVALUATED: 'bg-[#e3f2fd] text-[#1565c0]',
 };
 
+const sortFilterCategories = [
+  { key: 'title', label: 'Project Title' },
+  { key: 'code', label: 'Project Code' },
+  { key: 'createdAt', label: 'Year' },
+  { key: 'firm', label: 'Firm' },
+  { key: 'firmSize', label: 'Firm Size' },
+  { key: 'status', label: 'Status' },
+  { key: 'corporatorName', label: "Corporator's Name" },
+  { key: 'address', label: 'Address' },
+  { key: 'prioritySector', label: 'Priority Sector' },
+];
+
 const modalInputCls = "w-full py-2 px-3 border border-[#d0d0d0] rounded-lg text-[13px] font-[inherit] text-[#333] bg-white transition-all duration-200 placeholder:text-[#aaa] focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(20,97,132,0.1)]";
 const modalSelectCls = `${modalInputCls} modal-select`;
 
 export default function SetupPage() {
-  const [activeFilter, setActiveFilter] = useState('PROPOSAL');
+  const [activeFilter, setActiveFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
@@ -131,6 +146,16 @@ export default function SetupPage() {
   });
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [sortField, setSortField] = useState('code');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [filterCategory, setFilterCategory] = useState('');
+  const [filterValue, setFilterValue] = useState('');
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const sortRef = useRef<HTMLDivElement>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
 
   const fetchProjects = async () => {
     try {
@@ -148,17 +173,55 @@ export default function SetupPage() {
 
   useEffect(() => { fetchProjects(); }, []);
 
-  // Filter projects by active tab and search query
+  // Close dropdowns on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) setShowSortDropdown(false);
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setShowFilterDropdown(false);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Filter projects by active tab, search query, column filter, then sort
   const filteredProjects = projects
-    .filter(p => p.status === activeFilter)
+    .filter(p => activeFilter ? p.status === activeFilter : true)
     .filter(p => {
       if (!searchQuery.trim()) return true;
-      const q = searchQuery.toLowerCase();
+      const q = searchQuery.toLowerCase().replace(/^#/, '');
       return (
+        p.code.toLowerCase().includes(q) ||
         p.title.toLowerCase().includes(q) ||
         (p.firm?.toLowerCase().includes(q)) ||
-        p.code.toLowerCase().includes(q)
+        (p.address?.toLowerCase().includes(q)) ||
+        (p.corporatorName?.toLowerCase().includes(q)) ||
+        (p.prioritySector?.toLowerCase().includes(q)) ||
+        (p.firmSize?.toLowerCase().includes(q)) ||
+        (p.status?.toLowerCase().includes(q))
       );
+    })
+    .filter(p => {
+      if (!filterCategory || !filterValue.trim()) return true;
+      const v = filterValue.toLowerCase();
+      if (filterCategory === 'createdAt') {
+        return p.createdAt ? new Date(p.createdAt).getFullYear().toString().includes(v) : false;
+      }
+      const fieldVal = (p as unknown as Record<string, unknown>)[filterCategory];
+      return typeof fieldVal === 'string' && fieldVal.toLowerCase().includes(v);
+    })
+    .sort((a, b) => {
+      const dir = sortDirection === 'asc' ? 1 : -1;
+      if (sortField === 'createdAt') {
+        return dir * (new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime());
+      }
+      if (sortField === 'code') {
+        const numA = parseInt(a.code.replace(/\D/g, '')) || 0;
+        const numB = parseInt(b.code.replace(/\D/g, '')) || 0;
+        return dir * (numA - numB);
+      }
+      const valA = ((a as unknown as Record<string, string>)[sortField]) || '';
+      const valB = ((b as unknown as Record<string, string>)[sortField]) || '';
+      return dir * valA.localeCompare(valB);
     });
 
   // Compute counts per status from all projects
@@ -231,24 +294,29 @@ export default function SetupPage() {
     setSaving(true);
 
     try {
-      const res = await fetch('/api/setup-projects', {
-        method: 'POST',
+      const payload = {
+        title: formData.projectTitle,
+        fund: formData.fund,
+        typeOfFund: formData.typeOfFund,
+        firmSize: formData.firmSize,
+        address: `${formData.barangay}, ${formData.municipality}, ${formData.province}`,
+        coordinates: formData.coordinates || null,
+        firm: formData.firmName || null,
+        typeOfFirm: formData.firmType || null,
+        corporatorName: formData.cooperatorName,
+        contactNumbers: contactNumbers.filter(c => c.trim()),
+        emails: emails.filter(e => e.trim()),
+        status: formData.projectStatus,
+        prioritySector: formData.prioritySector,
+      };
+
+      const url = editingProjectId ? `/api/setup-projects/${editingProjectId}` : '/api/setup-projects';
+      const method = editingProjectId ? 'PATCH' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: formData.projectTitle,
-          fund: formData.fund,
-          typeOfFund: formData.typeOfFund,
-          firmSize: formData.firmSize,
-          address: `${formData.barangay}, ${formData.municipality}, ${formData.province}`,
-          coordinates: formData.coordinates || null,
-          firm: formData.firmName || null,
-          typeOfFirm: formData.firmType || null,
-          corporatorName: formData.cooperatorName,
-          contactNumbers: contactNumbers.filter(c => c.trim()),
-          emails: emails.filter(e => e.trim()),
-          status: formData.projectStatus,
-          prioritySector: formData.prioritySector,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -257,6 +325,8 @@ export default function SetupPage() {
       }
 
       setShowAddModal(false);
+      setEditingProjectId(null);
+      setSelectedProjects([]);
       setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', companyLogo: null });
       setEmails(['']); setContactNumbers(['']);
       await fetchProjects();
@@ -265,6 +335,107 @@ export default function SetupPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const openEditModal = (projectId: string) => {
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return;
+    const addressParts = project.address?.split(', ') || [];
+    const barangay = addressParts[0] || '';
+    const municipality = addressParts[1] || '';
+    const province = addressParts[2] || '';
+    setFormData({
+      projectTitle: project.title,
+      fund: project.fund || '',
+      typeOfFund: project.typeOfFund || '',
+      firmSize: project.firmSize || '',
+      province,
+      municipality,
+      barangay,
+      coordinates: project.coordinates || '',
+      firmName: project.firm || '',
+      firmType: project.typeOfFirm || '',
+      cooperatorName: project.corporatorName || '',
+      projectStatus: project.status,
+      prioritySector: project.prioritySector || '',
+      companyLogo: null,
+    });
+    setEmails(project.emails.length > 0 ? project.emails : ['']);
+    setContactNumbers(project.contactNumbers.length > 0 ? project.contactNumbers : ['']);
+    setEditingProjectId(projectId);
+    setFormErrors({});
+    setSaveError('');
+    setShowAddModal(true);
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedProjects.length === 0) return;
+    const confirmMsg = selectedProjects.length === 1
+      ? 'Are you sure you want to delete this project?'
+      : `Are you sure you want to delete ${selectedProjects.length} projects?`;
+    if (!confirm(confirmMsg)) return;
+    setDeleting(true);
+    try {
+      await Promise.all(selectedProjects.map(id =>
+        fetch(`/api/setup-projects/${id}`, { method: 'DELETE' })
+      ));
+      setSelectedProjects([]);
+      await fetchProjects();
+    } catch {
+      console.error('Failed to delete projects');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleExportPDF = () => {
+    const projectsToExport = selectedProjects.length > 0
+      ? filteredProjects.filter(p => selectedProjects.includes(p.id))
+      : filteredProjects;
+    if (projectsToExport.length === 0) return;
+
+    // A4 portrait: 210 x 297 mm
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageWidth = 210;
+    const marginLeft = 10;
+    const marginRight = 10;
+    const tableWidth = pageWidth - marginLeft - marginRight; // 190mm
+
+    doc.setFontSize(14);
+    doc.setTextColor(20, 97, 132);
+    doc.text('SETUP 4.0 — Project Masterlist', marginLeft, 14);
+    doc.setFontSize(8);
+    doc.setTextColor(100);
+    doc.text(`Exported: ${new Date().toLocaleDateString()} | ${projectsToExport.length} project(s)`, marginLeft, 19);
+
+    // Column widths proportional to tableWidth (190mm total)
+    const colWidths = [7, 11, 32, 22, 28, 22, 20, 22, 14, 14, 12].map(w => w / 204 * tableWidth);
+
+    autoTable(doc, {
+      startY: 23,
+      head: [['#', 'Code', 'Project Title', 'Firm', 'Address', "Corporator", 'Contact', 'Email', 'Status', 'Sector', 'Size']],
+      body: projectsToExport.map((p, i) => [
+        i + 1,
+        `#${p.code}`,
+        p.title,
+        p.firm || '—',
+        p.address || '—',
+        p.corporatorName || '—',
+        p.contactNumbers.join(', ') || '—',
+        p.emails.join(', ') || '—',
+        statusDisplay[p.status] || p.status,
+        p.prioritySector || '—',
+        p.firmSize || '—',
+      ]),
+      styles: { fontSize: 6, cellPadding: 1.5, overflow: 'linebreak' },
+      headStyles: { fillColor: [20, 97, 132], textColor: 255, fontStyle: 'bold', fontSize: 6 },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      margin: { left: marginLeft, right: marginRight },
+      tableWidth: tableWidth,
+      columnStyles: Object.fromEntries(colWidths.map((w, i) => [i, { cellWidth: w }])),
+    });
+
+    doc.save(`SETUP_Masterlist_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
   const getStatusClass = (status: string) => statusColors[status] || statusColors.PROPOSAL;
@@ -297,7 +468,7 @@ export default function SetupPage() {
               <input type="text" className="w-full h-full pl-[50px] pr-[25px] border border-[#e0e0e0] rounded-[25px] text-[15px] bg-[#f5f5f5] transition-all duration-200 focus:outline-none focus:border-primary focus:bg-white focus:shadow-[0_2px_8px_rgba(20,97,132,0.1)] placeholder:text-[#999]" placeholder="Search here" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
           </div>
-          <button className="flex items-center gap-2 py-3 px-5 bg-accent text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover" onClick={() => { setShowAddModal(true); setFormErrors({}); }}>
+          <button className="flex items-center gap-2 py-3 px-5 bg-accent text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover" onClick={() => { setEditingProjectId(null); setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', companyLogo: null }); setEmails(['']); setContactNumbers(['']); setFormErrors({}); setSaveError(''); setShowAddModal(true); }}>
             <Icon icon="mdi:plus" width={20} height={20} />
             Add New Project
           </button>
@@ -306,7 +477,7 @@ export default function SetupPage() {
         {/* Filter Tabs */}
         <div className="flex gap-[15px] mb-5 w-full">
           {filterTabs.map(tab => (
-            <button key={tab.id} className={`flex-1 flex flex-col items-center justify-center py-5 px-[15px] border-none rounded-xl cursor-pointer transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.06)] ${activeFilter === tab.id ? 'bg-primary' : 'bg-white hover:bg-[#f0f8ff] hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)]'}`} onClick={() => setActiveFilter(tab.id)}>
+            <button key={tab.id} className={`flex-1 flex flex-col items-center justify-center py-5 px-[15px] border-none rounded-xl cursor-pointer transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.06)] ${activeFilter === tab.id ? 'bg-primary' : 'bg-white hover:bg-[#f0f8ff] hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)]'}`} onClick={() => setActiveFilter(prev => prev === tab.id ? '' : tab.id)}>
               <div className="inline-flex items-center gap-[5px] mb-2">
                 <span className={`text-[13px] font-medium leading-none ${activeFilter === tab.id ? 'text-white' : 'text-[#666]'}`}>{tab.label}</span>
                 <span className="w-1.5 h-1.5 rounded-full inline-block align-middle" style={{ backgroundColor: tab.color }}></span>
@@ -321,13 +492,49 @@ export default function SetupPage() {
           <div className="flex justify-between items-center mb-5 pb-[15px] border-b border-[#e0e0e0]">
             <h2 className="text-lg font-bold text-primary m-0">MASTERLIST</h2>
             <div className="flex gap-2.5">
-              <button className="flex items-center gap-[5px] py-2 px-[15px] bg-white border border-[#d0d0d0] rounded-lg text-[13px] text-[#333] cursor-pointer transition-all duration-200 hover:bg-[#f5f5f5] hover:border-primary">
-                <Icon icon="mdi:sort" width={16} height={16} /> Sort
-              </button>
-              <button className="flex items-center gap-[5px] py-2 px-[15px] bg-white border border-[#d0d0d0] rounded-lg text-[13px] text-[#333] cursor-pointer transition-all duration-200 hover:bg-[#f5f5f5] hover:border-primary">
-                <Icon icon="mdi:filter-variant" width={16} height={16} /> Filter
-              </button>
-              <button className="flex items-center gap-[5px] py-2 px-[15px] bg-[#dc3545] text-white border border-[#dc3545] rounded-lg text-[13px] cursor-pointer transition-all duration-200 hover:bg-[#c82333]">
+              {/* Sort Dropdown */}
+              <div className="relative" ref={sortRef}>
+                <button className="flex items-center gap-[5px] py-2 px-[15px] bg-white border border-[#d0d0d0] rounded-lg text-[13px] text-[#333] cursor-pointer transition-all duration-200 hover:bg-[#f5f5f5] hover:border-primary" onClick={() => { setShowSortDropdown(v => !v); setShowFilterDropdown(false); }}>
+                  <Icon icon="mdi:sort" width={16} height={16} /> Sort
+                </button>
+                {showSortDropdown && (
+                  <div className="absolute right-0 top-full mt-1 w-[200px] bg-white border border-[#e0e0e0] rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.12)] z-50 py-1">
+                    {sortFilterCategories.map(cat => (
+                      <button key={cat.key} className={`w-full flex items-center justify-between py-2 px-3 text-[13px] text-left border-none bg-transparent cursor-pointer transition-colors duration-150 hover:bg-[#f0f8ff] ${sortField === cat.key ? 'text-primary font-semibold' : 'text-[#333]'}`} onClick={() => { if (sortField === cat.key) { setSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setSortField(cat.key); setSortDirection('asc'); } setShowSortDropdown(false); }}>
+                        <span>{cat.label}</span>
+                        {sortField === cat.key && <Icon icon={sortDirection === 'asc' ? 'mdi:arrow-up' : 'mdi:arrow-down'} width={14} height={14} />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Filter Dropdown */}
+              <div className="relative" ref={filterRef}>
+                <button className={`flex items-center gap-[5px] py-2 px-[15px] border rounded-lg text-[13px] cursor-pointer transition-all duration-200 hover:bg-[#f5f5f5] hover:border-primary ${filterCategory && filterValue ? 'bg-[#e3f2fd] border-primary text-primary font-semibold' : 'bg-white border-[#d0d0d0] text-[#333]'}`} onClick={() => { setShowFilterDropdown(v => !v); setShowSortDropdown(false); }}>
+                  <Icon icon="mdi:filter-variant" width={16} height={16} /> Filter
+                  {filterCategory && filterValue && <span className="ml-1 w-[6px] h-[6px] rounded-full bg-primary inline-block" />}
+                </button>
+                {showFilterDropdown && (
+                  <div className="absolute right-0 top-full mt-1 w-[260px] bg-white border border-[#e0e0e0] rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.12)] z-50 p-3 flex flex-col gap-2">
+                    <label className="text-[12px] font-semibold text-[#555]">Category</label>
+                    <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="w-full py-1.5 px-2 border border-[#d0d0d0] rounded text-[13px] bg-white focus:outline-none focus:border-primary">
+                      <option value="">Select category</option>
+                      {sortFilterCategories.map(cat => (
+                        <option key={cat.key} value={cat.key}>{cat.label}</option>
+                      ))}
+                    </select>
+                    <label className="text-[12px] font-semibold text-[#555]">Value</label>
+                    <input type="text" placeholder="Type to filter..." value={filterValue} onChange={e => setFilterValue(e.target.value)} className="w-full py-1.5 px-2 border border-[#d0d0d0] rounded text-[13px] bg-white focus:outline-none focus:border-primary placeholder:text-[#aaa]" />
+                    <div className="flex gap-2 mt-1">
+                      <button className="flex-1 py-1.5 bg-accent text-white border-none rounded text-[12px] font-semibold cursor-pointer hover:bg-accent-hover" onClick={() => setShowFilterDropdown(false)}>Apply</button>
+                      <button className="flex-1 py-1.5 bg-[#f5f5f5] text-[#333] border border-[#d0d0d0] rounded text-[12px] font-semibold cursor-pointer hover:bg-[#e8e8e8]" onClick={() => { setFilterCategory(''); setFilterValue(''); }}>Clear</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button className="flex items-center gap-[5px] py-2 px-[15px] bg-[#dc3545] text-white border border-[#dc3545] rounded-lg text-[13px] cursor-pointer transition-all duration-200 hover:bg-[#c82333]" onClick={handleExportPDF}>
                 <Icon icon="mdi:file-pdf-box" width={16} height={16} /> Export PDF
               </button>
             </div>
@@ -364,7 +571,7 @@ export default function SetupPage() {
                     <td className="w-9 min-w-[36px] text-center py-3 px-2.5 text-left border-b border-[#e0e0e0]">
                       <input type="checkbox" className="w-4 h-4 accent-accent cursor-pointer" checked={selectedProjects.includes(project.id)} onChange={(e) => setSelectedProjects(prev => e.target.checked ? [...prev, project.id] : prev.filter(id => id !== project.id))} />
                     </td>
-                    <td className="text-primary font-semibold whitespace-nowrap py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.code}</td>
+                    <td className="text-primary font-semibold whitespace-nowrap py-3 px-2.5 text-left border-b border-[#e0e0e0]">#{project.code}</td>
                     <td className="max-w-[250px] text-[#333] font-medium whitespace-normal break-words py-3 px-2.5 text-left border-b border-[#e0e0e0]"><Link href={`/setup/${project.id}`} className="text-primary no-underline font-medium hover:text-accent hover:underline">{project.title}</Link></td>
                     <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.firm}</td>
                     <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.typeOfFirm && <span className="inline-block py-1 px-2.5 bg-[#fff3cd] text-[#856404] rounded-[15px] text-[11px] font-medium">{project.typeOfFirm}</span>}</td>
@@ -382,17 +589,36 @@ export default function SetupPage() {
             </table>
           </div>
         </div>
+
+        {/* Floating Selection Toaster */}
+        {selectedProjects.length > 0 && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[1050] flex items-center gap-3 bg-[#1e293b] text-white py-3 px-5 rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+            <button className="flex items-center justify-center bg-transparent border-none text-white/70 cursor-pointer p-0.5 rounded hover:text-white hover:bg-white/10 transition-colors" onClick={() => setSelectedProjects([])}>
+              <Icon icon="mdi:close" width={18} height={18} />
+            </button>
+            <span className="text-[13px] font-medium whitespace-nowrap">{selectedProjects.length} Item{selectedProjects.length > 1 ? 's' : ''} Selected</span>
+            <div className="w-px h-5 bg-white/20" />
+            {selectedProjects.length === 1 && (
+              <button className="flex items-center gap-1.5 py-1.5 px-3 bg-accent text-white border-none rounded-lg text-[12px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-accent-hover" onClick={() => openEditModal(selectedProjects[0])}>
+                <Icon icon="mdi:pencil" width={14} height={14} /> Edit
+              </button>
+            )}
+            <button className="flex items-center gap-1.5 py-1.5 px-3 bg-[#dc3545] text-white border-none rounded-lg text-[12px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#c82333] disabled:opacity-60" onClick={handleDeleteSelected} disabled={deleting}>
+              <Icon icon="mdi:delete" width={14} height={14} /> {deleting ? 'Deleting...' : 'Delete'}
+            </button>
+          </div>
+        )}
       </main>
 
       {/* Add New Project Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => setShowAddModal(false)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1100]" onClick={() => { setShowAddModal(false); setEditingProjectId(null); }}>
           <div className="add-project-modal bg-white rounded-[20px] py-[25px] px-[35px] w-full max-w-[680px] max-h-[85vh] overflow-y-auto relative shadow-[0_10px_40px_rgba(0,0,0,0.3)]" onClick={(e) => e.stopPropagation()}>
-            <button className="absolute top-[15px] right-[15px] bg-transparent border-none cursor-pointer text-[#999] p-[5px] flex items-center justify-center rounded-full transition-all duration-200 hover:bg-[#f0f0f0] hover:text-[#333]" onClick={() => setShowAddModal(false)}>
+            <button className="absolute top-[15px] right-[15px] bg-transparent border-none cursor-pointer text-[#999] p-[5px] flex items-center justify-center rounded-full transition-all duration-200 hover:bg-[#f0f0f0] hover:text-[#333]" onClick={() => { setShowAddModal(false); setEditingProjectId(null); }}>
               <Icon icon="mdi:close" width={20} height={20} />
             </button>
-            <h2 className="text-xl font-bold text-primary m-0 mb-[3px]">Add New Project</h2>
-            <p className="text-xs text-[#888] m-0 mb-[15px]">Complete the form to register a new project</p>
+            <h2 className="text-xl font-bold text-primary m-0 mb-[3px]">{editingProjectId ? 'Edit Project' : 'Add New Project'}</h2>
+            <p className="text-xs text-[#888] m-0 mb-[15px]">{editingProjectId ? 'Update the project details below' : 'Complete the form to register a new project'}</p>
 
             <div className="flex flex-col gap-3">
               {/* Project Title */}
@@ -564,7 +790,7 @@ export default function SetupPage() {
               {saveError && <p className="text-[#dc3545] text-[13px] text-center m-0">{saveError}</p>}
               <div className="flex justify-center mt-0.5">
                 <button className="py-2.5 px-[50px] bg-accent text-white border-none rounded-[10px] text-[15px] font-semibold cursor-pointer transition-colors duration-200 font-[inherit] hover:bg-accent-hover active:translate-y-px disabled:opacity-60 disabled:cursor-not-allowed" onClick={handleSaveProject} disabled={saving}>
-                  {saving ? 'Saving...' : 'Save Project'}
+                  {saving ? 'Saving...' : editingProjectId ? 'Update Project' : 'Save Project'}
                 </button>
               </div>
             </div>

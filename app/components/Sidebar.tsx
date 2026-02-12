@@ -35,7 +35,7 @@ export default function Sidebar({ activePath, items }: SidebarProps) {
   const navItems = items || getDefaultItems(activePath);
 
   return (
-    <aside className={`${expanded ? 'w-[220px]' : 'w-[70px]'} bg-primary flex flex-col pt-2.5 relative transition-[width] duration-300 overflow-visible z-[1000]`}>
+    <aside className={`${expanded ? 'w-[220px]' : 'w-[70px]'} bg-primary flex flex-col pt-2.5 relative transition-[width] duration-300 overflow-visible z-[1000] shrink-0 h-full`}>
       <button className="absolute top-2.5 -right-3 w-6 h-6 bg-accent border-none rounded-full cursor-pointer flex items-center justify-center z-10 hover:bg-accent-hover" onClick={() => setExpanded(!expanded)}>
         <Icon icon={expanded ? "mdi:chevron-left" : "mdi:chevron-right"} width={16} height={16} color="#fff" />
       </button>

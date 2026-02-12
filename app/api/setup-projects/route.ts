@@ -27,9 +27,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const data = await req.json();
 
-  // Auto-generate project code as zero-padded string
-  const count = await prisma.setupProject.count();
-  const code = String(count + 1).padStart(3, '0');
+  // Auto-generate project code based on highest existing code
+  const last = await prisma.setupProject.findFirst({ orderBy: { code: 'desc' } });
+  const nextNum = last ? parseInt(last.code, 10) + 1 : 1;
+  const code = String(nextNum).padStart(3, '0');
 
   const project = await prisma.setupProject.create({
     data: { ...data, code },

@@ -1,27 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Icon } from '@iconify/react';
 import DashboardLayout from '../../components/DashboardLayout';
 
-// Mock project data (same as setup page)
-const projectData: Record<string, {
-  id: number; code: string; title: string; firm: string; typeOfFirm: string;
-  address: string; cooperatorName: string; contactNo: string; email: string;
-  status: string; prioritySector: string; firmSize: string; assignee: string;
-  datePublished: string;
-}> = {
-  '1': { id: 1, code: '001', title: 'Acquisition of Equipment for the Mass Production of DOST and USTP Developed Technology', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 5, Kauswagan, Cagayan de Oro City', cooperatorName: 'Engr. Neriñosa T. Morales', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Proposal', prioritySector: 'Agri-based Processing', firmSize: 'Medium', assignee: 'Jane Doe', datePublished: 'February 14, 2026' },
-  '2': { id: 2, code: '002', title: 'Acquisition of Equipment for the Mass Production of DOST and USTP Developed Technology', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 5, Kauswagan, Cagayan de Oro City', cooperatorName: 'Engr. Neriñosa T. Morales', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Proposal', prioritySector: 'Agri-based Processing', firmSize: 'Medium', assignee: 'Jane Doe', datePublished: 'February 14, 2026' },
-  '3': { id: 3, code: '003', title: 'Acquisition of Equipment for the Mass Production of DOST and USTP Developed Technology', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 5, Kauswagan, Cagayan de Oro City', cooperatorName: 'Engr. Neriñosa T. Morales', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Approved', prioritySector: 'Agri-based Processing', firmSize: 'Medium', assignee: 'Jane Doe', datePublished: 'February 14, 2026' },
-  '4': { id: 4, code: '004', title: 'Acquisition of Equipment for the Mass Production of DOST and USTP Developed Technology', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 5, Kauswagan, Cagayan de Oro City', cooperatorName: 'Engr. Neriñosa T. Morales', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Ongoing', prioritySector: 'Agri-based Processing', firmSize: 'Medium', assignee: 'Jane Doe', datePublished: 'February 14, 2026' },
-  '5': { id: 5, code: '005', title: 'Acquisition of Equipment for the Mass Production of DOST and USTP Developed Technology', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 5, Kauswagan, Cagayan de Oro City', cooperatorName: 'Engr. Neriñosa T. Morales', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Withdrawn', prioritySector: 'Agri-based Processing', firmSize: 'Medium', assignee: 'Jane Doe', datePublished: 'February 14, 2026' },
-  '6': { id: 6, code: '006', title: 'Acquisition of Equipment for the Mass Production of DOST and USTP Developed Technology', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 5, Kauswagan, Cagayan de Oro City', cooperatorName: 'Engr. Neriñosa T. Morales', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Terminated', prioritySector: 'Agri-based Processing', firmSize: 'Medium', assignee: 'Jane Doe', datePublished: 'February 14, 2026' },
-  '7': { id: 7, code: '007', title: 'Acquisition of Equipment for the Mass Production of DOST and USTP Developed Technology', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 5, Kauswagan, Cagayan de Oro City', cooperatorName: 'Engr. Neriñosa T. Morales', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Evaluated', prioritySector: 'Agri-based Processing', firmSize: 'Large', assignee: 'Jane Doe', datePublished: 'February 14, 2026' },
-  '8': { id: 8, code: '008', title: 'Acquisition of Equipment for the Mass Production of DOST and USTP Developed Technology', firm: 'Best Friend Goodies', typeOfFirm: 'Agri-processing', address: 'Purok 5, Kauswagan, Cagayan de Oro City', cooperatorName: 'Engr. Neriñosa T. Morales', contactNo: '09123456789', email: 'sample@gmail.com', status: 'Proposal', prioritySector: 'Agri-based Processing', firmSize: 'Small', assignee: 'Jane Doe', datePublished: 'February 14, 2026' },
-};
+interface Project {
+  id: string;
+  code: string;
+  title: string;
+  firm: string | null;
+  typeOfFirm: string | null;
+  address: string | null;
+  coordinates: string | null;
+  corporatorName: string | null;
+  contactNumbers: string[];
+  emails: string[];
+  status: string;
+  prioritySector: string | null;
+  firmSize: string | null;
+  fund: string | null;
+  typeOfFund: string | null;
+  assignee: string | null;
+  companyLogoUrl: string | null;
+  createdAt: string;
+}
 
 type DocRow = {
   id: number;
@@ -185,9 +189,32 @@ function DocumentTable({ title, docs }: { title: string; docs: DocRow[] }) {
 export default function ProjectDetailPage() {
   const params = useParams();
   const id = params.id as string;
-  const project = projectData[id];
+  const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  if (!project) {
+  useEffect(() => {
+    fetch(`/api/setup-projects/${id}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Not found');
+        return res.json();
+      })
+      .then(data => setProject(data))
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return (
+      <DashboardLayout activePath="/setup">
+        <main className="flex-1 py-6 px-10 pb-[60px] overflow-y-auto bg-[#f4f6f8]">
+          <p className="text-[#999] text-sm">Loading project...</p>
+        </main>
+      </DashboardLayout>
+    );
+  }
+
+  if (error || !project) {
     return (
       <DashboardLayout activePath="/setup">
         <main className="flex-1 py-6 px-10 pb-[60px] overflow-y-auto bg-[#f4f6f8]">
@@ -200,6 +227,10 @@ export default function ProjectDetailPage() {
       </DashboardLayout>
     );
   }
+
+  const datePublished = new Date(project.createdAt).toLocaleDateString('en-US', {
+    year: 'numeric', month: 'long', day: 'numeric',
+  });
 
   return (
     <DashboardLayout activePath="/setup">
@@ -229,18 +260,18 @@ export default function ProjectDetailPage() {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 text-[13px] text-[#888] mb-1">
-                <span className="text-[#c62828] font-semibold">{project.firm}</span>
+                <span className="text-[#c62828] font-semibold">{project.firm || '—'}</span>
                 <span className="text-[#ccc]">|</span>
-                <span className="text-[#555]">{project.firmSize}</span>
+                <span className="text-[#555]">{project.firmSize || '—'}</span>
               </div>
               <h2 className="text-lg font-bold text-[#222] m-0 mb-0.5 leading-[1.3]">{project.title}</h2>
-              <p className="text-sm text-[#555] m-0 mb-3">Acquisition of Equipment for the Mass</p>
+              <p className="text-sm text-[#555] m-0 mb-3">{project.typeOfFirm || ''}</p>
               <div className="[&_p]:my-0.5 [&_p]:text-[13px] [&_p]:text-[#555] [&_strong]:text-[#c62828] [&_strong]:font-semibold">
-                <p><strong>Cooperator&apos;s Name:</strong> {project.cooperatorName}</p>
-                <p><strong>Address:</strong> {project.address}</p>
-                <p><strong>Priority Sector:</strong> {project.prioritySector}</p>
-                <p><strong>Assignee:</strong> {project.assignee}</p>
-                <p><strong>Date Published:</strong> {project.datePublished}</p>
+                <p><strong>Cooperator&apos;s Name:</strong> {project.corporatorName || '—'}</p>
+                <p><strong>Address:</strong> {project.address || '—'}</p>
+                <p><strong>Priority Sector:</strong> {project.prioritySector || '—'}</p>
+                <p><strong>Assignee:</strong> {project.assignee || '—'}</p>
+                <p><strong>Date Published:</strong> {datePublished}</p>
               </div>
             </div>
           </div>

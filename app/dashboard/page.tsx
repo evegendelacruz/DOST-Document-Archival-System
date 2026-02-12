@@ -1,27 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { Icon } from '@iconify/react';
 import DashboardLayout from '../components/DashboardLayout';
 import { NavItem } from '../components/Sidebar';
 
-const searchSuggestions = [
-  'Acquisition of Equipment for the Mass Production',
-  'DOST and USTP Developed Technology',
-  'Best Friend Goodies',
-  'Technology Transfer',
-  'Research and Development',
-  'Equipment Procurement',
-  'Mass Production Project'
-];
-
-const archivalData = [
-  { id: 1, user: 'Jane Doe', title: 'Acquisition of Equipment for the Mass Production of DOST and USTP Developed Technolog...', company: 'Best Friend Goodies', contact: 'Ms. Nenita M. Tan', year: '2025' },
-  { id: 2, user: 'Jane Doe', title: 'Acquisition of Equipment for the Mass Production of DOST and USTP Developed Technolog...', company: 'Best Friend Goodies', contact: 'Ms. Nenita M. Tan', year: '2025' },
-  { id: 3, user: 'Jane Doe', title: 'Acquisition of Equipment for the Mass Production of DOST and USTP Developed Technolog...', company: 'Best Friend Goodies', contact: 'Ms. Nenita M. Tan', year: '2025' },
-  { id: 4, user: 'Jane Doe', title: 'Acquisition of Equipment for the Mass Production of DOST and USTP Developed Technolog...', company: 'Best Friend Goodies', contact: 'Ms. Nenita M. Tan', year: '2025' },
-  { id: 5, user: 'Jane Doe', title: 'Acquisition of Equipment for the Mass Production of DOST and USTP Developed Technolog...', company: 'Best Friend Goodies', contact: 'Ms. Nenita M. Tan', year: '2025' }
-];
+interface SetupProject {
+  id: string;
+  code: string;
+  title: string;
+  firm: string | null;
+  address: string | null;
+  corporatorName: string | null;
+  status: string;
+  prioritySector: string | null;
+  firmSize: string | null;
+  createdAt: string;
+}
 
 const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
 const getFirstDayOfMonth = (year: number, month: number) => {
@@ -38,8 +34,40 @@ export default function DashboardPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(1);
   const [currentYear, setCurrentYear] = useState(2026);
+  const [allProjects, setAllProjects] = useState<SetupProject[]>([]);
+  const [searchResults, setSearchResults] = useState<SetupProject[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
-  const filteredSuggestions = searchSuggestions.filter(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
+  // Fetch all projects once for suggestions
+  useEffect(() => {
+    fetch('/api/setup-projects').then(r => r.json()).then(setAllProjects).catch(() => {});
+  }, []);
+
+  // Build suggestions from real project titles, codes, and firms
+  const filteredSuggestions = searchQuery.trim()
+    ? allProjects
+        .flatMap(p => [p.title, `#${p.code}`, p.firm].filter(Boolean) as string[])
+        .filter((v, i, a) => a.indexOf(v) === i)
+        .filter(s => s.toLowerCase().includes(searchQuery.toLowerCase().replace(/^#/, '')))
+        .slice(0, 7)
+    : [];
+
+  const performSearch = useCallback((query: string) => {
+    if (!query.trim()) { setSearchResults([]); return; }
+    setSearchLoading(true);
+    const q = query.toLowerCase().replace(/^#/, '');
+    const results = allProjects.filter(p =>
+      p.code.toLowerCase().includes(q) ||
+      p.title.toLowerCase().includes(q) ||
+      (p.firm?.toLowerCase().includes(q)) ||
+      (p.address?.toLowerCase().includes(q)) ||
+      (p.corporatorName?.toLowerCase().includes(q)) ||
+      (p.prioritySector?.toLowerCase().includes(q)) ||
+      (p.status?.toLowerCase().includes(q))
+    );
+    setSearchResults(results);
+    setSearchLoading(false);
+  }, [allProjects]);
 
   const handlePrevMonth = () => {
     if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(currentYear - 1); }
@@ -60,11 +88,13 @@ export default function DashboardPage() {
   const handleSuggestionClick = (suggestion: string) => {
     setSearchQuery(suggestion);
     setShowSuggestions(false);
+    performSearch(suggestion);
     setShowResults(true);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
+      performSearch(searchQuery);
       setShowResults(true);
       setShowSuggestions(false);
     }
@@ -192,17 +222,21 @@ export default function DashboardPage() {
               )}
             </div>
             <div className="flex flex-col gap-[15px]">
-              {archivalData.map((item) => (
-                <div key={item.id} className="flex items-start gap-[15px] py-2.5 cursor-pointer border-b border-[#e0e0e0] hover:bg-black/[0.02]">
+              {searchLoading ? (
+                <p className="text-sm text-[#999] text-center py-4">Searching...</p>
+              ) : searchResults.length === 0 ? (
+                <p className="text-sm text-[#999] text-center py-4">No results found for &quot;{searchQuery}&quot;</p>
+              ) : searchResults.map((project) => (
+                <Link key={project.id} href={`/setup/${project.id}`} className="flex items-start gap-[15px] py-2.5 no-underline border-b border-[#e0e0e0] hover:bg-black/[0.02]">
                   <div>
                     <Icon icon="mdi:account-circle" width={40} height={40} color="#146184" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-[#333] mb-[5px]">{item.user}</div>
-                    <div className="text-sm font-bold text-primary mb-[5px] whitespace-nowrap overflow-hidden text-ellipsis">{item.title}</div>
-                    <div className="text-xs text-[#666]">{item.company} | {item.contact} | Year:{item.year}</div>
+                    <div className="text-sm font-semibold text-primary mb-[5px]">#{project.code}</div>
+                    <div className="text-sm font-bold text-primary mb-[5px] whitespace-nowrap overflow-hidden text-ellipsis">{project.title}</div>
+                    <div className="text-xs text-[#666]">{project.firm || '—'} | {project.corporatorName || '—'} | Year: {new Date(project.createdAt).getFullYear()}</div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
