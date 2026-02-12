@@ -5,6 +5,50 @@ import { Icon } from '@iconify/react';
 import DashboardLayout from '../components/DashboardLayout';
 import { NavItem } from '../components/Sidebar';
 
+interface BookingFormData {
+  eventTitle: string;
+  eventDate: string;
+  location: string;
+  bookedBy: string;
+  priorityLevel: string;
+  bookedPersonnel: string;
+  bookedService: string;
+  staffInvolved: string;
+}
+
+interface CalendarEvent {
+  id: number;
+  title: string;
+  date: string;
+  location: string;
+  bookedBy: string;
+  bookedService: string;
+  bookedPersonnel: string;
+  priority: 'Done' | 'High' | 'Normal' | 'Urgent' | 'Low' | 'Ongoing';
+  staffInvolved: string;
+}
+
+const sampleEvents: CalendarEvent[] = [
+  { id: 1, title: 'Davao DOST Summit', date: '2026-02-09', location: 'Samal Island, Davao City', bookedBy: 'Jane Doe', bookedService: 'Transportation', bookedPersonnel: 'Sir Dodong', priority: 'Urgent', staffInvolved: 'John, Mary, Peter' },
+  { id: 2, title: 'RSTW Orientation 2026', date: '2026-02-10', location: 'Alubijid, Misamis Oriental', bookedBy: 'Nerrence Marjita', bookedService: 'Transportation', bookedPersonnel: 'Sir Dodong', priority: 'High', staffInvolved: 'Sarah, Mike' },
+  { id: 3, title: 'Area Client Training', date: '2026-02-10', location: 'Opol, Misamis Oriental', bookedBy: 'James Reid', bookedService: 'Transportation', bookedPersonnel: 'Sir Dodong', priority: 'Normal', staffInvolved: 'Alice, Bob' },
+  { id: 4, title: 'Research Colloquium 2026', date: '2026-02-05', location: 'Jasaan, Misamis Oriental', bookedBy: 'Nadine Lustre', bookedService: 'Transportation', bookedPersonnel: 'Sir Dodong', priority: 'Done', staffInvolved: 'Tom, Jerry' },
+  { id: 5, title: 'DOST Summit', date: '2026-02-03', location: 'Tagoloan, Misamis Oriental', bookedBy: 'Kathryn Bernardo', bookedService: 'Transportation', bookedPersonnel: 'Sir Dodong', priority: 'Done', staffInvolved: 'Emma, Lucas' },
+  { id: 6, title: 'Research Colloquium', date: '2026-01-29', location: 'Jasaan, Misamis Oriental', bookedBy: 'Daniel Padilla', bookedService: 'Catering', bookedPersonnel: 'Sir Dodong', priority: 'Done', staffInvolved: 'Olivia, Liam' },
+  { id: 7, title: 'DOST Summit', date: '2026-01-30', location: 'CDO Convention Center', bookedBy: 'Liza Soberano', bookedService: 'Venue', bookedPersonnel: 'Sir Dodong', priority: 'Normal', staffInvolved: 'Sophia, James' },
+  { id: 8, title: 'Tech Workshop', date: '2026-02-16', location: 'DOST Office, CDO', bookedBy: 'John Smith', bookedService: 'Equipment', bookedPersonnel: 'Sir Dodong', priority: 'High', staffInvolved: 'Ava, Noah' },
+  { id: 9, title: 'Science Fair', date: '2026-02-20', location: 'SM CDO', bookedBy: 'Maria Santos', bookedService: 'Venue', bookedPersonnel: 'Sir Dodong', priority: 'Normal', staffInvolved: 'Isabella, Mason' },
+];
+
+const priorityColors: Record<string, { bg: string; text: string; border: string; dot: string }> = {
+  Done: { bg: 'bg-[#e8f5e9]', text: 'text-[#4caf50]', border: 'border-l-[#4caf50]', dot: 'bg-[#4caf50]' },
+  High: { bg: 'bg-[#fff3e0]', text: 'text-[#ff9800]', border: 'border-l-[#ff9800]', dot: 'bg-[#ff9800]' },
+  Normal: { bg: 'bg-[#f5f5f5]', text: 'text-[#9e9e9e]', border: 'border-l-[#9e9e9e]', dot: 'bg-[#9e9e9e]' },
+  Urgent: { bg: 'bg-[#e3f2fd]', text: 'text-[#00AEEF]', border: 'border-l-[#00AEEF]', dot: 'bg-[#00AEEF]' },
+  Low: { bg: 'bg-[#f3e5f5]', text: 'text-[#9c27b0]', border: 'border-l-[#9c27b0]', dot: 'bg-[#9c27b0]' },
+  Ongoing: { bg: 'bg-[#fff8e1]', text: 'text-[#ffc107]', border: 'border-l-[#ffc107]', dot: 'bg-[#ffc107]' },
+};
+
 const searchSuggestions = [
   'Acquisition of Equipment for the Mass Production',
   'DOST and USTP Developed Technology',
@@ -31,6 +75,16 @@ const getFirstDayOfMonth = (year: number, month: number) => {
 
 const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
+const getEventsForDate = (year: number, month: number, day: number, events: CalendarEvent[]) => {
+  const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  return events.filter(e => e.date === dateStr);
+};
+
+const isToday = (year: number, month: number, day: number) => {
+  const today = new Date();
+  return today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
+};
+
 export default function DashboardPage() {
   const [activeNav, setActiveNav] = useState('calendar');
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,6 +92,27 @@ export default function DashboardPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(1);
   const [currentYear, setCurrentYear] = useState(2026);
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [bookingForm, setBookingForm] = useState<BookingFormData>({
+    eventTitle: '',
+    eventDate: '',
+    location: '',
+    bookedBy: '',
+    priorityLevel: '',
+    bookedPersonnel: '',
+    bookedService: '',
+    staffInvolved: '',
+  });
+  const [serviceOptions, setServiceOptions] = useState<string[]>(['Transportation', 'Catering', 'Equipment', 'Venue']);
+  const [showAddService, setShowAddService] = useState(false);
+  const [newServiceName, setNewServiceName] = useState('');
+  const [events, setEvents] = useState<CalendarEvent[]>(sampleEvents);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [showEventDetailModal, setShowEventDetailModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<CalendarEvent | null>(null);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const filteredSuggestions = searchSuggestions.filter(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
 
@@ -70,6 +145,119 @@ export default function DashboardPage() {
     }
   };
 
+  const handleBookingInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setBookingForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleConfirmBooking = () => {
+    console.log('Booking submitted:', bookingForm);
+    setShowBookingModal(false);
+    setBookingForm({
+      eventTitle: '',
+      eventDate: '',
+      location: '',
+      bookedBy: '',
+      priorityLevel: '',
+      bookedPersonnel: '',
+      bookedService: '',
+      staffInvolved: '',
+    });
+  };
+
+  const closeBookingModal = () => {
+    setShowBookingModal(false);
+    setShowAddService(false);
+    setNewServiceName('');
+  };
+
+  // Sort events: Today first, then Urgent/High/Normal for future dates, Done at bottom
+  const sortedEvents = [...events].sort((a, b) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    dateA.setHours(0, 0, 0, 0);
+    dateB.setHours(0, 0, 0, 0);
+
+    const isAToday = dateA.getTime() === today.getTime();
+    const isBToday = dateB.getTime() === today.getTime();
+    const isADone = a.priority === 'Done';
+    const isBDone = b.priority === 'Done';
+
+    // Today events first
+    if (isAToday && !isBToday) return -1;
+    if (!isAToday && isBToday) return 1;
+
+    // Done events last
+    if (isADone && !isBDone) return 1;
+    if (!isADone && isBDone) return -1;
+
+    // Sort by date (ascending)
+    if (dateA.getTime() !== dateB.getTime()) {
+      return dateA.getTime() - dateB.getTime();
+    }
+
+    // Same date: sort by priority
+    const priorityOrder: Record<string, number> = {
+      'Urgent': 1,
+      'High': 2,
+      'Normal': 3,
+      'Low': 4,
+      'Ongoing': 5,
+      'Done': 6
+    };
+    return (priorityOrder[a.priority] || 99) - (priorityOrder[b.priority] || 99);
+  });
+
+  const handleServiceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (e.target.value === '__add_new__') {
+      setShowAddService(true);
+    } else {
+      setBookingForm(prev => ({ ...prev, bookedService: e.target.value }));
+    }
+  };
+
+  const handleAddNewService = () => {
+    if (newServiceName.trim() && !serviceOptions.includes(newServiceName.trim())) {
+      setServiceOptions(prev => [...prev, newServiceName.trim()]);
+      setBookingForm(prev => ({ ...prev, bookedService: newServiceName.trim() }));
+    }
+    setShowAddService(false);
+    setNewServiceName('');
+  };
+
+  const handleEventClick = (event: CalendarEvent) => {
+    setSelectedEvent(event);
+    setShowEventDetailModal(true);
+  };
+
+  const handleEditEvent = (event: CalendarEvent) => {
+    setEditingEvent(event);
+    setShowEditModal(true);
+  };
+
+  const handleDeleteEvent = (event: CalendarEvent) => {
+    setEventToDelete(event);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteEvent = () => {
+    if (eventToDelete) {
+      setEvents(prev => prev.filter(e => e.id !== eventToDelete.id));
+      setShowDeleteConfirm(false);
+      setEventToDelete(null);
+    }
+  };
+
+  const handleSaveEdit = () => {
+    if (editingEvent) {
+      setEvents(prev => prev.map(e => e.id === editingEvent.id ? editingEvent : e));
+      setShowEditModal(false);
+      setEditingEvent(null);
+    }
+  };
+
   const generateCalendarDays = () => {
     const daysInMonth = getDaysInMonth(currentYear, currentMonth);
     const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
@@ -96,11 +284,11 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout activePath="/dashboard" sidebarItems={sidebarItems}>
-      <main className={`flex-1 py-10 px-[60px] flex flex-col items-center max-md:py-[30px] max-md:px-5 ${showResults ? 'items-start' : ''}`}>
+      <main className={`flex-1 py-6 px-[60px] flex flex-col items-center max-md:py-[30px] max-md:px-5 ${showResults ? 'items-start' : ''}`}>
         {activeNav === 'calendar' && (
-          <div className="flex w-full gap-[30px] items-stretch">
+          <div className="flex w-full gap-[30px] items-start">
             <div className="flex-1 bg-white rounded-[15px] p-[30px] shadow-[0_2px_10px_rgba(0,0,0,0.05)]">
-              <div className="flex items-center justify-center gap-5 mb-[25px]">
+              <div className="flex items-center justify-center gap-5 mb-2">
                 <button className="bg-transparent border-none cursor-pointer p-[5px] flex items-center justify-center hover:opacity-70" onClick={handlePrevMonth}>
                   <Icon icon="mdi:chevron-left" width={24} height={24} color="#00AEEF" />
                 </button>
@@ -109,6 +297,25 @@ export default function DashboardPage() {
                   <Icon icon="mdi:chevron-right" width={24} height={24} color="#00AEEF" />
                 </button>
               </div>
+              {/* Legend */}
+              <div className="flex items-center justify-center gap-4 mb-4">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm bg-[#4caf50]"></div>
+                  <span className="text-xs text-[#666]">Done</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm bg-[#ff9800]"></div>
+                  <span className="text-xs text-[#666]">High</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm bg-[#9e9e9e]"></div>
+                  <span className="text-xs text-[#666]">Normal</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm bg-[#00AEEF]"></div>
+                  <span className="text-xs text-[#666]">Today</span>
+                </div>
+              </div>
               <div className="w-full">
                 <div className="grid grid-cols-7 mb-2.5">
                   {['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'].map(day => (
@@ -116,22 +323,102 @@ export default function DashboardPage() {
                   ))}
                 </div>
                 <div className="grid grid-cols-7 border border-[#e0e0e0] border-r-0 border-b-0">
-                  {calendarDays.map((day, index) => (
-                    <div key={index} className={`min-h-[80px] p-2 border-r border-b border-[#e0e0e0] bg-white ${(index % 7 === 5 || index % 7 === 6) ? 'bg-[#e8f4f8]' : ''}`}>
-                      <span className={`text-sm font-medium ${!day.currentMonth ? 'text-[#ccc]' : 'text-primary'}`}>{day.day}</span>
-                    </div>
-                  ))}
+                  {calendarDays.map((day, index) => {
+                    const dayEvents = day.currentMonth ? getEventsForDate(currentYear, currentMonth, day.day, events) : [];
+                    const isTodayDate = day.currentMonth && isToday(currentYear, currentMonth, day.day);
+                    return (
+                      <div
+                        key={index}
+                        className={`min-h-[80px] p-1.5 border-r border-b border-[#e0e0e0] ${isTodayDate ? 'bg-[#e0f7fa]' : (index % 7 === 5 || index % 7 === 6) ? 'bg-[#e8f4f8]' : 'bg-white'}`}
+                      >
+                        <span className={`text-sm font-medium ${!day.currentMonth ? 'text-[#ccc]' : isTodayDate ? 'text-[#00AEEF]' : 'text-primary'}`}>{day.day}</span>
+                        <div className="mt-1 flex flex-col gap-0.5">
+                          {dayEvents.slice(0, 2).map((event) => (
+                            <div
+                              key={event.id}
+                              onClick={() => handleEventClick(event)}
+                              className={`flex items-center gap-1 px-1 py-0.5 rounded text-[10px] truncate cursor-pointer transition-all hover:scale-105 hover:shadow-sm group relative ${priorityColors[event.priority]?.bg || 'bg-gray-100'}`}
+                              title={`${event.title}\n${event.location}\n${event.bookedBy}`}
+                            >
+                              <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${priorityColors[event.priority]?.dot || 'bg-gray-400'}`}></div>
+                              <span className={`truncate ${priorityColors[event.priority]?.text || 'text-gray-600'}`}>{event.title}</span>
+                              {/* Tooltip */}
+                              <div className="absolute left-0 bottom-full mb-1 hidden group-hover:block z-50 w-48 p-2 bg-white rounded-lg shadow-lg border border-gray-200 text-left">
+                                <p className="text-xs font-bold text-primary mb-1">{event.title}</p>
+                                <p className="text-[10px] text-gray-600"><span className="font-semibold">Date:</span> {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                                <p className="text-[10px] text-gray-600"><span className="font-semibold">Location:</span> {event.location}</p>
+                                <p className="text-[10px] text-gray-600"><span className="font-semibold">Booked by:</span> {event.bookedBy}</p>
+                                <p className="text-[10px] text-gray-600"><span className="font-semibold">Priority:</span> <span className={priorityColors[event.priority]?.text}>{event.priority}</span></p>
+                              </div>
+                            </div>
+                          ))}
+                          {dayEvents.length > 2 && (
+                            <span className="text-[9px] text-[#999] pl-1">+{dayEvents.length - 2} more</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
-            <div className="w-[280px] shrink-0 flex flex-col">
-              <button className="flex items-center justify-center gap-2 w-full py-[15px] px-[25px] bg-accent text-white border-none rounded-[30px] text-base font-semibold cursor-pointer transition-colors duration-200 mb-5 hover:bg-accent-hover">
+            <div className="w-[300px] shrink-0 flex flex-col">
+              <button
+                onClick={() => setShowBookingModal(true)}
+                className="flex items-center justify-center gap-2 w-full py-[15px] px-[25px] bg-accent text-white border-none rounded-[30px] text-base font-semibold cursor-pointer transition-colors duration-200 mb-5 hover:bg-accent-hover"
+              >
                 <Icon icon="mdi:plus" width={20} height={20} />
                 Book Appointment
               </button>
-              <div className="bg-white rounded-[15px] p-[30px] shadow-[0_2px_10px_rgba(0,0,0,0.05)] flex-1">
-                <h3 className="text-[22px] font-bold text-primary mb-[15px]">Upcoming Events</h3>
-                <p className="text-sm text-[#999] italic">No upcoming events yet...</p>
+              <div className="bg-white rounded-[15px] p-5 shadow-[0_2px_10px_rgba(0,0,0,0.05)] flex flex-col overflow-hidden h-[580px]">
+                <h3 className="text-xl font-bold text-primary mb-4 text-center shrink-0">Upcoming Events</h3>
+                <div className="flex flex-col gap-3 overflow-y-auto flex-1 pr-1">
+                {sortedEvents.length === 0 ? (
+                  <p className="text-sm text-[#999] italic">No upcoming events yet...</p>
+                ) : (
+                  sortedEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className={`border-l-4 ${priorityColors[event.priority]?.border || 'border-l-gray-400'} bg-white rounded-r-lg p-3 shadow-[0_1px_4px_rgba(0,0,0,0.08)]`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <h4 className="text-sm font-bold text-primary leading-tight flex-1">{event.title}</h4>
+                        <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded ${priorityColors[event.priority]?.bg || 'bg-gray-100'} ${priorityColors[event.priority]?.text || 'text-gray-600'}`}>
+                          {event.priority}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-[#666] leading-relaxed space-y-0.5">
+                        <p><span className="font-semibold text-[#333]">Event Date:</span> {new Date(event.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                        <p><span className="font-semibold text-[#333]">Location:</span> {event.location}</p>
+                        <p><span className="font-semibold text-[#333]">Booked by:</span> {event.bookedBy}</p>
+                        <p><span className="font-semibold text-[#333]">Service:</span> {event.bookedService}</p>
+                        <p className="flex items-center gap-1">
+                          <span className="font-semibold text-[#333]">Personnel:</span>
+                          <Icon icon="mdi:account" width={12} height={12} className="text-primary" />
+                          {event.bookedPersonnel}
+                        </p>
+                        <p><span className="font-semibold text-[#333]">Staff Involved:</span> {event.staffInvolved}</p>
+                      </div>
+                      <div className="flex justify-end gap-1.5 mt-2.5 pt-2 border-t border-gray-100">
+                        <button
+                          onClick={() => handleEditEvent(event)}
+                          className="p-1.5 text-primary bg-primary/10 rounded hover:bg-primary/20 transition-colors"
+                          title="Edit event"
+                        >
+                          <Icon icon="mdi:pencil" width={14} height={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteEvent(event)}
+                          className="p-1.5 text-red-500 bg-red-50 rounded hover:bg-red-100 transition-colors"
+                          title="Delete event"
+                        >
+                          <Icon icon="mdi:delete" width={14} height={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
               </div>
             </div>
           </div>
@@ -208,6 +495,424 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+
+      {/* Add Service Modal */}
+      {showAddService && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[300]">
+          <div className="bg-white rounded-lg w-full max-w-[300px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+            <h3 className="text-base font-bold text-primary mb-3">Add New Service</h3>
+            <input
+              type="text"
+              value={newServiceName}
+              onChange={(e) => setNewServiceName(e.target.value)}
+              placeholder="Enter service name"
+              className="w-full px-3 py-2 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary mb-4"
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => { setShowAddService(false); setNewServiceName(''); }}
+                className="px-4 py-2 bg-gray-200 text-gray-600 rounded text-sm font-medium hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddNewService}
+                className="px-4 py-2 bg-primary text-white rounded text-sm font-medium hover:bg-primary-dark"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Book Appointment Modal */}
+      {showBookingModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+          <div className="bg-white rounded-[10px] w-full max-w-[420px] p-6 relative shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+            <button
+              onClick={closeBookingModal}
+              className="absolute top-3 right-3 text-[#999] hover:text-[#666] bg-transparent border-none cursor-pointer"
+            >
+              <Icon icon="mdi:close" width={20} height={20} />
+            </button>
+
+            <h2 className="text-xl font-bold text-primary mb-0.5">Book Appointment</h2>
+            <p className="text-xs text-[#666] mb-4">Complete the form to confirm your appointment request.</p>
+
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="block text-xs font-medium text-[#333] mb-1">
+                  Event Title<span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="eventTitle"
+                  value={bookingForm.eventTitle}
+                  onChange={handleBookingInputChange}
+                  className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-[#333] mb-1">
+                    Event Date<span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    name="eventDate"
+                    value={bookingForm.eventDate}
+                    onChange={handleBookingInputChange}
+                    className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#333] mb-1">
+                    Location<span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="location"
+                    value={bookingForm.location}
+                    onChange={handleBookingInputChange}
+                    className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-[#333] mb-1">
+                    Booked by:
+                  </label>
+                  <input
+                    type="text"
+                    name="bookedBy"
+                    value={bookingForm.bookedBy}
+                    onChange={handleBookingInputChange}
+                    className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#333] mb-1">
+                    Priority Level<span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="priorityLevel"
+                    value={bookingForm.priorityLevel}
+                    onChange={handleBookingInputChange}
+                    className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary bg-white"
+                  >
+                    <option value="">Select priority</option>
+                    <option value="Urgent">Urgent</option>
+                    <option value="High">High</option>
+                    <option value="Normal">Normal</option>
+                    <option value="Low">Low</option>
+                    <option value="Ongoing">Ongoing</option>
+                    <option value="Done">Done</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-[#333] mb-1">
+                    Booked Personnel (optional)
+                  </label>
+                  <input
+                    type="text"
+                    name="bookedPersonnel"
+                    value={bookingForm.bookedPersonnel}
+                    onChange={handleBookingInputChange}
+                    className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#333] mb-1">
+                    Booked Service (optional)
+                  </label>
+                  <select
+                    name="bookedService"
+                    value={bookingForm.bookedService}
+                    onChange={handleServiceChange}
+                    className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary bg-white"
+                  >
+                    <option value="">Select service</option>
+                    {serviceOptions.map((service) => (
+                      <option key={service} value={service}>{service}</option>
+                    ))}
+                    <option value="__add_new__" style={{ color: '#146184', fontWeight: 'bold' }}>+ Add Service Option</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+              <label className="block text-xs font-medium text-[#333] mb-1">
+                Staff Involved (optional)
+              </label>
+              <input
+                type="text"
+                name="staffInvolved"
+                value={bookingForm.staffInvolved}
+                onChange={handleBookingInputChange}
+                placeholder="e.g., John, Mary, Peter"
+                className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+              />
+            </div>
+
+              <button
+                onClick={handleConfirmBooking}
+                className="mt-2 w-[160px] mx-auto py-2.5 px-5 bg-accent text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 hover:bg-primary-dark"
+              >
+                Confirm Booking
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Event Detail Modal */}
+      {showEventDetailModal && selectedEvent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+          <div className="bg-white rounded-[10px] w-full max-w-[400px] p-6 relative shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+            <button
+              onClick={() => { setShowEventDetailModal(false); setSelectedEvent(null); }}
+              className="absolute top-3 right-3 text-[#999] hover:text-[#666] bg-transparent border-none cursor-pointer"
+            >
+              <Icon icon="mdi:close" width={20} height={20} />
+            </button>
+
+            <div className="flex items-center gap-2 mb-4">
+              <div className={`w-3 h-3 rounded-full ${priorityColors[selectedEvent.priority]?.dot}`}></div>
+              <h2 className="text-xl font-bold text-primary">{selectedEvent.title}</h2>
+            </div>
+
+            <div className={`inline-block text-xs font-semibold px-3 py-1 rounded-full mb-4 ${priorityColors[selectedEvent.priority]?.bg} ${priorityColors[selectedEvent.priority]?.text}`}>
+              {selectedEvent.priority}
+            </div>
+
+            <div className="space-y-3 text-sm">
+              <div className="flex items-start gap-3">
+                <Icon icon="mdi:calendar" width={18} height={18} className="text-primary mt-0.5" />
+                <div>
+                  <p className="font-semibold text-[#333]">Event Date</p>
+                  <p className="text-[#666]">{new Date(selectedEvent.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Icon icon="mdi:map-marker" width={18} height={18} className="text-primary mt-0.5" />
+                <div>
+                  <p className="font-semibold text-[#333]">Location</p>
+                  <p className="text-[#666]">{selectedEvent.location}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Icon icon="mdi:account" width={18} height={18} className="text-primary mt-0.5" />
+                <div>
+                  <p className="font-semibold text-[#333]">Booked by</p>
+                  <p className="text-[#666]">{selectedEvent.bookedBy}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Icon icon="mdi:room-service" width={18} height={18} className="text-primary mt-0.5" />
+                <div>
+                  <p className="font-semibold text-[#333]">Booked Service</p>
+                  <p className="text-[#666]">{selectedEvent.bookedService}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Icon icon="mdi:account-tie" width={18} height={18} className="text-primary mt-0.5" />
+                <div>
+                  <p className="font-semibold text-[#333]">Booked Personnel</p>
+                  <p className="text-[#666]">{selectedEvent.bookedPersonnel}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Icon icon="mdi:account-group" width={18} height={18} className="text-primary mt-0.5" />
+                <div>
+                  <p className="font-semibold text-[#333]">Staff Involved</p>
+                  <p className="text-[#666]">{selectedEvent.staffInvolved}</p>
+                </div>
+            </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => { setShowEventDetailModal(false); handleEditEvent(selectedEvent); }}
+                className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
+              >
+                <Icon icon="mdi:pencil" width={16} height={16} />
+                Edit
+              </button>
+              <button
+                onClick={() => { setShowEventDetailModal(false); setSelectedEvent(null); }}
+                className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Event Modal */}
+      {showEditModal && editingEvent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]">
+          <div className="bg-white rounded-[10px] w-full max-w-[420px] p-6 relative shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+            <button
+              onClick={() => { setShowEditModal(false); setEditingEvent(null); }}
+              className="absolute top-3 right-3 text-[#999] hover:text-[#666] bg-transparent border-none cursor-pointer"
+            >
+              <Icon icon="mdi:close" width={20} height={20} />
+            </button>
+
+            <h2 className="text-xl font-bold text-primary mb-4">Edit Event</h2>
+
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="block text-xs font-medium text-[#333] mb-1">Event Title</label>
+                <input
+                  type="text"
+                  value={editingEvent.title}
+                  onChange={(e) => setEditingEvent({ ...editingEvent, title: e.target.value })}
+                  className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-[#333] mb-1">Event Date</label>
+                  <input
+                    type="date"
+                    value={editingEvent.date}
+                    onChange={(e) => setEditingEvent({ ...editingEvent, date: e.target.value })}
+                    className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#333] mb-1">Location</label>
+                  <input
+                    type="text"
+                    value={editingEvent.location}
+                    onChange={(e) => setEditingEvent({ ...editingEvent, location: e.target.value })}
+                    className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-[#333] mb-1">Booked by</label>
+                  <input
+                    type="text"
+                    value={editingEvent.bookedBy}
+                    onChange={(e) => setEditingEvent({ ...editingEvent, bookedBy: e.target.value })}
+                    className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#333] mb-1">Priority Level</label>
+                  <select
+                    value={editingEvent.priority}
+                    onChange={(e) => setEditingEvent({ ...editingEvent, priority: e.target.value as CalendarEvent['priority'] })}
+                    className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary bg-white"
+                  >
+                    <option value="Urgent">Urgent</option>
+                    <option value="High">High</option>
+                    <option value="Normal">Normal</option>
+                    <option value="Low">Low</option>
+                    <option value="Ongoing">Ongoing</option>
+                    <option value="Done">Done</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-[#333] mb-1">Booked Personnel</label>
+                  <input
+                    type="text"
+                    value={editingEvent.bookedPersonnel}
+                    onChange={(e) => setEditingEvent({ ...editingEvent, bookedPersonnel: e.target.value })}
+                    className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#333] mb-1">Booked Service</label>
+                  <select
+                    value={editingEvent.bookedService}
+                    onChange={(e) => setEditingEvent({ ...editingEvent, bookedService: e.target.value })}
+                    className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary bg-white"
+                  >
+                    {serviceOptions.map((service) => (
+                      <option key={service} value={service}>{service}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#333] mb-1">Staff Involved</label>
+                <input
+                  type="text"
+                  value={editingEvent.staffInvolved}
+                  onChange={(e) => setEditingEvent({ ...editingEvent, staffInvolved: e.target.value })}
+                  placeholder="e.g., John, Mary, Peter"
+                  className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 mt-4">
+                <button
+                  onClick={() => { setShowEditModal(false); setEditingEvent(null); }}
+                  className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && eventToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[250]">
+          <div className="bg-white rounded-[10px] w-full max-w-[350px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
+              <Icon icon="mdi:delete-alert" width={24} height={24} className="text-red-500" />
+            </div>
+            <h3 className="text-lg font-bold text-center text-[#333] mb-2">Delete Event</h3>
+            <p className="text-sm text-center text-[#666] mb-4">
+              Are you sure you want to delete <span className="font-semibold text-primary">{eventToDelete.title}</span>? This action cannot be undone.
+            </p>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => { setShowDeleteConfirm(false); setEventToDelete(null); }}
+                className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteEvent}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
