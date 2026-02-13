@@ -27,7 +27,11 @@
       "Bash(./node_modules/.bin/tsc:*)",
       "Bash(npx --package=typescript tsc:*)",
       "Bash(node /mnt/c/Users/Admin/Desktop/dost-nextjs/node_modules/typescript/bin/tsc:*)",
-      "Bash(node -p:*)"
+      "Bash(node -p:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:09550732496nerrenze12345ma@10.255.255.254:5432/dost_db?schema=public\" npx prisma migrate dev:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:09550732496nerrenze12345ma@host.docker.internal:5432/dost_db?schema=public\" npx prisma migrate dev:*)",
+      "Bash(ip route:*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:09550732496nerrenze12345ma@172.30.112.1:5432/dost_db?schema=public\" npx prisma migrate dev:*)"
     ]
   }
 }

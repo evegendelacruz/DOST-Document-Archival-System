@@ -1,143 +1,74 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import DashboardLayout from '../components/DashboardLayout';
 
-const filterCards = [
-  { id: 'approved-amount', label: 'Total Approved Amount', value: '₱200,000.00', isAmount: true },
-  { id: 'released-amount', label: 'Total Released Amount', value: '₱1,000,000.00', isAmount: true },
-  { id: 'cest-program', label: 'Total CEST Program', value: '5', isAmount: false },
-  { id: 'lira-program', label: 'Total LIRA Program', value: '5', isAmount: false },
-  { id: 'swep-program', label: 'Total SWEP Program', value: '5', isAmount: false },
-  { id: 'other-funding', label: 'Total Other Funding Source', value: '5', isAmount: false },
-];
+interface CestProject {
+  id: string;
+  code: string;
+  projectTitle: string;
+  location: string | null;
+  beneficiaries: string | null;
+  programFunding: string | null;
+  status: string | null;
+  approvedAmount: number | null;
+  releasedAmount: number | null;
+  projectDuration: string | null;
+  staffAssigned: string | null;
+  year: string | null;
+  dateOfApproval: string | null;
+}
 
-const projectData = [
-  {
-    id: 1,
-    code: '001',
-    projectTitle: 'Acquisition of Equipment for the Mass Production',
-    location: 'Cagayan de Oro City',
-    beneficiaries: 'Tabuan Organic Farmers Multi-Purpose Cooperative',
-    programFunding: 'CEST',
-    status: 'Approved',
-    approvedAmount: '₱200,000.00',
-    releasedAmount: '₱150,000.00',
-    projectDuration: '12 months',
-    staffAssigned: 'Jane Doe',
-    year: '2025',
-    dateOfApproval: '01-15-2025',
-  },
-  {
-    id: 2,
-    code: '002',
-    projectTitle: 'Acquisition of Equipment for the Mass Production',
-    location: 'Cagayan de Oro City',
-    beneficiaries: 'Tabuan Organic Farmers Multi-Purpose Cooperative',
-    programFunding: 'LIRA',
-    status: 'Approved',
-    approvedAmount: '₱200,000.00',
-    releasedAmount: '₱150,000.00',
-    projectDuration: '12 months',
-    staffAssigned: 'Jane Doe',
-    year: '2025',
-    dateOfApproval: '01-15-2025',
-  },
-  {
-    id: 3,
-    code: '003',
-    projectTitle: 'Acquisition of Equipment for the Mass Production',
-    location: 'Cagayan de Oro City',
-    beneficiaries: 'Tabuan Organic Farmers Multi-Purpose Cooperative',
-    programFunding: 'SWEP',
-    status: 'Approved',
-    approvedAmount: '₱200,000.00',
-    releasedAmount: '₱150,000.00',
-    projectDuration: '12 months',
-    staffAssigned: 'Jane Doe',
-    year: '2025',
-    dateOfApproval: '01-15-2025',
-  },
-  {
-    id: 4,
-    code: '004',
-    projectTitle: 'Acquisition of Equipment for the Mass Production',
-    location: 'Cagayan de Oro City',
-    beneficiaries: 'Tabuan Organic Farmers Multi-Purpose Cooperative',
-    programFunding: 'CEST',
-    status: 'Approved',
-    approvedAmount: '₱200,000.00',
-    releasedAmount: '₱150,000.00',
-    projectDuration: '12 months',
-    staffAssigned: 'Jane Doe',
-    year: '2025',
-    dateOfApproval: '01-15-2025',
-  },
-  {
-    id: 5,
-    code: '005',
-    projectTitle: 'Acquisition of Equipment for the Mass Production',
-    location: 'Cagayan de Oro City',
-    beneficiaries: 'Tabuan Organic Farmers Multi-Purpose Cooperative',
-    programFunding: 'LIRA',
-    status: 'Approved',
-    approvedAmount: '₱200,000.00',
-    releasedAmount: '₱150,000.00',
-    projectDuration: '12 months',
-    staffAssigned: 'Jane Doe',
-    year: '2025',
-    dateOfApproval: '01-15-2025',
-  },
-  {
-    id: 6,
-    code: '006',
-    projectTitle: 'Acquisition of Equipment for the Mass Production',
-    location: 'Cagayan de Oro City',
-    beneficiaries: 'Tabuan Organic Farmers Multi-Purpose Cooperative',
-    programFunding: 'SWEP',
-    status: 'Approved',
-    approvedAmount: '₱200,000.00',
-    releasedAmount: '₱150,000.00',
-    projectDuration: '12 months',
-    staffAssigned: 'Jane Doe',
-    year: '2025',
-    dateOfApproval: '01-15-2025',
-  },
-  {
-    id: 7,
-    code: '007',
-    projectTitle: 'Acquisition of Equipment for the Mass Production',
-    location: 'Cagayan de Oro City',
-    beneficiaries: 'Tabuan Organic Farmers Multi-Purpose Cooperative',
-    programFunding: 'CEST',
-    status: 'Approved',
-    approvedAmount: '₱200,000.00',
-    releasedAmount: '₱150,000.00',
-    projectDuration: '12 months',
-    staffAssigned: 'Jane Doe',
-    year: '2025',
-    dateOfApproval: '01-15-2025',
-  },
-  {
-    id: 8,
-    code: '008',
-    projectTitle: 'Acquisition of Equipment for the Mass Production',
-    location: 'Cagayan de Oro City',
-    beneficiaries: 'Tabuan Organic Farmers Multi-Purpose Cooperative',
-    programFunding: 'Other',
-    status: 'Approved',
-    approvedAmount: '₱200,000.00',
-    releasedAmount: '₱150,000.00',
-    projectDuration: '12 months',
-    staffAssigned: 'Jane Doe',
-    year: '2025',
-    dateOfApproval: '01-15-2025',
-  },
-];
+function formatCurrency(value: number | null): string {
+  if (value == null) return '—';
+  return `₱${value.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
 
 export default function CestPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [projects, setProjects] = useState<CestProject[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProjects = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/cest-projects');
+      const data = await res.json();
+      setProjects(data);
+    } catch (err) {
+      console.error('Failed to fetch CEST projects:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchProjects(); }, []);
+
+  const filteredProjects = projects.filter(p => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return p.code.toLowerCase().includes(q) ||
+      p.projectTitle.toLowerCase().includes(q) ||
+      (p.location?.toLowerCase().includes(q) ?? false) ||
+      (p.staffAssigned?.toLowerCase().includes(q) ?? false);
+  });
+
+  const totalApproved = projects.reduce((sum, p) => sum + (p.approvedAmount ?? 0), 0);
+  const totalReleased = projects.reduce((sum, p) => sum + (p.releasedAmount ?? 0), 0);
+  const cestCount = projects.filter(p => p.programFunding === 'CEST').length;
+  const liraCount = projects.filter(p => p.programFunding === 'LIRA').length;
+  const swepCount = projects.filter(p => p.programFunding === 'SWEP').length;
+  const otherCount = projects.filter(p => p.programFunding && !['CEST', 'LIRA', 'SWEP'].includes(p.programFunding)).length;
+
+  const filterCards = [
+    { id: 'approved-amount', label: 'Total Approved Amount', value: formatCurrency(totalApproved), isAmount: true },
+    { id: 'released-amount', label: 'Total Released Amount', value: formatCurrency(totalReleased), isAmount: true },
+    { id: 'cest-program', label: 'Total CEST Program', value: String(cestCount), isAmount: false },
+    { id: 'lira-program', label: 'Total LIRA Program', value: String(liraCount), isAmount: false },
+    { id: 'swep-program', label: 'Total SWEP Program', value: String(swepCount), isAmount: false },
+    { id: 'other-funding', label: 'Total Other Funding Source', value: String(otherCount), isAmount: false },
+  ];
 
   return (
     <DashboardLayout activePath="/cest">
@@ -230,22 +161,32 @@ export default function CestPage() {
                 </tr>
               </thead>
               <tbody>
-                {projectData.map((project) => (
-                  <tr key={project.id}>
-                    <td className="text-primary font-semibold whitespace-nowrap">{project.code}</td>
-                    <td className="max-w-[250px] text-[#333] font-medium whitespace-normal break-words">{project.projectTitle}</td>
-                    <td>{project.location}</td>
-                    <td>{project.beneficiaries}</td>
-                    <td><span className="inline-block py-1 px-2.5 bg-[#e3f2fd] text-[#1565c0] rounded-[15px] text-[11px] font-medium">{project.programFunding}</span></td>
-                    <td><span className="inline-block py-1 px-3 rounded-[15px] text-[11px] font-medium bg-[#e8f5e9] text-[#2e7d32]">{project.status}</span></td>
-                    <td>{project.approvedAmount}</td>
-                    <td>{project.releasedAmount}</td>
-                    <td>{project.projectDuration}</td>
-                    <td>{project.staffAssigned}</td>
-                    <td>{project.year}</td>
-                    <td>{project.dateOfApproval}</td>
+                {loading ? (
+                  <tr>
+                    <td colSpan={12} className="text-center py-8 text-[#999]">Loading projects...</td>
                   </tr>
-                ))}
+                ) : filteredProjects.length === 0 ? (
+                  <tr>
+                    <td colSpan={12} className="text-center py-8 text-[#999]">No projects found</td>
+                  </tr>
+                ) : (
+                  filteredProjects.map((project) => (
+                    <tr key={project.id}>
+                      <td className="text-primary font-semibold whitespace-nowrap">{project.code}</td>
+                      <td className="max-w-[250px] text-[#333] font-medium whitespace-normal break-words">{project.projectTitle}</td>
+                      <td>{project.location ?? '—'}</td>
+                      <td>{project.beneficiaries ?? '—'}</td>
+                      <td><span className="inline-block py-1 px-2.5 bg-[#e3f2fd] text-[#1565c0] rounded-[15px] text-[11px] font-medium">{project.programFunding ?? '—'}</span></td>
+                      <td><span className="inline-block py-1 px-3 rounded-[15px] text-[11px] font-medium bg-[#e8f5e9] text-[#2e7d32]">{project.status ?? '—'}</span></td>
+                      <td>{formatCurrency(project.approvedAmount)}</td>
+                      <td>{formatCurrency(project.releasedAmount)}</td>
+                      <td>{project.projectDuration ?? '—'}</td>
+                      <td>{project.staffAssigned ?? '—'}</td>
+                      <td>{project.year ?? '—'}</td>
+                      <td>{project.dateOfApproval ?? '—'}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

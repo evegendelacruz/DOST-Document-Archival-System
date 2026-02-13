@@ -19,7 +19,7 @@ interface BookingFormData {
 }
 
 interface CalendarEvent {
-  id: number;
+  id: string;
   title: string;
   date: string;
   location: string;
@@ -29,18 +29,6 @@ interface CalendarEvent {
   priority: 'Done' | 'High' | 'Normal' | 'Urgent' | 'Low' | 'Ongoing';
   staffInvolved: string;
 }
-
-const sampleEvents: CalendarEvent[] = [
-  { id: 1, title: 'Davao DOST Summit', date: '2026-02-09', location: 'Samal Island, Davao City', bookedBy: 'Jane Doe', bookedService: 'Transportation', bookedPersonnel: 'Sir Dodong', priority: 'Urgent', staffInvolved: 'John, Mary, Peter' },
-  { id: 2, title: 'RSTW Orientation 2026', date: '2026-02-10', location: 'Alubijid, Misamis Oriental', bookedBy: 'Nerrence Marjita', bookedService: 'Transportation', bookedPersonnel: 'Sir Dodong', priority: 'High', staffInvolved: 'Sarah, Mike' },
-  { id: 3, title: 'Area Client Training', date: '2026-02-10', location: 'Opol, Misamis Oriental', bookedBy: 'James Reid', bookedService: 'Transportation', bookedPersonnel: 'Sir Dodong', priority: 'Normal', staffInvolved: 'Alice, Bob' },
-  { id: 4, title: 'Research Colloquium 2026', date: '2026-02-05', location: 'Jasaan, Misamis Oriental', bookedBy: 'Nadine Lustre', bookedService: 'Transportation', bookedPersonnel: 'Sir Dodong', priority: 'Done', staffInvolved: 'Tom, Jerry' },
-  { id: 5, title: 'DOST Summit', date: '2026-02-03', location: 'Tagoloan, Misamis Oriental', bookedBy: 'Kathryn Bernardo', bookedService: 'Transportation', bookedPersonnel: 'Sir Dodong', priority: 'Done', staffInvolved: 'Emma, Lucas' },
-  { id: 6, title: 'Research Colloquium', date: '2026-01-29', location: 'Jasaan, Misamis Oriental', bookedBy: 'Daniel Padilla', bookedService: 'Catering', bookedPersonnel: 'Sir Dodong', priority: 'Done', staffInvolved: 'Olivia, Liam' },
-  { id: 7, title: 'DOST Summit', date: '2026-01-30', location: 'CDO Convention Center', bookedBy: 'Liza Soberano', bookedService: 'Venue', bookedPersonnel: 'Sir Dodong', priority: 'Normal', staffInvolved: 'Sophia, James' },
-  { id: 8, title: 'Tech Workshop', date: '2026-02-16', location: 'DOST Office, CDO', bookedBy: 'John Smith', bookedService: 'Equipment', bookedPersonnel: 'Sir Dodong', priority: 'High', staffInvolved: 'Ava, Noah' },
-  { id: 9, title: 'Science Fair', date: '2026-02-20', location: 'SM CDO', bookedBy: 'Maria Santos', bookedService: 'Venue', bookedPersonnel: 'Sir Dodong', priority: 'Normal', staffInvolved: 'Isabella, Mason' },
-];
 
 const priorityColors: Record<string, { bg: string; text: string; border: string; dot: string }> = {
   Done: { bg: 'bg-[#e8f5e9]', text: 'text-[#4caf50]', border: 'border-l-[#4caf50]', dot: 'bg-[#4caf50]' },
@@ -109,7 +97,7 @@ export default function DashboardPage() {
   const [serviceOptions, setServiceOptions] = useState<string[]>(['Transportation', 'Catering', 'Equipment', 'Venue']);
   const [showAddService, setShowAddService] = useState(false);
   const [newServiceName, setNewServiceName] = useState('');
-  const [events, setEvents] = useState<CalendarEvent[]>(sampleEvents);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showEventDetailModal, setShowEventDetailModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -121,6 +109,18 @@ export default function DashboardPage() {
   useEffect(() => {
     fetch('/api/setup-projects').then(r => r.json()).then(setAllProjects).catch(() => {});
   }, []);
+
+  // Fetch calendar events from API
+  const fetchEvents = useCallback(() => {
+    fetch('/api/calendar-events')
+      .then(r => r.json())
+      .then(setEvents)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
 
   // Build suggestions from real project titles, codes, and firms
   const filteredSuggestions = searchQuery.trim()
@@ -184,10 +184,10 @@ export default function DashboardPage() {
     setBookingForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleConfirmBooking = () => {
+  const handleConfirmBooking = async () => {
   // Validate required fields
   const errors: string[] = [];
-  
+
   if (!bookingForm.eventTitle.trim()) {
     errors.push('Event Title is required');
   }
@@ -200,34 +200,39 @@ export default function DashboardPage() {
   if (!bookingForm.priorityLevel) {
     errors.push('Priority Level is required');
   }
-  
+
   if (errors.length > 0) {
     setValidationErrors(errors);
     return;
   }
-  
+
   // Clear validation errors if validation passes
   setValidationErrors([]);
-  
+
   try {
-    // Create new event
-    const newEvent: CalendarEvent = {
-      id: events.length + 1,
-      title: bookingForm.eventTitle,
-      date: bookingForm.eventDate,
-      location: bookingForm.location,
-      bookedBy: bookingForm.bookedBy || 'N/A',
-      bookedService: bookingForm.bookedService || 'N/A',
-      bookedPersonnel: bookingForm.bookedPersonnel || 'N/A',
-      priority: bookingForm.priorityLevel as CalendarEvent['priority'],
-      staffInvolved: bookingForm.staffInvolved || 'N/A',
-    };
-    
-    setEvents(prev => [...prev, newEvent]);
+    const res = await fetch('/api/calendar-events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: bookingForm.eventTitle,
+        date: bookingForm.eventDate,
+        location: bookingForm.location,
+        bookedBy: bookingForm.bookedBy || 'N/A',
+        bookedService: bookingForm.bookedService || 'N/A',
+        bookedPersonnel: bookingForm.bookedPersonnel || 'N/A',
+        priority: bookingForm.priorityLevel,
+        staffInvolved: bookingForm.staffInvolved || 'N/A',
+      }),
+    });
+
+    if (!res.ok) throw new Error('Failed to create event');
+
+    const created = await res.json();
+    setEvents(prev => [...prev, created]);
     setBookingStatus('success');
     setShowBookingConfirm(true);
     setShowBookingModal(false);
-    
+
     // Reset form
     setBookingForm({
       eventTitle: '',
@@ -239,7 +244,7 @@ export default function DashboardPage() {
       bookedService: '',
       staffInvolved: '',
     });
-  } catch (error) {
+  } catch {
     setBookingStatus('error');
     setShowBookingConfirm(true);
   }
@@ -324,17 +329,42 @@ export default function DashboardPage() {
     setShowDeleteConfirm(true);
   };
 
-  const confirmDeleteEvent = () => {
+  const confirmDeleteEvent = async () => {
     if (eventToDelete) {
+      try {
+        await fetch(`/api/calendar-events/${eventToDelete.id}`, { method: 'DELETE' });
+      } catch {
+        // silently fail
+      }
       setEvents(prev => prev.filter(e => e.id !== eventToDelete.id));
       setShowDeleteConfirm(false);
       setEventToDelete(null);
     }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editingEvent) {
-      setEvents(prev => prev.map(e => e.id === editingEvent.id ? editingEvent : e));
+      try {
+        const res = await fetch(`/api/calendar-events/${editingEvent.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: editingEvent.title,
+            date: editingEvent.date,
+            location: editingEvent.location,
+            bookedBy: editingEvent.bookedBy,
+            bookedService: editingEvent.bookedService,
+            bookedPersonnel: editingEvent.bookedPersonnel,
+            priority: editingEvent.priority,
+            staffInvolved: editingEvent.staffInvolved,
+          }),
+        });
+        if (!res.ok) throw new Error('Failed to update event');
+        const updated = await res.json();
+        setEvents(prev => prev.map(e => e.id === updated.id ? updated : e));
+      } catch {
+        // silently fail — keep local state as-is
+      }
       setShowEditModal(false);
       setEditingEvent(null);
     }

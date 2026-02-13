@@ -151,6 +151,24 @@ model ArchivalRecord {
   @@map("archival_records")
 }
 
+// ─── Calendar Events ────────────────────────────────────────────────
+
+model CalendarEvent {
+  id              String   @id @default(uuid()) @db.Uuid
+  title           String
+  date            String
+  location        String
+  bookedBy        String?
+  bookedService   String?
+  bookedPersonnel String?
+  priority        String   @default("Normal")
+  staffInvolved   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("calendar_events")
+}
+
 // ─── Address Hierarchy ───────────────────────────────────────────────
 
 model Province {

@@ -1,10 +1,23 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Icon } from '@iconify/react';
 
 export default function Header() {
+  const [userName, setUserName] = useState('User');
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('user');
+      if (stored) {
+        const user = JSON.parse(stored);
+        if (user.fullName) setUserName(user.fullName);
+      }
+    } catch {}
+  }, []);
+
   return (
     <header className="flex justify-between items-center py-2 px-6 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.1)] z-[100] max-md:py-1.5 max-md:px-3.5">
       <div className="flex items-center gap-2.5">
@@ -23,7 +36,7 @@ export default function Header() {
         <button className="bg-transparent border-none cursor-pointer p-[5px] text-[#666] transition-colors duration-200 hover:text-primary"><Icon icon="mdi:bell-outline" width={24} height={24} /></button>
         <div className="flex items-center gap-2 pl-3 border-l border-[#e0e0e0]">
           <Icon icon="mdi:account-circle" width={30} height={30} color="#666" />
-          <span className="text-[13px] text-[#333] font-medium max-md:hidden">Jane Doe</span>
+          <span className="text-[13px] text-[#333] font-medium max-md:hidden">{userName}</span>
         </div>
       </div>
     </header>
