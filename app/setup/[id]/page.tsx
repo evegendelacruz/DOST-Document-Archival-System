@@ -388,7 +388,7 @@ export default function ProjectDetailPage() {
         </Link>
 
         {/* Project Info Card */}
-        <div className="bg-white rounded-xl py-6 px-7 mb-8 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+        <div className="bg-white rounded-xl py-6 px-7 mb-2 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
           {/* Header with SETUP logo and Edit button */}
           <div className="flex items-start justify-between mb-5">
             <div className="flex items-center gap-3.5">
@@ -434,8 +434,44 @@ export default function ProjectDetailPage() {
           </div>
         </div>
       </div>
-  
 
+        {/* Project Progress */}
+        <div className="bg-white rounded-xl py-6 px-7 mb-2 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+          <div className="grid grid-cols-3 gap-6">
+            {/* Project Initiation */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-[13px] font-semibold text-[#333] m-0">Project Initiation</h3>
+                <span className="text-[13px] font-semibold text-[#333]">80%</span>
+              </div>
+              <div className="w-full h-2 bg-[#e0e0e0] rounded-full overflow-hidden">
+                <div className="h-full bg-[#ffa726] rounded-full" style={{ width: '80%' }}></div>
+              </div>
+            </div>
+
+            {/* Project Implementation */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-[13px] font-semibold text-[#333] m-0">Project Implementation</h3>
+                <span className="text-[13px] font-semibold text-[#333]">10%</span>
+              </div>
+              <div className="w-full h-2 bg-[#e0e0e0] rounded-full overflow-hidden">
+                <div className="h-full bg-[#ffa726] rounded-full" style={{ width: '10%' }}></div>
+              </div>
+            </div>
+
+            {/* Overall Project Progress */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-[13px] font-semibold text-[#333] m-0">Overall Project Progress</h3>
+                <span className="text-[13px] font-semibold text-[#333]">50%</span>
+              </div>
+              <div className="w-full h-2 bg-[#e0e0e0] rounded-full overflow-hidden">
+                <div className="h-full bg-[#ffa726] rounded-full" style={{ width: '50%' }}></div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Project Initiation */}
         <DocumentTable title="Project Initiation" docs={initiationDocs} projectId={id} phase="INITIATION" />
