@@ -23,6 +23,7 @@ interface Project {
   fund: string | null;
   typeOfFund: string | null;
   assignee: string | null;
+  year: string | null;
   companyLogoUrl: string | null;
   createdAt: string;
 }
@@ -401,7 +402,11 @@ export default function ProjectDetailPage() {
         <div className="bg-white rounded-xl py-6 px-7 flex justify-between items-start mb-8 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
           <div className="flex gap-5 flex-1">
             <div className="w-[70px] h-[70px] min-w-[70px] rounded-full bg-[#e3f2fd] flex items-center justify-center overflow-hidden">
-              <Icon icon="mdi:store" width={48} height={48} color="#146184" />
+              {project.companyLogoUrl ? (
+                <img src={project.companyLogoUrl} alt="Company Logo" className="w-full h-full object-cover" />
+              ) : (
+                <Icon icon="mdi:store" width={48} height={48} color="#146184" />
+              )}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 text-[13px] text-[#888] mb-1">
@@ -416,6 +421,7 @@ export default function ProjectDetailPage() {
                 <p><strong>Address:</strong> {project.address || '—'}</p>
                 <p><strong>Priority Sector:</strong> {project.prioritySector || '—'}</p>
                 <p><strong>Assignee:</strong> {project.assignee || '—'}</p>
+                <p><strong>Year:</strong> {project.year || '—'}</p>
                 <p><strong>Date Published:</strong> {datePublished}</p>
               </div>
             </div>

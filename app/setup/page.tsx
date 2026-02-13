@@ -296,7 +296,18 @@ export default function SetupPage() {
     setSaving(true);
 
     try {
-      const payload = {
+      // Convert logo to base64 data URL if a new file was selected
+      let logoUrl: string | null = null;
+      if (formData.companyLogo) {
+        logoUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(formData.companyLogo!);
+        });
+      }
+
+      const payload: Record<string, unknown> = {
         title: formData.projectTitle,
         fund: formData.fund,
         typeOfFund: formData.typeOfFund,
@@ -312,6 +323,11 @@ export default function SetupPage() {
         prioritySector: formData.prioritySector,
         year: formData.year || null,
       };
+
+      // Only include logo if a new one was uploaded
+      if (logoUrl) {
+        payload.companyLogoUrl = logoUrl;
+      }
 
       const url = editingProjectId ? `/api/setup-projects/${editingProjectId}` : '/api/setup-projects';
       const method = editingProjectId ? 'PATCH' : 'POST';
@@ -548,6 +564,7 @@ export default function SetupPage() {
                   </th>
                     <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[10px] align-middle">Code</th>
                     <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[200px] align-middle">Project Title</th>
+                    <th className="py-3 px-1.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[50px] align-middle">Logo</th>
                     <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[150px] align-middle">Firm</th>
                     <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[120px] align-middle">Type of Firm</th>
                     <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[150px] align-middle">Address</th>
@@ -557,14 +574,15 @@ export default function SetupPage() {
                     <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[20px] align-middle">Status</th>
                     <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[100px] align-middle">Priority Sector</th>
                     <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[50px] align-middle">Firm Size</th>
+                    <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[50px] align-middle">Year</th>
                     <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[100px] align-middle">Assignee</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={14} className="py-8 text-center text-[#999] text-sm">Loading projects...</td></tr>
+                  <tr><td colSpan={16} className="py-8 text-center text-[#999] text-sm">Loading projects...</td></tr>
                 ) : filteredProjects.length === 0 ? (
-                  <tr><td colSpan={14} className="py-8 text-center text-[#999] text-sm">No projects found</td></tr>
+                  <tr><td colSpan={16} className="py-8 text-center text-[#999] text-sm">No projects found</td></tr>
                 ) : filteredProjects.map((project) => (
                   <tr key={project.id} className="hover:bg-[#f9f9f9]">
                     <td className="w-9 min-w-[36px] text-center py-3 px-2.5 text-left border-b border-[#e0e0e0]">
@@ -572,6 +590,15 @@ export default function SetupPage() {
                     </td>
                       <td className="text-primary font-semibold whitespace-nowrap py-3 px-2 text-left border-b border-[#e0e0e0]">#{project.code}</td>
                       <td className="max-w-[250px] text-[#333] font-medium whitespace-normal break-words py-3 px-2 text-left border-b border-[#e0e0e0]"><Link href={`/setup/${project.id}`} className="text-primary no-underline font-medium hover:text-accent hover:underline">{project.title}</Link></td>
+                      <td className="py-3 px-1.5 text-center border-b border-[#e0e0e0]">
+                        {project.companyLogoUrl ? (
+                          <img src={project.companyLogoUrl} alt="Logo" className="w-8 h-8 rounded-full object-cover inline-block" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-[#e3f2fd] flex items-center justify-center inline-flex">
+                            <Icon icon="mdi:store" width={18} height={18} color="#146184" />
+                          </div>
+                        )}
+                      </td>
                       <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.firm}</td>
                       <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.typeOfFirm && <span className="inline-block py-1 px-2.5 bg-[#fff3cd] text-[#856404] rounded-[15px] text-[11px] font-medium">{project.typeOfFirm}</span>}</td>
                       <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.address}</td>
@@ -581,6 +608,7 @@ export default function SetupPage() {
                       <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]"><span className={`inline-block py-1 px-3 rounded-[15px] text-[11px] font-medium ${getStatusClass(project.status)}`}>{statusDisplay[project.status] || project.status}</span></td>
                       <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.prioritySector}</td>
                       <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.firmSize}</td>
+                      <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.year || '—'}</td>
                       <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.assignee}</td>
                   </tr>
                 ))}
