@@ -386,45 +386,51 @@ export default function ProjectDetailPage() {
           <span>Back</span>
         </Link>
 
-        {/* SETUP 4.0 Header */}
-        <div className="flex items-center gap-3.5 mb-5">
-          <div className="w-[50px] h-[50px] flex items-center justify-center">
-            <img src="/setup-logo.png" alt="SETUP" className="w-[50px] h-[50px] object-contain bg-primary rounded-full p-2" />
-          </div>
-          <div className="flex flex-col">
-            <h1 className="text-[28px] font-bold text-primary m-0 leading-none">SETUP 4.0</h1>
-            <p className="text-[10px] text-[#666] m-0 leading-[1.3]">Small Enterprise Technology<br/>Upgrading Program</p>
-          </div>
-        </div>
-
         {/* Project Info Card */}
-        <div className="bg-white rounded-xl py-6 px-7 flex justify-between items-start mb-8 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-          <div className="flex gap-5 flex-1">
-            <div className="w-[70px] h-[70px] min-w-[70px] rounded-full bg-[#e3f2fd] flex items-center justify-center overflow-hidden">
-              <Icon icon="mdi:store" width={48} height={48} color="#146184" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 text-[13px] text-[#888] mb-1">
-                <span className="text-[#c62828] font-semibold">{project.firm || '—'}</span>
-                <span className="text-[#ccc]">|</span>
-                <span className="text-[#555]">{project.firmSize || '—'}</span>
+        <div className="bg-white rounded-xl py-6 px-7 mb-8 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+          {/* Header with SETUP logo and Edit button */}
+          <div className="flex items-start justify-between mb-5">
+            <div className="flex items-center gap-3.5">
+            {/* SETUP 4.0 Header */}
+            <div className="flex items-center gap-3.5 mb-5">
+              <div className="w-[120px] h-auto flex items-center justify-center">
+                <img src="/setup-4.0-logo.png" alt="SETUP" className="w-[120px] h-auto" />
               </div>
-              <h2 className="text-lg font-bold text-[#222] m-0 mb-0.5 leading-[1.3]">{project.title}</h2>
-              <p className="text-sm text-[#555] m-0 mb-3">{project.typeOfFirm || ''}</p>
-              <div className="[&_p]:my-0.5 [&_p]:text-[13px] [&_p]:text-[#555] [&_strong]:text-[#c62828] [&_strong]:font-semibold">
-                <p><strong>Cooperator&apos;s Name:</strong> {project.corporatorName || '—'}</p>
+            </div>
+            </div>
+            <button className="flex items-center gap-1.5 bg-accent text-white border-none rounded-[20px] py-2 px-5 text-[13px] font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover">
+              <Icon icon="mdi:pencil-outline" width={16} height={16} />
+              Edit Mode
+            </button>
+          </div>
+
+          {/* Project Content */}
+          <div className="flex gap-5 items-start">
+            <div className="w-[100px] h-[100px] min-w-[100px] rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+              {/* Default circle for project logo - can upload image here */}
+              <Icon icon="mdi:store" width={48} height={48} color="#999" />
+            </div>
+            <div className="flex-1 flex gap-5">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 text-[13px] mb-1">
+                  <span className="text-[#555] font-medium">{project.firm || '—'}</span>
+                  <span className="text-[#ccc]">|</span>
+                  <span className="text-[#555]">{project.firmSize || '—'}</span>
+                </div>
+                <h2 className="text-[18px] font-bold text-[#146184] m-0 mb-1 leading-[1.3]">{project.title}</h2>
+                <p className="text-[14px] text-[#555] m-0 mb-2">{project.typeOfFirm || ''}</p>
+                <div className="inline-block bg-[#ff9800] text-white text-[11px] font-semibold px-3 py-1 rounded-full mb-3">
+                  Ongoing
+                </div>
+              </div>
+              <div className="[&_p]:my-1 [&_p]:text-[13px] [&_p]:text-[#555] [&_strong]:text-[#222] [&_strong]:font-semibold">
+                <p><strong>Cooperator's Name:</strong> {project.corporatorName || '—'}</p>
                 <p><strong>Address:</strong> {project.address || '—'}</p>
                 <p><strong>Priority Sector:</strong> {project.prioritySector || '—'}</p>
                 <p><strong>Assignee:</strong> {project.assignee || '—'}</p>
                 <p><strong>Date Published:</strong> {datePublished}</p>
               </div>
             </div>
-          </div>
-          <div className="flex items-start">
-            <button className="flex items-center gap-1.5 bg-accent text-white border-none rounded-[20px] py-2 px-5 text-[13px] font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover">
-              <Icon icon="mdi:pencil-outline" width={16} height={16} />
-              Edit Mode
-            </button>
           </div>
         </div>
 
