@@ -38,3 +38,6 @@ next-env.d.ts
 nodejs.msi
 
 /app/generated/prisma
+
+# uploaded files
+/public/uploads

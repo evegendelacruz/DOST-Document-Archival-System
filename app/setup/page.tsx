@@ -88,6 +88,7 @@ interface Project {
   fund: string | null;
   typeOfFund: string | null;
   assignee: string | null;
+  year: string | null;
   companyLogoUrl: string | null;
   createdAt: string;
 }
@@ -142,7 +143,7 @@ export default function SetupPage() {
     projectTitle: '', fund: '', typeOfFund: '', firmSize: '',
     province: '', municipality: '', barangay: '', coordinates: '',
     firmName: '', firmType: '', cooperatorName: '',
-    projectStatus: '', prioritySector: '', companyLogo: null as File | null,
+    projectStatus: '', prioritySector: '', year: '', companyLogo: null as File | null,
   });
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -308,6 +309,7 @@ export default function SetupPage() {
         emails: emails.filter(e => e.trim()),
         status: formData.projectStatus,
         prioritySector: formData.prioritySector,
+        year: formData.year || null,
       };
 
       const url = editingProjectId ? `/api/setup-projects/${editingProjectId}` : '/api/setup-projects';
@@ -327,7 +329,7 @@ export default function SetupPage() {
       setShowAddModal(false);
       setEditingProjectId(null);
       setSelectedProjects([]);
-      setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', companyLogo: null });
+      setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', year: '', companyLogo: null });
       setEmails(['']); setContactNumbers(['']);
       await fetchProjects();
     } catch (err) {
@@ -358,6 +360,7 @@ export default function SetupPage() {
       cooperatorName: project.corporatorName || '',
       projectStatus: project.status,
       prioritySector: project.prioritySector || '',
+      year: project.year || '',
       companyLogo: null,
     });
     setEmails(project.emails.length > 0 ? project.emails : ['']);
@@ -409,11 +412,11 @@ export default function SetupPage() {
     doc.text(`Exported: ${new Date().toLocaleDateString()} | ${projectsToExport.length} project(s)`, marginLeft, 19);
 
     // Column widths proportional to tableWidth (190mm total)
-    const colWidths = [7, 11, 32, 22, 28, 22, 20, 22, 14, 14, 12].map(w => w / 204 * tableWidth);
+    const colWidths = [7, 10, 28, 20, 26, 20, 18, 20, 13, 13, 11, 10].map(w => w / 196 * tableWidth);
 
     autoTable(doc, {
       startY: 23,
-      head: [['#', 'Code', 'Project Title', 'Firm', 'Address', "Corporator", 'Contact', 'Email', 'Status', 'Sector', 'Size']],
+      head: [['#', 'Code', 'Project Title', 'Firm', 'Address', "Corporator", 'Contact', 'Email', 'Status', 'Sector', 'Size', 'Year']],
       body: projectsToExport.map((p, i) => [
         i + 1,
         `#${p.code}`,
@@ -426,6 +429,7 @@ export default function SetupPage() {
         statusDisplay[p.status] || p.status,
         p.prioritySector || '—',
         p.firmSize || '—',
+        p.year || '—',
       ]),
       styles: { fontSize: 6, cellPadding: 1.5, overflow: 'linebreak' },
       headStyles: { fillColor: [20, 97, 132], textColor: 255, fontStyle: 'bold', fontSize: 6 },
@@ -468,7 +472,7 @@ export default function SetupPage() {
               <input type="text" className="w-full h-full pl-[50px] pr-[25px] border border-[#e0e0e0] rounded-[25px] text-[15px] bg-[#f5f5f5] transition-all duration-200 focus:outline-none focus:border-primary focus:bg-white focus:shadow-[0_2px_8px_rgba(20,97,132,0.1)] placeholder:text-[#999]" placeholder="Search here" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
           </div>
-          <button className="flex items-center gap-2 py-3 px-5 bg-accent text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover" onClick={() => { setEditingProjectId(null); setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', companyLogo: null }); setEmails(['']); setContactNumbers(['']); setFormErrors({}); setSaveError(''); setShowAddModal(true); }}>
+          <button className="flex items-center gap-2 py-3 px-5 bg-accent text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover" onClick={() => { setEditingProjectId(null); setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', year: '', companyLogo: null }); setEmails(['']); setContactNumbers(['']); setFormErrors({}); setSaveError(''); setShowAddModal(true); }}>
             <Icon icon="mdi:plus" width={20} height={20} />
             Add New Project
           </button>
@@ -558,14 +562,15 @@ export default function SetupPage() {
                   <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Status</th>
                   <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Priority Sector</th>
                   <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Firm Size</th>
+                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Year</th>
                   <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Assignee</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={13} className="py-8 text-center text-[#999] text-sm">Loading projects...</td></tr>
+                  <tr><td colSpan={14} className="py-8 text-center text-[#999] text-sm">Loading projects...</td></tr>
                 ) : filteredProjects.length === 0 ? (
-                  <tr><td colSpan={13} className="py-8 text-center text-[#999] text-sm">No projects found</td></tr>
+                  <tr><td colSpan={14} className="py-8 text-center text-[#999] text-sm">No projects found</td></tr>
                 ) : filteredProjects.map((project) => (
                   <tr key={project.id} className="hover:bg-[#f9f9f9]">
                     <td className="w-9 min-w-[36px] text-center py-3 px-2.5 text-left border-b border-[#e0e0e0]">
@@ -582,6 +587,7 @@ export default function SetupPage() {
                     <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]"><span className={`inline-block py-1 px-3 rounded-[15px] text-[11px] font-medium ${getStatusClass(project.status)}`}>{statusDisplay[project.status] || project.status}</span></td>
                     <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.prioritySector}</td>
                     <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.firmSize}</td>
+                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.year}</td>
                     <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.assignee}</td>
                   </tr>
                 ))}
@@ -629,7 +635,7 @@ export default function SetupPage() {
               </div>
 
               {/* Fund Row */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-[13px] font-semibold text-[#333]">Fund<span className="text-[#dc3545] ml-0.5">*</span></label>
                   <input type="text" placeholder="Enter fund" value={formData.fund} onChange={(e) => handleFormChange('fund', e.target.value)} className={`${modalInputCls} ${formErrors.fund ? 'border-[#dc3545]! focus:border-[#dc3545]! focus:shadow-[0_0_0_3px_rgba(220,53,69,0.1)]!' : ''}`} />
@@ -654,6 +660,10 @@ export default function SetupPage() {
                     <option value="Large">Large</option>
                   </select>
                   {formErrors.firmSize && <span className="text-[#dc3545] text-[11px]">{formErrors.firmSize}</span>}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-semibold text-[#333]">Year</label>
+                  <input type="text" placeholder="e.g. 2026" value={formData.year} onChange={(e) => handleFormChange('year', e.target.value.replace(/\D/g, '').slice(0, 4))} className={modalInputCls} />
                 </div>
               </div>
 

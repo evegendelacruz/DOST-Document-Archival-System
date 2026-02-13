@@ -31,7 +31,8 @@
       "Bash(DATABASE_URL=\"postgresql://postgres:09550732496nerrenze12345ma@10.255.255.254:5432/dost_db?schema=public\" npx prisma migrate dev:*)",
       "Bash(DATABASE_URL=\"postgresql://postgres:09550732496nerrenze12345ma@host.docker.internal:5432/dost_db?schema=public\" npx prisma migrate dev:*)",
       "Bash(ip route:*)",
-      "Bash(DATABASE_URL=\"postgresql://postgres:09550732496nerrenze12345ma@172.30.112.1:5432/dost_db?schema=public\" npx prisma migrate dev:*)"
+      "Bash(DATABASE_URL=\"postgresql://postgres:09550732496nerrenze12345ma@172.30.112.1:5432/dost_db?schema=public\" npx prisma migrate dev:*)",
+      "Bash(sudo service postgresql status:*)"
     ]
   }
 }
