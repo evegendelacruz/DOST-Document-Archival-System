@@ -73,6 +73,7 @@ model SetupProject {
   fund            String?
   typeOfFund      String?
   assignee        String?
+  year            String?
   companyLogoUrl  String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -91,6 +92,8 @@ model ProjectDocument {
   templateItemId String?
   fileName       String
   fileUrl        String
+  mimeType       String        @default("application/octet-stream")
+  fileData       Bytes?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Icon } from '@iconify/react';
@@ -24,6 +24,15 @@ interface Project {
   typeOfFund: string | null;
   assignee: string | null;
   companyLogoUrl: string | null;
+  createdAt: string;
+}
+
+interface ProjectDocument {
+  id: string;
+  phase: string;
+  templateItemId: string | null;
+  fileName: string;
+  fileUrl: string;
   createdAt: string;
 }
 
@@ -96,11 +105,97 @@ const implementationDocs: DocRow[] = [
   { id: 33, label: 'Completion Report', type: 'item' },
 ];
 
-function DocumentTable({ title, docs }: { title: string; docs: DocRow[] }) {
+function DocumentTable({
+  title,
+  docs,
+  projectId,
+  phase,
+}: {
+  title: string;
+  docs: DocRow[];
+  projectId: string;
+  phase: 'INITIATION' | 'IMPLEMENTATION';
+}) {
   const [expandedDropdowns, setExpandedDropdowns] = useState<Record<string, boolean>>({});
+  const [documents, setDocuments] = useState<ProjectDocument[]>([]);
+  const [uploadingItemId, setUploadingItemId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const targetItemIdRef = useRef<string | null>(null);
+
+  const fetchDocuments = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/setup-projects/${projectId}/documents`);
+      if (!res.ok) return;
+      const allDocs: ProjectDocument[] = await res.json();
+      setDocuments(allDocs.filter(d => d.phase === phase));
+    } catch {
+      // silently fail
+    }
+  }, [projectId, phase]);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
 
   const toggleDropdown = (key: string) => {
     setExpandedDropdowns(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const getDocForItem = (templateItemId: string): ProjectDocument | undefined => {
+    return documents.find(d => d.templateItemId === templateItemId);
+  };
+
+  const handleUploadClick = (templateItemId: string) => {
+    targetItemIdRef.current = templateItemId;
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const templateItemId = targetItemIdRef.current;
+    if (!file || !templateItemId) return;
+
+    // Reset the input so the same file can be re-selected
+    e.target.value = '';
+
+    setUploadingItemId(templateItemId);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('phase', phase);
+      formData.append('templateItemId', templateItemId);
+
+      const res = await fetch(`/api/setup-projects/${projectId}/documents`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error('Upload failed');
+      await fetchDocuments();
+    } catch {
+      alert('Failed to upload file. Please try again.');
+    } finally {
+      setUploadingItemId(null);
+      targetItemIdRef.current = null;
+    }
+  };
+
+  const handleView = (doc: ProjectDocument) => {
+    window.open(`/api/setup-projects/${projectId}/documents/${doc.id}/download`, '_blank');
+  };
+
+  const handleDelete = async (doc: ProjectDocument) => {
+    if (!confirm(`Delete "${doc.fileName}"?`)) return;
+
+    try {
+      const res = await fetch(`/api/setup-projects/${projectId}/documents/${doc.id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Delete failed');
+      await fetchDocuments();
+    } catch {
+      alert('Failed to delete file. Please try again.');
+    }
   };
 
   let itemCounter = 0;
@@ -112,6 +207,15 @@ function DocumentTable({ title, docs }: { title: string; docs: DocRow[] }) {
         <Icon icon="mdi:information-outline" width={16} height={16} className="min-w-4 mt-px" />
         <span>To ensure that the document you uploaded is viewable in our system, click the View button below and check the document you uploaded. If it is not viewable, re-upload the document</span>
       </div>
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+
       <div className="overflow-x-auto px-7">
         <table className="w-full border-collapse text-[13px]">
           <thead>
@@ -150,25 +254,68 @@ function DocumentTable({ title, docs }: { title: string; docs: DocRow[] }) {
               }
 
               itemCounter++;
-              const rowKey = `${title}-${doc.id}-${idx}`;
+              const templateItemId = `${phase}-${doc.id}`;
+              const uploadedDoc = getDocForItem(templateItemId);
+              const isUploading = uploadingItemId === templateItemId;
+              const hasFile = !!uploadedDoc;
 
               return (
-                <tr key={rowKey}>
+                <tr key={`${title}-${doc.id}-${idx}`}>
                   <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#888] font-medium">{itemCounter}</td>
                   <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#333]">{doc.label}</td>
                   <td className="py-2.5 px-3 border-b border-[#eee] align-middle">
-                    <span className="text-[#bbb] italic text-xs">No file uploaded</span>
+                    {hasFile ? (
+                      <span className="text-[#333] text-xs truncate block max-w-[150px]" title={uploadedDoc.fileName}>
+                        {uploadedDoc.fileName}
+                      </span>
+                    ) : (
+                      <span className="text-[#bbb] italic text-xs">No file uploaded</span>
+                    )}
                   </td>
-                  <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#999] text-xs">—</td>
+                  <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#999] text-xs">
+                    {hasFile
+                      ? new Date(uploadedDoc.createdAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })
+                      : '—'}
+                  </td>
                   <td className="py-2.5 px-3 border-b border-[#eee] align-middle">
                     <div className="flex gap-1.5">
-                      <button className="w-7 h-7 border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 text-white bg-[#f5a623] hover:opacity-80" title="Upload">
-                        <Icon icon="mdi:upload" width={14} height={14} />
+                      {/* Upload */}
+                      <button
+                        className="w-7 h-7 border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 text-white bg-[#f5a623] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Upload"
+                        onClick={() => handleUploadClick(templateItemId)}
+                        disabled={isUploading}
+                      >
+                        {isUploading ? (
+                          <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                        ) : (
+                          <Icon icon="mdi:upload" width={14} height={14} />
+                        )}
                       </button>
-                      <button className="w-7 h-7 border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 text-white bg-[#2e7d32] hover:opacity-80" title="View">
+                      {/* View */}
+                      <button
+                        className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                          hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                        }`}
+                        title="View"
+                        onClick={() => hasFile && handleView(uploadedDoc)}
+                        disabled={!hasFile}
+                      >
                         <Icon icon="mdi:eye-outline" width={14} height={14} />
                       </button>
-                      <button className="w-7 h-7 border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 text-white bg-[#c62828] hover:opacity-80" title="Delete">
+                      {/* Delete */}
+                      <button
+                        className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                          hasFile ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                        }`}
+                        title="Delete"
+                        onClick={() => hasFile && handleDelete(uploadedDoc)}
+                        disabled={!hasFile}
+                      >
                         <Icon icon="mdi:delete-outline" width={14} height={14} />
                       </button>
                     </div>
@@ -179,9 +326,7 @@ function DocumentTable({ title, docs }: { title: string; docs: DocRow[] }) {
           </tbody>
         </table>
       </div>
-      <div className="flex justify-center py-5 px-7">
-        <button className="bg-accent text-white border-none rounded-[20px] py-2.5 px-12 text-sm font-semibold cursor-pointer transition-colors duration-200 hover:bg-accent-hover">Save</button>
-      </div>
+      <div className="py-5" />
     </div>
   );
 }
@@ -284,10 +429,10 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* Project Initiation */}
-        <DocumentTable title="Project Initiation" docs={initiationDocs} />
+        <DocumentTable title="Project Initiation" docs={initiationDocs} projectId={id} phase="INITIATION" />
 
         {/* Project Implementation */}
-        <DocumentTable title="Project Implementation" docs={implementationDocs} />
+        <DocumentTable title="Project Implementation" docs={implementationDocs} projectId={id} phase="IMPLEMENTATION" />
       </main>
     </DashboardLayout>
   );
