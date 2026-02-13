@@ -27,7 +27,29 @@
       "Bash(./node_modules/.bin/tsc:*)",
       "Bash(npx --package=typescript tsc:*)",
       "Bash(node /mnt/c/Users/Admin/Desktop/dost-nextjs/node_modules/typescript/bin/tsc:*)",
-      "Bash(node -p:*)"
+      "Bash(node -p:*)",
+      "Bash(sudo service postgresql start:*)",
+      "Bash(sudo systemctl start:*)",
+      "Bash(pg_ctl start:*)",
+      "Bash(/mnt/c/Windows/System32/cmd.exe /c 'sc query postgresql')",
+      "Bash(docker:*)",
+      "Bash(/mnt/c/Windows/System32/cmd.exe /c \"net start postgresql-x64-17\")",
+      "Bash(/mnt/c/Windows/System32/cmd.exe /c \"net start postgresql-x64-15\")",
+      "Bash(\"/mnt/c/Program Files/PostgreSQL/17/bin/psql.exe\" -U postgres -h localhost -p 5432 -c \"SELECT 1\")",
+      "Bash(nc:*)",
+      "Bash(/mnt/c/Windows/System32/cmd.exe /c \"ipconfig\")",
+      "Bash(/mnt/c/Windows/System32/cmd.exe /c \"net stop postgresql-x64-17 && net start postgresql-x64-17\")",
+      "Bash(nslookup:*)",
+      "Bash(host:*)",
+      "Bash(ping:*)",
+      "Bash(getent hosts:*)",
+      "Bash(dig:*)",
+      "Bash(sudo tee:*)",
+      "Bash(python3:*)",
+      "Bash(/mnt/c/Windows/System32/cmd.exe /c \"nslookup 0.tcp.in.ngrok.io\")",
+      "Bash(/mnt/c/Windows/System32/cmd.exe /c \"nslookup 0.tcp.ap.ngrok.io\")",
+      "Bash(/mnt/c/Windows/System32/cmd.exe /c \"nslookup ngrok.io\")",
+      "Bash(/mnt/c/Windows/System32/cmd.exe /c \"nslookup 0.tcp.in.ngrok.io 8.8.8.8\")"
     ]
   }
 }
