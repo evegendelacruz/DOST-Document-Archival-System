@@ -55,7 +55,7 @@ interface SetupProject {
 const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
 const getFirstDayOfMonth = (year: number, month: number) => {
   const day = new Date(year, month, 1).getDay();
-  return day === 0 ? 7 : day;
+  return day; 
 };
 
 const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -371,18 +371,29 @@ export default function DashboardPage() {
   };
 
   const generateCalendarDays = () => {
-    const daysInMonth = getDaysInMonth(currentYear, currentMonth);
-    const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
-    const daysInPrevMonth = getDaysInMonth(currentYear, currentMonth - 1);
-    const days = [];
+  const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+  const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
+  const daysInPrevMonth = getDaysInMonth(currentYear, currentMonth - 1);
+  const days = [];
 
-    for (let i = firstDay - 1; i > 0; i--) days.push({ day: daysInPrevMonth - i + 1, currentMonth: false });
-    for (let i = 1; i <= daysInMonth; i++) days.push({ day: i, currentMonth: true });
-    const remaining = 42 - days.length;
-    for (let i = 1; i <= remaining; i++) days.push({ day: i, currentMonth: false });
+  // Add previous month's days
+  for (let i = firstDay - 1; i >= 0; i--) {
+    days.push({ day: daysInPrevMonth - i, currentMonth: false });
+  }
+  
+  // Add current month's days
+  for (let i = 1; i <= daysInMonth; i++) {
+    days.push({ day: i, currentMonth: true });
+  }
+  
+  // Add next month's days to fill the grid
+  const remaining = 42 - days.length;
+  for (let i = 1; i <= remaining; i++) {
+    days.push({ day: i, currentMonth: false });
+  }
 
-    return days;
-  };
+  return days;
+};
 
   const calendarDays = generateCalendarDays();
 
@@ -430,48 +441,56 @@ export default function DashboardPage() {
               </div>
               <div className="w-full">
                 <div className="grid grid-cols-7 mb-2.5">
-                  {['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'].map(day => (
+                  {['SUNDAY','MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'].map(day => (
                     <div key={day} className="text-center text-xs font-semibold text-primary p-2.5 tracking-[1px]">{day}</div>
                   ))}
                 </div>
-                <div className="grid grid-cols-7 border border-[#e0e0e0] border-r-0 border-b-0">
-                  {calendarDays.map((day, index) => {
-                    const dayEvents = day.currentMonth ? getEventsForDate(currentYear, currentMonth, day.day, events) : [];
-                    const isTodayDate = day.currentMonth && isToday(currentYear, currentMonth, day.day);
-                    return (
-                      <div
-                        key={index}
-                        className={`min-h-[80px] p-1.5 border-r border-b border-[#e0e0e0] ${isTodayDate ? 'bg-[#e0f7fa]' : (index % 7 === 5 || index % 7 === 6) ? 'bg-[#e8f4f8]' : 'bg-white'}`}
-                      >
-                        <span className={`text-sm font-medium ${!day.currentMonth ? 'text-[#ccc]' : isTodayDate ? 'text-[#00AEEF]' : 'text-primary'}`}>{day.day}</span>
-                        <div className="mt-1 flex flex-col gap-0.5">
-                          {dayEvents.slice(0, 2).map((event) => (
-                            <div
-                              key={event.id}
-                              onClick={() => handleEventClick(event)}
-                              className={`flex items-center gap-1 px-1 py-0.5 rounded text-[10px] truncate cursor-pointer transition-all hover:scale-105 hover:shadow-sm group relative ${priorityColors[event.priority]?.bg || 'bg-gray-100'}`}
-                              title={`${event.title}\n${event.location}\n${event.bookedBy}`}
-                            >
-                              <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${priorityColors[event.priority]?.dot || 'bg-gray-400'}`}></div>
-                              <span className={`truncate ${priorityColors[event.priority]?.text || 'text-gray-600'}`}>{event.title}</span>
-                              {/* Tooltip */}
-                              <div className="absolute left-0 bottom-full mb-1 hidden group-hover:block z-50 w-48 p-2 bg-white rounded-lg shadow-lg border border-gray-200 text-left">
-                                <p className="text-xs font-bold text-primary mb-1">{event.title}</p>
-                                <p className="text-[10px] text-gray-600"><span className="font-semibold">Date:</span> {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                                <p className="text-[10px] text-gray-600"><span className="font-semibold">Location:</span> {event.location}</p>
-                                <p className="text-[10px] text-gray-600"><span className="font-semibold">Booked by:</span> {event.bookedBy}</p>
-                                <p className="text-[10px] text-gray-600"><span className="font-semibold">Priority:</span> <span className={priorityColors[event.priority]?.text}>{event.priority}</span></p>
-                              </div>
-                            </div>
-                          ))}
-                          {dayEvents.length > 2 && (
-                            <span className="text-[9px] text-[#999] pl-1">+{dayEvents.length - 2} more</span>
-                          )}
+               <div className="grid grid-cols-7 border border-[#e0e0e0] border-r-0 border-b-0">
+                {calendarDays.map((day, index) => {
+                  const dayEvents = day.currentMonth ? getEventsForDate(currentYear, currentMonth, day.day, events) : [];
+                  const isTodayDate = day.currentMonth && isToday(currentYear, currentMonth, day.day);
+                  return (
+                    <div
+                      key={index}
+                      className={`min-h-[80px] p-1.5 border-r border-b border-[#e0e0e0] ${(index % 7 === 0 || index % 7 === 6) ? 'bg-[#e8f4f8]' : 'bg-white'}`}
+                    >
+                      {isTodayDate ? (
+                        <div className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#00AEEF] ">
+                          <span className="text-sm font-medium text-white">{day.day}</span>
                         </div>
+                      ) : (
+                        <span className={`text-sm font-medium ${!day.currentMonth ? 'text-[#ccc]' : 'text-primary'}`}>
+                          {day.day}
+                        </span>
+                      )}
+                      <div className="mt-1 flex flex-col gap-0.5">
+                        {dayEvents.slice(0, 2).map((event) => (
+                          <div
+                            key={event.id}
+                            onClick={() => handleEventClick(event)}
+                            className={`flex items-center gap-1 px-1 py-0.5 rounded text-[10px] truncate cursor-pointer transition-all hover:scale-105 hover:shadow-sm group relative ${priorityColors[event.priority]?.bg || 'bg-gray-100'}`}
+                            title={`${event.title}\n${event.location}\n${event.bookedBy}`}
+                          >
+                            <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${priorityColors[event.priority]?.dot || 'bg-gray-400'}`}></div>
+                            <span className={`truncate ${priorityColors[event.priority]?.text || 'text-gray-600'}`}>{event.title}</span>
+                            {/* Tooltip */}
+                            <div className="absolute left-0 bottom-full mb-1 hidden group-hover:block z-50 w-48 p-2 bg-white rounded-lg shadow-lg border border-gray-200 text-left">
+                              <p className="text-xs font-bold text-primary mb-1">{event.title}</p>
+                              <p className="text-[10px] text-gray-600"><span className="font-semibold">Date:</span> {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                              <p className="text-[10px] text-gray-600"><span className="font-semibold">Location:</span> {event.location}</p>
+                              <p className="text-[10px] text-gray-600"><span className="font-semibold">Booked by:</span> {event.bookedBy}</p>
+                              <p className="text-[10px] text-gray-600"><span className="font-semibold">Priority:</span> <span className={priorityColors[event.priority]?.text}>{event.priority}</span></p>
+                            </div>
+                          </div>
+                        ))}
+                        {dayEvents.length > 2 && (
+                          <span className="text-[9px] text-[#999] pl-1">+{dayEvents.length - 2} more</span>
+                        )}
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
+              </div>
               </div>
             </div>
             <div className="w-[300px] shrink-0 flex flex-col">
@@ -538,8 +557,8 @@ export default function DashboardPage() {
 
         {activeNav === 'archival' && !showResults && (
           <>
-            <h1 className="text-5xl font-bold text-primary mb-[30px] max-md:text-[32px]">Archival</h1>
-            <div className="relative w-full max-w-[600px]">
+            <h1 className="text-6xl font-bold text-primary mb-[20px] mt-8 max-md:text-[32px] mt-25">Archival</h1>
+            <div className="relative w-full max-w-[600px] mt-2">
               <input
                 type="text"
                 className="w-full py-[15px] pr-[50px] pl-5 border border-[#d0d0d0] rounded-[30px] text-base bg-white shadow-[0_4px_15px_rgba(0,0,0,0.08)] transition-all duration-200 focus:outline-none focus:border-primary focus:shadow-[0_4px_15px_rgba(20,97,132,0.15)] placeholder:text-[#999]"
