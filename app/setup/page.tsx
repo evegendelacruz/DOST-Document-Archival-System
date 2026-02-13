@@ -546,18 +546,18 @@ export default function SetupPage() {
                   <th className="w-5 min-w-[10px] text-left py-3 px-2.5 border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[10px] align-middle">
                     <input type="checkbox" className="w-4 h-4 accent-accent cursor-pointer" checked={selectedProjects.length === filteredProjects.length && filteredProjects.length > 0} onChange={(e) => setSelectedProjects(e.target.checked ? filteredProjects.map(p => p.id) : [])} />
                   </th>
-                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Code</th>
-                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Project Title</th>
-                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Firm</th>
-                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Type of Firm</th>
-                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Address</th>
-                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Corporator&apos;s Name</th>
-                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Contact No.</th>
-                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Email</th>
-                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Status</th>
-                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Priority Sector</th>
-                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Firm Size</th>
-                  <th className="py-3 px-2.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Assignee</th>
+                    <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[10px] align-middle">Code</th>
+                    <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[200px] align-middle">Project Title</th>
+                    <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[150px] align-middle">Firm</th>
+                    <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[120px] align-middle">Type of Firm</th>
+                    <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[150px] align-middle">Address</th>
+                    <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[150px] align-middle">Corporator&apos;s Name</th>
+                    <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[50px] align-middle">Contact No.</th>
+                    <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[30px] align-middle">Email</th>
+                    <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[20px] align-middle">Status</th>
+                    <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[100px] align-middle">Priority Sector</th>
+                    <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[50px] align-middle">Firm Size</th>
+                    <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[100px] align-middle">Assignee</th>
                 </tr>
               </thead>
               <tbody>
@@ -570,18 +570,18 @@ export default function SetupPage() {
                     <td className="w-9 min-w-[36px] text-center py-3 px-2.5 text-left border-b border-[#e0e0e0]">
                       <input type="checkbox" className="w-4 h-4 accent-accent cursor-pointer" checked={selectedProjects.includes(project.id)} onChange={(e) => setSelectedProjects(prev => e.target.checked ? [...prev, project.id] : prev.filter(id => id !== project.id))} />
                     </td>
-                    <td className="text-primary font-semibold whitespace-nowrap py-3 px-2.5 text-left border-b border-[#e0e0e0]">#{project.code}</td>
-                    <td className="max-w-[250px] text-[#333] font-medium whitespace-normal break-words py-3 px-2.5 text-left border-b border-[#e0e0e0]"><Link href={`/setup/${project.id}`} className="text-primary no-underline font-medium hover:text-accent hover:underline">{project.title}</Link></td>
-                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.firm}</td>
-                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.typeOfFirm && <span className="inline-block py-1 px-2.5 bg-[#fff3cd] text-[#856404] rounded-[15px] text-[11px] font-medium">{project.typeOfFirm}</span>}</td>
-                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.address}</td>
-                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.corporatorName}</td>
-                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.contactNumbers.join(', ')}</td>
-                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.emails.join(', ')}</td>
-                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]"><span className={`inline-block py-1 px-3 rounded-[15px] text-[11px] font-medium ${getStatusClass(project.status)}`}>{statusDisplay[project.status] || project.status}</span></td>
-                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.prioritySector}</td>
-                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.firmSize}</td>
-                    <td className="py-3 px-2.5 text-left border-b border-[#e0e0e0]">{project.assignee}</td>
+                      <td className="text-primary font-semibold whitespace-nowrap py-3 px-2 text-left border-b border-[#e0e0e0]">#{project.code}</td>
+                      <td className="max-w-[250px] text-[#333] font-medium whitespace-normal break-words py-3 px-2 text-left border-b border-[#e0e0e0]"><Link href={`/setup/${project.id}`} className="text-primary no-underline font-medium hover:text-accent hover:underline">{project.title}</Link></td>
+                      <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.firm}</td>
+                      <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.typeOfFirm && <span className="inline-block py-1 px-2.5 bg-[#fff3cd] text-[#856404] rounded-[15px] text-[11px] font-medium">{project.typeOfFirm}</span>}</td>
+                      <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.address}</td>
+                      <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.corporatorName}</td>
+                      <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.contactNumbers.join(', ')}</td>
+                      <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.emails.join(', ')}</td>
+                      <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]"><span className={`inline-block py-1 px-3 rounded-[15px] text-[11px] font-medium ${getStatusClass(project.status)}`}>{statusDisplay[project.status] || project.status}</span></td>
+                      <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.prioritySector}</td>
+                      <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.firmSize}</td>
+                      <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.assignee}</td>
                   </tr>
                 ))}
               </tbody>
