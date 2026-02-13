@@ -120,6 +120,7 @@ function DocumentTable({
   const [expandedDropdowns, setExpandedDropdowns] = useState<Record<string, boolean>>({});
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [uploadingItemId, setUploadingItemId] = useState<string | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<ProjectDocument | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const targetItemIdRef = useRef<string | null>(null);
 
@@ -182,7 +183,32 @@ function DocumentTable({
   };
 
   const handleView = (doc: ProjectDocument) => {
-    window.open(`/api/setup-projects/${projectId}/documents/${doc.id}/download`, '_blank');
+    setPreviewDoc(doc);
+  };
+
+  const handleDownload = async (doc: ProjectDocument) => {
+    try {
+      const response = await fetch(`/api/setup-projects/${projectId}/documents/${doc.id}/download`);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = doc.fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      alert('Failed to download file. Please try again.');
+    }
+  };
+
+  const handlePrint = () => {
+    if (!previewDoc) return;
+    const iframe = document.getElementById('preview-iframe') as HTMLIFrameElement;
+    if (iframe?.contentWindow) {
+      iframe.contentWindow.print();
+    }
   };
 
   const handleDelete = async (doc: ProjectDocument) => {
@@ -202,133 +228,189 @@ function DocumentTable({
   let itemCounter = 0;
 
   return (
-    <div className="bg-white rounded-xl mb-8 shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
-      <h2 className="text-base font-bold text-primary pt-5 px-7 m-0 mb-3">{title}</h2>
-      <div className="flex items-start gap-2 bg-[#e1f5fe] border border-[#b3e5fc] rounded-lg py-2.5 px-4 mx-7 mb-4 text-xs text-[#0277bd] leading-[1.4]">
-        <Icon icon="mdi:information-outline" width={16} height={16} className="min-w-4 mt-px" />
-        <span>To ensure that the document you uploaded is viewable in our system, click the View button below and check the document you uploaded. If it is not viewable, re-upload the document</span>
-      </div>
+    <>
+      <div className="bg-white rounded-xl mb-8 shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+        <h2 className="text-base font-bold text-primary pt-5 px-7 m-0 mb-3">{title}</h2>
+        <div className="flex items-start gap-2 bg-[#e1f5fe] border border-[#b3e5fc] rounded-lg py-2.5 px-4 mx-7 mb-4 text-xs text-[#0277bd] leading-[1.4]">
+          <Icon icon="mdi:information-outline" width={16} height={16} className="min-w-4 mt-px" />
+          <span>To ensure that the document you uploaded is viewable in our system, click the View button below and check the document you uploaded. If it is not viewable, re-upload the document</span>
+        </div>
 
-      {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        className="hidden"
-        onChange={handleFileChange}
-      />
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={handleFileChange}
+        />
 
-      <div className="overflow-x-auto px-7">
-        <table className="w-full border-collapse text-[13px]">
-          <thead>
-            <tr className="bg-primary text-white">
-              <th className="w-9 py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">#</th>
-              <th className="min-w-[240px] py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">Documentary Requirements</th>
-              <th className="w-40 py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">File</th>
-              <th className="w-[120px] py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">Date Uploaded</th>
-              <th className="w-[120px] py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {docs.map((doc, idx) => {
-              if (doc.type === 'section') {
+        <div className="overflow-x-auto px-7">
+          <table className="w-full border-collapse text-[13px]">
+            <thead>
+              <tr className="bg-primary text-white">
+                <th className="w-9 py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">#</th>
+                <th className="min-w-[240px] py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">Documentary Requirements</th>
+                <th className="w-40 py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">File</th>
+                <th className="w-[120px] py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">Date Uploaded</th>
+                <th className="w-[120px] py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {docs.map((doc, idx) => {
+                if (doc.type === 'section') {
+                  return (
+                    <tr key={`section-${idx}`}>
+                      <td colSpan={5} className="py-2.5 px-3 bg-[#f0f0f0] border-b border-[#ddd] text-[13px] text-primary">
+                        <strong>{doc.label}</strong>
+                      </td>
+                    </tr>
+                  );
+                }
+
+                if (doc.type === 'dropdown') {
+                  const key = `dropdown-${idx}`;
+                  return (
+                    <tr key={key}>
+                      <td colSpan={5} className="p-0 border-b border-[#eee]">
+                        <button className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" onClick={() => toggleDropdown(key)}>
+                          <Icon icon={expandedDropdowns[key] ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                          <span>{doc.label}</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                }
+
+                itemCounter++;
+                const templateItemId = `${phase}-${doc.id}`;
+                const uploadedDoc = getDocForItem(templateItemId);
+                const isUploading = uploadingItemId === templateItemId;
+                const hasFile = !!uploadedDoc;
+
                 return (
-                  <tr key={`section-${idx}`}>
-                    <td colSpan={5} className="py-2.5 px-3 bg-[#f0f0f0] border-b border-[#ddd] text-[13px] text-primary">
-                      <strong>{doc.label}</strong>
+                  <tr key={`${title}-${doc.id}-${idx}`}>
+                    <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#888] font-medium">{itemCounter}</td>
+                    <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#333]">{doc.label}</td>
+                    <td className="py-2.5 px-3 border-b border-[#eee] align-middle">
+                      {hasFile ? (
+                        <span className="text-[#333] text-xs truncate block max-w-[150px]" title={uploadedDoc.fileName}>
+                          {uploadedDoc.fileName}
+                        </span>
+                      ) : (
+                        <span className="text-[#bbb] italic text-xs">No file uploaded</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#999] text-xs">
+                      {hasFile
+                        ? new Date(uploadedDoc.createdAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })
+                        : '—'}
+                    </td>
+                    <td className="py-2.5 px-3 border-b border-[#eee] align-middle">
+                      <div className="flex gap-1.5">
+                        {/* Upload */}
+                        <button
+                          className="w-7 h-7 border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 text-white bg-[#f5a623] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Upload"
+                          onClick={() => handleUploadClick(templateItemId)}
+                          disabled={isUploading}
+                        >
+                          {isUploading ? (
+                            <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                          ) : (
+                            <Icon icon="mdi:upload" width={14} height={14} />
+                          )}
+                        </button>
+                        {/* View */}
+                        <button
+                          className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                            hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                          }`}
+                          title="View"
+                          onClick={() => hasFile && handleView(uploadedDoc)}
+                          disabled={!hasFile}
+                        >
+                          <Icon icon="mdi:eye-outline" width={14} height={14} />
+                        </button>
+                        {/* Delete */}
+                        <button
+                          className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                            hasFile ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                          }`}
+                          title="Delete"
+                          onClick={() => hasFile && handleDelete(uploadedDoc)}
+                          disabled={!hasFile}
+                        >
+                          <Icon icon="mdi:delete-outline" width={14} height={14} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
-              }
-
-              if (doc.type === 'dropdown') {
-                const key = `dropdown-${idx}`;
-                return (
-                  <tr key={key}>
-                    <td colSpan={5} className="p-0 border-b border-[#eee]">
-                      <button className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" onClick={() => toggleDropdown(key)}>
-                        <Icon icon={expandedDropdowns[key] ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
-                        <span>{doc.label}</span>
-                      </button>
-                    </td>
-                  </tr>
-                );
-              }
-
-              itemCounter++;
-              const templateItemId = `${phase}-${doc.id}`;
-              const uploadedDoc = getDocForItem(templateItemId);
-              const isUploading = uploadingItemId === templateItemId;
-              const hasFile = !!uploadedDoc;
-
-              return (
-                <tr key={`${title}-${doc.id}-${idx}`}>
-                  <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#888] font-medium">{itemCounter}</td>
-                  <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#333]">{doc.label}</td>
-                  <td className="py-2.5 px-3 border-b border-[#eee] align-middle">
-                    {hasFile ? (
-                      <span className="text-[#333] text-xs truncate block max-w-[150px]" title={uploadedDoc.fileName}>
-                        {uploadedDoc.fileName}
-                      </span>
-                    ) : (
-                      <span className="text-[#bbb] italic text-xs">No file uploaded</span>
-                    )}
-                  </td>
-                  <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#999] text-xs">
-                    {hasFile
-                      ? new Date(uploadedDoc.createdAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                        })
-                      : '—'}
-                  </td>
-                  <td className="py-2.5 px-3 border-b border-[#eee] align-middle">
-                    <div className="flex gap-1.5">
-                      {/* Upload */}
-                      <button
-                        className="w-7 h-7 border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 text-white bg-[#f5a623] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Upload"
-                        onClick={() => handleUploadClick(templateItemId)}
-                        disabled={isUploading}
-                      >
-                        {isUploading ? (
-                          <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
-                        ) : (
-                          <Icon icon="mdi:upload" width={14} height={14} />
-                        )}
-                      </button>
-                      {/* View */}
-                      <button
-                        className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
-                          hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
-                        }`}
-                        title="View"
-                        onClick={() => hasFile && handleView(uploadedDoc)}
-                        disabled={!hasFile}
-                      >
-                        <Icon icon="mdi:eye-outline" width={14} height={14} />
-                      </button>
-                      {/* Delete */}
-                      <button
-                        className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
-                          hasFile ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
-                        }`}
-                        title="Delete"
-                        onClick={() => hasFile && handleDelete(uploadedDoc)}
-                        disabled={!hasFile}
-                      >
-                        <Icon icon="mdi:delete-outline" width={14} height={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="py-5" />
       </div>
-      <div className="py-5" />
-    </div>
+
+      {/* Modal Preview */}
+      {previewDoc && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setPreviewDoc(null)}>
+          {/* A4 aspect ratio: 210mm x 297mm = 1:1.414 */}
+          <div className="bg-white rounded-lg w-[calc(90vh/1.414)] h-[90vh] max-w-full flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 flex-shrink-0">
+              <h3 className="text-sm font-semibold text-gray-800 truncate pr-4">{previewDoc.fileName}</h3>
+              <button
+                onClick={() => setPreviewDoc(null)}
+                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
+                title="Close"
+              >
+                <Icon icon="mdi:close" width={20} height={20} className="text-gray-600" />
+              </button>
+            </div>
+
+            {/* Modal Body - Document Preview */}
+            <div className="flex-1 overflow-hidden bg-white">
+              <iframe
+                id="preview-iframe"
+                src={`/api/setup-projects/${projectId}/documents/${previewDoc.id}/download#toolbar=0`}
+                className="w-full h-full border-none"
+                title={previewDoc.fileName}
+              />
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-2 px-4 py-2.5 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+              <button
+                onClick={() => handleDownload(previewDoc)}
+                className="flex items-center gap-1.5 px-4 py-2 bg-[#00bcd4] text-white rounded-md font-semibold text-xs hover:bg-[#0097a7] transition-colors"
+              >
+                <Icon icon="mdi:download" width={16} height={16} />
+                Download
+              </button>
+              <button
+                onClick={handlePrint}
+                className="flex items-center gap-1.5 px-4 py-2 bg-[#ff9800] text-white rounded-md font-semibold text-xs hover:bg-[#f57c00] transition-colors"
+              >
+                <Icon icon="mdi:printer" width={16} height={16} />
+                Print
+              </button>
+              <button
+                onClick={() => setPreviewDoc(null)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md font-semibold text-xs hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
