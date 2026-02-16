@@ -1,12 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
 
 export default function Header() {
   const [userName, setUserName] = useState('User');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     try {
@@ -17,6 +21,29 @@ export default function Header() {
       }
     } catch {}
   }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleMyProfile = () => {
+    setIsDropdownOpen(false);
+    router.push('/profile');
+  };
+
+  const handleLogout = () => {
+    setIsDropdownOpen(false);
+    localStorage.removeItem('user');
+    router.push('/');
+  };
 
   return (
     <header className="flex justify-between items-center py-2 px-6 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.1)] z-[100] max-md:py-1.5 max-md:px-3.5">
@@ -34,9 +61,37 @@ export default function Header() {
           <Icon icon="mdi:compass-outline" width={24} height={24} />
         </Link>
         <button className="bg-transparent border-none cursor-pointer p-[5px] text-[#666] transition-colors duration-200 hover:text-primary"><Icon icon="mdi:bell-outline" width={24} height={24} /></button>
-        <div className="flex items-center gap-2 pl-3 border-l border-[#e0e0e0]">
-          <Icon icon="mdi:account-circle" width={30} height={30} color="#666" />
-          <span className="text-[13px] text-[#333] font-medium max-md:hidden">{userName}</span>
+        
+        {/* User Profile Dropdown */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="flex items-center gap-2 pl-3 border-l border-[#e0e0e0] bg-transparent cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            <Icon icon="mdi:account-circle" width={30} height={30} color="#666" />
+            <span className="text-[13px] text-[#333] font-medium max-md:hidden">{userName}</span>
+          </button>
+
+          {/* Dropdown Menu */}
+          {isDropdownOpen && (
+            <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+              <button
+                onClick={handleMyProfile}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left"
+              >
+                <Icon icon="mdi:account-outline" width={20} height={20} />
+                <span>My Profile</span>
+              </button>
+              <div className="border-t border-gray-200 my-1"></div>
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
+              >
+                <Icon icon="mdi:logout" width={20} height={20} />
+                <span>Log Out</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>
