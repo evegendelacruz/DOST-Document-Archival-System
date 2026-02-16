@@ -2057,6 +2057,9 @@ export default function ProjectDetailPage() {
   const [error, setError] = useState(false);
   const [initiationProgress, setInitiationProgress] = useState(0);
   const [implementationProgress, setImplementationProgress] = useState(0);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
   const overallProgress = Math.round((initiationProgress + implementationProgress) / 2);
 
   useEffect(() => {
@@ -2069,6 +2072,39 @@ export default function ProjectDetailPage() {
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
+        setShowStatusDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleStatusUpdate = async (newStatus: string) => {
+    if (!project || newStatus === project.status) {
+      setShowStatusDropdown(false);
+      return;
+    }
+    setUpdatingStatus(true);
+    try {
+      const res = await fetch(`/api/setup-projects/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error('Failed to update status');
+      const updated = await res.json();
+      setProject(updated);
+    } catch (err) {
+      console.error('Failed to update status:', err);
+    } finally {
+      setUpdatingStatus(false);
+      setShowStatusDropdown(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -2097,6 +2133,16 @@ export default function ProjectDetailPage() {
   const datePublished = new Date(project.createdAt).toLocaleDateString('en-US', {
     year: 'numeric', month: 'long', day: 'numeric',
   });
+
+  const statusConfig: Record<string, { label: string; bg: string; text: string; bar: string }> = {
+    PROPOSAL: { label: 'Proposal', bg: '#e3f2fd', text: '#1565c0', bar: '#1565c0' },
+    APPROVED: { label: 'Approved', bg: '#e8f5e9', text: '#2e7d32', bar: '#2e7d32' },
+    ONGOING: { label: 'Ongoing', bg: '#fff8e1', text: '#f57f17', bar: '#ffa726' },
+    WITHDRAWN: { label: 'Withdrawal', bg: '#f0f0f0', text: '#757575', bar: '#9e9e9e' },
+    TERMINATED: { label: 'Terminated', bg: '#fce4ec', text: '#ad1457', bar: '#ad1457' },
+    GRADUATED: { label: 'Graduated', bg: '#e0f2f1', text: '#00695c', bar: '#00695c' },
+  };
+  const currentStatus = statusConfig[project.status] || statusConfig.PROPOSAL;
 
   return (
     <DashboardLayout activePath="/setup">
@@ -2140,8 +2186,31 @@ export default function ProjectDetailPage() {
               </div>
               <h2 className="text-[18px] font-bold text-[#146184] m-0 mb-1 leading-[1.3]">{project.title}</h2>
               <p className="text-[14px] text-[#555] m-0 mb-2">{project.typeOfFirm || ''}</p>
-              <div className="inline-block bg-[#ff9800] text-white text-[11px] font-semibold px-3 py-1 rounded-full mb-3">
-                Ongoing
+              <div className="relative inline-block mb-3" ref={statusDropdownRef}>
+                <button
+                  className="text-[11px] font-semibold px-3 py-1 rounded-full border-none cursor-pointer flex items-center gap-1 transition-opacity duration-200 hover:opacity-80"
+                  style={{ backgroundColor: currentStatus.bg, color: currentStatus.text }}
+                  onClick={() => setShowStatusDropdown(v => !v)}
+                  disabled={updatingStatus}
+                >
+                  {updatingStatus ? 'Updating...' : currentStatus.label}
+                  <Icon icon="mdi:chevron-down" width={14} height={14} />
+                </button>
+                {showStatusDropdown && (
+                  <div className="absolute left-0 top-full mt-1 w-[160px] bg-white border border-[#e0e0e0] rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.12)] z-50 py-1">
+                    {Object.entries(statusConfig).map(([key, cfg]) => (
+                      <button
+                        key={key}
+                        className={`w-full flex items-center gap-2 py-2 px-3 text-[12px] text-left border-none bg-transparent cursor-pointer transition-colors duration-150 hover:bg-[#f5f5f5] ${project.status === key ? 'font-semibold' : ''}`}
+                        onClick={() => handleStatusUpdate(key)}
+                      >
+                        <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: cfg.bar }}></span>
+                        {cfg.label}
+                        {project.status === key && <Icon icon="mdi:check" width={14} height={14} className="ml-auto" style={{ color: cfg.bar }} />}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             <div className="[&_p]:my-1 [&_p]:text-[13px] [&_p]:text-[#555] [&_strong]:text-[#222] [&_strong]:font-semibold">
@@ -2165,7 +2234,7 @@ export default function ProjectDetailPage() {
                 <span className="text-[13px] font-semibold text-[#333]">{initiationProgress}%</span>
               </div>
               <div className="w-full h-2 bg-[#e0e0e0] rounded-full overflow-hidden">
-                <div className="h-full bg-[#ffa726] rounded-full transition-all duration-300" style={{ width: `${initiationProgress}%` }}></div>
+                <div className="h-full rounded-full transition-all duration-300" style={{ width: `${initiationProgress}%`, backgroundColor: currentStatus.bar }}></div>
               </div>
             </div>
 
@@ -2176,7 +2245,7 @@ export default function ProjectDetailPage() {
                 <span className="text-[13px] font-semibold text-[#333]">{implementationProgress}%</span>
               </div>
               <div className="w-full h-2 bg-[#e0e0e0] rounded-full overflow-hidden">
-                <div className="h-full bg-[#ffa726] rounded-full transition-all duration-300" style={{ width: `${implementationProgress}%` }}></div>
+                <div className="h-full rounded-full transition-all duration-300" style={{ width: `${implementationProgress}%`, backgroundColor: currentStatus.bar }}></div>
               </div>
             </div>
 
@@ -2187,7 +2256,7 @@ export default function ProjectDetailPage() {
                 <span className="text-[13px] font-semibold text-[#333]">{overallProgress}%</span>
               </div>
               <div className="w-full h-2 bg-[#e0e0e0] rounded-full overflow-hidden">
-                <div className="h-full bg-[#ffa726] rounded-full transition-all duration-300" style={{ width: `${overallProgress}%` }}></div>
+                <div className="h-full rounded-full transition-all duration-300" style={{ width: `${overallProgress}%`, backgroundColor: currentStatus.bar }}></div>
               </div>
             </div>
           </div>

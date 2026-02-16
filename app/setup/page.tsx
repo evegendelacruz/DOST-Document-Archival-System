@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Icon } from '@iconify/react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import DashboardLayout from '../components/DashboardLayout';
 import 'leaflet/dist/leaflet.css';
 import Image from 'next/image';
@@ -459,6 +460,39 @@ export default function SetupPage() {
     doc.save(`SETUP_Masterlist_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
+  const handleExportExcel = () => {
+    const projectsToExport = selectedProjects.length > 0
+      ? filteredProjects.filter(p => selectedProjects.includes(p.id))
+      : filteredProjects;
+    if (projectsToExport.length === 0) return;
+
+    const headers = ['#', 'Code', 'Project Title', 'Firm', 'Address', 'Corporator', 'Contact', 'Email', 'Status', 'Sector', 'Size', 'Year'];
+    const data = projectsToExport.map((p, i) => [
+      i + 1,
+      `#${p.code}`,
+      p.title,
+      p.firm || '—',
+      p.address || '—',
+      p.corporatorName || '—',
+      p.contactNumbers.join(', ') || '—',
+      p.emails.join(', ') || '—',
+      statusDisplay[p.status] || p.status,
+      p.prioritySector || '—',
+      p.firmSize || '—',
+      p.year || '—',
+    ]);
+
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+    // Auto-size columns based on content width
+    ws['!cols'] = headers.map((h, i) => {
+      const maxLen = Math.max(h.length, ...data.map(row => String(row[i]).length));
+      return { wch: Math.min(maxLen + 2, 40) };
+    });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'SETUP Masterlist');
+    XLSX.writeFile(wb, `SETUP_Masterlist_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
   const getStatusClass = (status: string) => statusColors[status] || statusColors.PROPOSAL;
 
   return (
@@ -551,6 +585,9 @@ export default function SetupPage() {
 
               <button className="flex items-center gap-[5px] py-2 px-[15px] bg-[#dc3545] text-white border border-[#dc3545] rounded-lg text-[13px] cursor-pointer transition-all duration-200 hover:bg-[#c82333]" onClick={handleExportPDF}>
                 <Icon icon="mdi:file-pdf-box" width={16} height={16} /> Export PDF
+              </button>
+              <button className="flex items-center gap-[5px] py-2 px-[15px] bg-[#217346] text-white border border-[#217346] rounded-lg text-[13px] cursor-pointer transition-all duration-200 hover:bg-[#1a5c38]" onClick={handleExportExcel}>
+                <Icon icon="mdi:file-excel-box" width={16} height={16} /> Export Excel
               </button>
             </div>
           </div>
