@@ -6,7 +6,7 @@ import { Cake, FileEdit, Clock, Tag, X } from 'lucide-react';
 
 interface Notification {
   id: string;
-  type: 'birthday' | 'edit-request' | 'deadline' | 'untagging';
+  type: 'birthday' | 'edit-request' | 'liquidation' | 'untagging';
   title: string;
   message: string;
   time: string;
@@ -37,9 +37,9 @@ const sampleNotifications: Notification[] = [
   },
   {
     id: '3',
-    type: 'deadline',
-    title: 'Project Deadline',
-    message: 'Project SETUP-2024-005 deadline is in 3 days',
+    type: 'liquidation',
+    title: 'Project Liquidation',
+    message: 'Project SETUP-2024-005 liquidation deadline: 3 months remaining',
     time: '5 hours ago',
     read: false,
   },
@@ -47,7 +47,7 @@ const sampleNotifications: Notification[] = [
     id: '4',
     type: 'untagging',
     title: 'Upcoming Untagging',
-    message: 'Project SETUP-2024-003 is scheduled for untagging on Feb 20',
+    message: 'Project SETUP-2024-003 untagging: 9 months remaining (Q3)',
     time: '1 day ago',
     read: true,
   },
@@ -59,6 +59,22 @@ const sampleNotifications: Notification[] = [
     time: '1 day ago',
     read: true,
   },
+  {
+    id: '6',
+    type: 'liquidation',
+    title: 'Project Liquidation',
+    message: 'URGENT: Project SETUP-2024-002 liquidation deadline: 15 days remaining!',
+    time: '2 days ago',
+    read: true,
+  },
+  {
+    id: '7',
+    type: 'untagging',
+    title: 'Upcoming Untagging',
+    message: 'Project SETUP-2024-007 untagging: 3 months remaining (Q1)',
+    time: '3 days ago',
+    read: true,
+  },
 ];
 
 const getNotificationIcon = (type: Notification['type'], size: 'sm' | 'md' = 'sm') => {
@@ -68,7 +84,7 @@ const getNotificationIcon = (type: Notification['type'], size: 'sm' | 'md' = 'sm
       return <Cake className={`${className} text-pink-500`} />;
     case 'edit-request':
       return <FileEdit className={`${className} text-blue-500`} />;
-    case 'deadline':
+    case 'liquidation':
       return <Clock className={`${className} text-orange-500`} />;
     case 'untagging':
       return <Tag className={`${className} text-purple-500`} />;
@@ -83,7 +99,7 @@ const getNotificationBgColor = (type: Notification['type']) => {
       return 'bg-pink-50';
     case 'edit-request':
       return 'bg-blue-50';
-    case 'deadline':
+    case 'liquidation':
       return 'bg-orange-50';
     case 'untagging':
       return 'bg-purple-50';
@@ -98,13 +114,33 @@ const getNotificationBorderColor = (type: Notification['type']) => {
       return 'border-l-pink-500';
     case 'edit-request':
       return 'border-l-blue-500';
-    case 'deadline':
+    case 'liquidation':
       return 'border-l-orange-500';
     case 'untagging':
       return 'border-l-purple-500';
     default:
       return 'border-l-gray-500';
   }
+};
+
+// Helper to format liquidation countdown (7 months to 0)
+const formatLiquidationCountdown = (months: number, days?: number): string => {
+  if (months <= 0 && (!days || days <= 0)) {
+    return 'Overdue!';
+  }
+  if (months <= 0 && days && days > 0) {
+    return `${days} day${days > 1 ? 's' : ''} remaining!`;
+  }
+  return `${months} month${months > 1 ? 's' : ''} remaining`;
+};
+
+// Helper to format untagging countdown (12 months, quarterly)
+const formatUntaggingCountdown = (months: number): string => {
+  if (months <= 0) {
+    return 'Due for untagging!';
+  }
+  const quarter = Math.ceil(months / 3);
+  return `${months} month${months > 1 ? 's' : ''} remaining (Q${quarter})`;
 };
 
 // Desktop Toast Notification Component
@@ -196,10 +232,10 @@ export default function NotificationDropdown() {
     const toastNotification: ToastNotification = { ...notification, isExiting: false };
     setToasts((prev) => [...prev, toastNotification]);
 
-    // Auto-remove after 5 seconds
+    // Auto-remove after 8 seconds (longer duration)
     setTimeout(() => {
       closeToast(notification.id);
-    }, 5000);
+    }, 8000);
   }, []);
 
   // Close toast with animation
@@ -244,14 +280,24 @@ export default function NotificationDropdown() {
         message: 'John Smith requested access to edit Project CEST-2024-010.',
       },
       {
-        type: 'deadline' as const,
-        title: 'Project Deadline',
-        message: 'URGENT: Project SETUP-2024-012 deadline is tomorrow!',
+        type: 'liquidation' as const,
+        title: 'Project Liquidation',
+        message: `Project SETUP-2024-012 liquidation: ${formatLiquidationCountdown(2)}`,
+      },
+      {
+        type: 'liquidation' as const,
+        title: 'Project Liquidation',
+        message: `URGENT: Project SETUP-2024-015 liquidation: ${formatLiquidationCountdown(0, 7)}`,
       },
       {
         type: 'untagging' as const,
         title: 'Upcoming Untagging',
-        message: 'Project SETUP-2024-008 will be untagged in 2 days.',
+        message: `Project SETUP-2024-008 untagging: ${formatUntaggingCountdown(6)}`,
+      },
+      {
+        type: 'untagging' as const,
+        title: 'Upcoming Untagging',
+        message: `Project SETUP-2024-011 untagging: ${formatUntaggingCountdown(12)}`,
       },
     ];
 
@@ -276,6 +322,17 @@ export default function NotificationDropdown() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Mark all as read when dropdown is opened
+  const handleToggleDropdown = () => {
+    const newIsOpen = !isOpen;
+    setIsOpen(newIsOpen);
+
+    // Mark all as read when opening the dropdown
+    if (newIsOpen) {
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    }
+  };
+
   const markAsRead = (id: string) => {
     setNotifications(
       notifications.map((n) => (n.id === id ? { ...n, read: true } : n))
@@ -291,7 +348,7 @@ export default function NotificationDropdown() {
       <div className="relative" ref={dropdownRef}>
         {/* Bell Button */}
         <button
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={handleToggleDropdown}
           className="relative bg-transparent border-none cursor-pointer p-[5px] text-[#666] transition-colors duration-200 hover:text-primary"
         >
           <Icon icon="mdi:bell-outline" width={24} height={24} />
@@ -308,7 +365,7 @@ export default function NotificationDropdown() {
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
               <h3 className="text-sm font-semibold text-gray-800">Notifications</h3>
-              {unreadCount > 0 && (
+              {notifications.some((n) => !n.read) && (
                 <button
                   onClick={markAllAsRead}
                   className="text-xs text-cyan-600 hover:text-cyan-700 font-medium"

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
-import NotificationDropdown from './Notification';
+import NotificationDropdown from './notification';
 
 export default function Header() {
   const [userName, setUserName] = useState('User');

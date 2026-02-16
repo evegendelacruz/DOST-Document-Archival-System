@@ -34,7 +34,8 @@
       "Bash(DATABASE_URL=\"postgresql://postgres:09550732496nerrenze12345ma@172.30.112.1:5432/dost_db?schema=public\" npx prisma migrate dev:*)",
       "Bash(sudo service postgresql status:*)",
       "Bash(wc:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(git mv:*)"
     ]
   }
 }
