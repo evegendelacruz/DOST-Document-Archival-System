@@ -68,7 +68,7 @@ const filterTabs = [
   { id: 'PROPOSAL', label: 'Proposal', color: '#1565c0' },
   { id: 'APPROVED', label: 'Approved', color: '#2e7d32' },
   { id: 'ONGOING', label: 'Ongoing', color: '#f57f17' },
-  { id: 'WITHDRAWN', label: 'Withdrawal', color: '#c62828' },
+  { id: 'WITHDRAWN', label: 'Withdrawal', color: '#757575' },
   { id: 'TERMINATED', label: 'Terminated', color: '#ad1457' },
   { id: 'GRADUATED', label: 'Graduated', color: '#00695c' },
 ];
@@ -102,17 +102,15 @@ const statusDisplay: Record<string, string> = {
   WITHDRAWN: 'Withdrawal',
   TERMINATED: 'Terminated',
   GRADUATED: 'Graduated',
-  EVALUATED: 'Evaluated',
 };
 
 const statusColors: Record<string, string> = {
   PROPOSAL: 'bg-[#e3f2fd] text-[#1565c0]',
   APPROVED: 'bg-[#e8f5e9] text-[#2e7d32]',
   ONGOING: 'bg-[#fff8e1] text-[#f57f17]',
-  WITHDRAWN: 'bg-[#ffebee] text-[#c62828]',
+  WITHDRAWN: 'bg-[#f0f0f0] text-[#757575]',
   TERMINATED: 'bg-[#fce4ec] text-[#ad1457]',
   GRADUATED: 'bg-[#e0f2f1] text-[#00695c]',
-  EVALUATED: 'bg-[#e3f2fd] text-[#1565c0]',
 };
 
 const sortFilterCategories = [

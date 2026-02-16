@@ -175,7 +175,7 @@ function DocumentTable({
   docs: DocRow[];
   projectId: string;
   phase: 'INITIATION' | 'IMPLEMENTATION';
-  onProgressUpdate?: (progress: number) => void;
+  onProgressUpdate?: (progress: number, uploaded: number, total: number) => void;
 }) {
   const [expandedDropdowns, setExpandedDropdowns] = useState<Record<string, boolean>>({});
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
@@ -230,8 +230,8 @@ function DocumentTable({
 
   useEffect(() => {
     if (onProgressUpdate) {
-      const { percent } = calculateProgress();
-      onProgressUpdate(percent);
+      const { percent, uploadedItems, totalItems } = calculateProgress();
+      onProgressUpdate(percent, uploadedItems, totalItems);
     }
   }, [documents, annualPISRows, completionReportRows, moaSupplementalCount, dropdownSelections]);
 
@@ -1802,15 +1802,6 @@ function DocumentTable({
       </div>
       <div className="py-5" />
     </div>
-    {/* Upload Count */}
-    {(() => {
-      const { totalItems, uploadedItems } = calculateProgress();
-      return (
-        <div style={{ textAlign: 'right', padding: '0 8px', marginBottom: '16px' }}>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: '#555' }}>{uploadedItems}/{totalItems} files uploaded</span>
-        </div>
-      );
-    })()}
 
     {/* File List Modal */}
     {fileListModal && (() => {
@@ -2056,7 +2047,9 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [initiationProgress, setInitiationProgress] = useState(0);
+  const [initiationFiles, setInitiationFiles] = useState({ uploaded: 0, total: 0 });
   const [implementationProgress, setImplementationProgress] = useState(0);
+  const [implementationFiles, setImplementationFiles] = useState({ uploaded: 0, total: 0 });
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
@@ -2236,6 +2229,7 @@ export default function ProjectDetailPage() {
               <div className="w-full h-2 bg-[#e0e0e0] rounded-full overflow-hidden">
                 <div className="h-full rounded-full transition-all duration-300" style={{ width: `${initiationProgress}%`, backgroundColor: currentStatus.bar }}></div>
               </div>
+              <span className="text-[11px] text-[#888] mt-1 block">{initiationFiles.uploaded}/{initiationFiles.total} files uploaded</span>
             </div>
 
             {/* Project Implementation */}
@@ -2247,6 +2241,7 @@ export default function ProjectDetailPage() {
               <div className="w-full h-2 bg-[#e0e0e0] rounded-full overflow-hidden">
                 <div className="h-full rounded-full transition-all duration-300" style={{ width: `${implementationProgress}%`, backgroundColor: currentStatus.bar }}></div>
               </div>
+              <span className="text-[11px] text-[#888] mt-1 block">{implementationFiles.uploaded}/{implementationFiles.total} files uploaded</span>
             </div>
 
             {/* Overall Project Progress */}
@@ -2258,6 +2253,7 @@ export default function ProjectDetailPage() {
               <div className="w-full h-2 bg-[#e0e0e0] rounded-full overflow-hidden">
                 <div className="h-full rounded-full transition-all duration-300" style={{ width: `${overallProgress}%`, backgroundColor: currentStatus.bar }}></div>
               </div>
+              <span className="text-[11px] text-[#888] mt-1 block">{initiationFiles.uploaded + implementationFiles.uploaded}/{initiationFiles.total + implementationFiles.total} files uploaded</span>
             </div>
           </div>
         </div>
@@ -2268,16 +2264,16 @@ export default function ProjectDetailPage() {
             docs={initiationDocs} 
             projectId={id} 
             phase="INITIATION"
-            onProgressUpdate={setInitiationProgress}
+            onProgressUpdate={(p, u, t) => { setInitiationProgress(p); setInitiationFiles({ uploaded: u, total: t }); }}
           />
 
           {/* Project Implementation */}
-          <DocumentTable 
-            title="Project Implementation" 
-            docs={implementationDocs} 
-            projectId={id} 
+          <DocumentTable
+            title="Project Implementation"
+            docs={implementationDocs}
+            projectId={id}
             phase="IMPLEMENTATION"
-            onProgressUpdate={setImplementationProgress}
+            onProgressUpdate={(p, u, t) => { setImplementationProgress(p); setImplementationFiles({ uploaded: u, total: t }); }}
           />
       </main>
     </DashboardLayout>

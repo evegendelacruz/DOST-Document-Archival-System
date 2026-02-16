@@ -1,30 +1,67 @@
 'use client'
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { UserRoundMinus, Eye, EyeOff } from 'lucide-react';
 
 type PageView = 'account-settings' | 'user-management';
 
+interface UserData {
+  id: string;
+  email: string;
+  fullName: string;
+  contactNo: string | null;
+  birthday: string | null;
+  role: string;
+  profileImageUrl: string | null;
+  createdAt: string;
+}
+
 const ProfilePage = () => {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<PageView>('account-settings');
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [user, setUser] = useState<UserData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchUser = useCallback(async () => {
+    const stored = localStorage.getItem('user');
+    if (!stored) return;
+    const { id } = JSON.parse(stored);
+    if (!id) return;
+    const res = await fetch(`/api/users/${id}`);
+    if (res.ok) {
+      const data = await res.json();
+      setUser(data);
+      setProfileImage(data.profileImageUrl || null);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result as string);
-        setShowUploadModal(true);
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!file || !user) return;
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64 = reader.result as string;
+      setProfileImage(base64);
+
+      await fetch(`/api/users/${user.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileImageUrl: base64 }),
+      });
+
+      setShowUploadModal(true);
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -35,7 +72,7 @@ const ProfilePage = () => {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-gray-700">Profile</h2>
             <span className="bg-green-500 text-white text-xs font-medium px-4 py-1.5 rounded-full">
-              ADMIN
+              {user?.role || 'STAFF'}
             </span>
           </div>
 
@@ -58,7 +95,7 @@ const ProfilePage = () => {
                 )}
               </div>
 
-              {/* Upload Button - Positioned outside the image container */}
+              {/* Upload Button */}
               <button
                 onClick={handleUploadClick}
                 className="absolute bottom-1 right-1 w-8 h-8 bg-cyan-500 rounded-full flex items-center justify-center shadow-md hover:bg-cyan-600 transition-colors cursor-pointer z-10 border-2 border-white"
@@ -79,8 +116,12 @@ const ProfilePage = () => {
               className="hidden"
             />
 
-            <h3 className="mt-4 text-base font-bold text-cyan-600">JANE DOE</h3>
-            <p className="text-sm text-gray-500">DOSTX000001</p>
+            <h3 className="mt-4 text-base font-bold text-cyan-600">
+              {user?.fullName?.toUpperCase() || 'Loading...'}
+            </h3>
+            <p className="text-sm text-gray-500">
+              {user?.id ? `DOSTX${user.id.slice(0, 6).toUpperCase()}` : ''}
+            </p>
           </div>
 
           <nav className="space-y-2">
@@ -117,8 +158,12 @@ const ProfilePage = () => {
 
         {/* Right Content Area */}
         <div className="flex-1">
-          {currentView === 'account-settings' && <AccountSettings />}
-          {currentView === 'user-management' && <UserManagement />}
+          {currentView === 'account-settings' && user && (
+            <AccountSettings user={user} onSave={fetchUser} />
+          )}
+          {currentView === 'user-management' && user && (
+            <UserManagement currentUserId={user.id} />
+          )}
         </div>
       </div>
 
@@ -126,7 +171,6 @@ const ProfilePage = () => {
       {showUploadModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl w-100px max-w-sm mx-4 p-6">
-            {/* Success Icon */}
             <div className="flex justify-center mb-4">
               <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -134,13 +178,9 @@ const ProfilePage = () => {
                 </svg>
               </div>
             </div>
-
-            {/* Title */}
             <h2 className="text-18px font-bold text-[#146184] text-center mb-6">
               Profile Uploaded Successfully!
             </h2>
-
-            {/* Okay Button */}
             <button
               onClick={() => setShowUploadModal(false)}
               className="block w-25 py-1 mx-auto bg-cyan-500 text-white text-xs-s rounded-lg hover:bg-cyan-600 transition-colors"
@@ -155,11 +195,12 @@ const ProfilePage = () => {
 };
 
 // Account Settings Component
-const AccountSettings = () => {
+const AccountSettings = ({ user, onSave }: { user: UserData; onSave: () => void }) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -168,6 +209,17 @@ const AccountSettings = () => {
     contactNo: '',
     confirmPassword: ''
   });
+
+  useEffect(() => {
+    setFormData({
+      fullName: user.fullName || '',
+      email: user.email || '',
+      birthdate: user.birthday ? user.birthday.slice(0, 10) : '',
+      contactNo: user.contactNo || '',
+      password: '',
+      confirmPassword: '',
+    });
+  }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -178,20 +230,61 @@ const AccountSettings = () => {
 
   const handleEditClick = () => {
     setIsEditMode(true);
+    setError('');
   };
 
   const handleCancel = () => {
     setIsEditMode(false);
     setShowPassword(false);
     setShowConfirmPassword(false);
+    setError('');
+    // Reset form to current user data
+    setFormData({
+      fullName: user.fullName || '',
+      email: user.email || '',
+      birthdate: user.birthday ? user.birthday.slice(0, 10) : '',
+      contactNo: user.contactNo || '',
+      password: '',
+      confirmPassword: '',
+    });
   };
 
-  const handleSave = () => {
-    console.log('Saving changes:', formData);
+  const handleSave = async () => {
+    setError('');
+
+    if (formData.password && formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
+    const payload: Record<string, string> = {
+      fullName: formData.fullName,
+      email: formData.email,
+      contactNo: formData.contactNo,
+      birthday: formData.birthdate,
+    };
+
+    if (formData.password.trim()) {
+      payload.password = formData.password;
+    }
+
+    const res = await fetch(`/api/users/${user.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error || 'Failed to save changes.');
+      return;
+    }
+
     setIsEditMode(false);
     setShowPassword(false);
     setShowConfirmPassword(false);
     setShowSuccessModal(true);
+    onSave();
   };
 
   const inputBaseClass = "w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none";
@@ -201,6 +294,10 @@ const AccountSettings = () => {
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
       <h2 className="text-xl font-semibold text-cyan-600 mb-6">Account Settings</h2>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded">{error}</div>
+      )}
 
       <div className="grid grid-cols-3 gap-4 mb-4">
         <div>
@@ -262,6 +359,7 @@ const AccountSettings = () => {
               value={formData.password}
               onChange={handleChange}
               disabled={!isEditMode}
+              placeholder={isEditMode ? "Leave blank to keep current" : ""}
               className={`${isEditMode ? inputEnabledClass : inputDisabledClass} pr-10`}
             />
             <button
@@ -328,7 +426,6 @@ const AccountSettings = () => {
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl w-100px max-w-sm mx-4 p-6">
-            {/* Success Icon */}
             <div className="flex justify-center mb-4">
               <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -336,13 +433,9 @@ const AccountSettings = () => {
                 </svg>
               </div>
             </div>
-
-            {/* Title */}
             <h2 className="text-18px font-bold text-[#146184] text-center mb-6">
               Changes Saved Successfully!
             </h2>
-
-            {/* Okay Button */}
             <button
               onClick={() => setShowSuccessModal(false)}
               className="block w-25 py-1 mx-auto bg-cyan-500 text-white text-xs-s rounded-lg hover:bg-cyan-600 transition-colors"
@@ -357,26 +450,44 @@ const AccountSettings = () => {
 };
 
 // User Management Component
-const UserManagement = () => {
+const UserManagement = ({ currentUserId }: { currentUserId: string }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
 
-  // Sample user data matching the design
-  const [users, setUsers] = useState([
-    { id: '1', name: 'Jane Doe', idNumber: 'DOSTX000004', email: 'olores.alaiza88@gmail.com', role: 'User' },
-    { id: '2', name: 'Christian Harry Paasa', idNumber: 'DOSTX00003', email: 'paasa.harry123@gmail.com', role: 'User' },
-    { id: '3', name: 'Evegen P. Dela Cruz', idNumber: 'DOSTX000001', email: 'pangan.kenneth123@gmail.com', role: 'Admin' },
-    { id: '4', name: 'Jane Doe', idNumber: 'DOSTX000002', email: 'delacruz.evegen30@gmail.com', role: 'User' },
-  ]);
+  const fetchUsers = useCallback(async () => {
+    const res = await fetch('/api/users');
+    if (res.ok) {
+      const data = await res.json();
+      setUsers(data);
+    }
+  }, []);
 
-  const handleRoleChange = (userId: string, newRole: string) => {
-    setUsers(users.map(user =>
-      user.id === userId ? { ...user, role: newRole } : user
-    ));
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    const res = await fetch(`/api/users/${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: newRole }),
+    });
+    if (res.ok) {
+      setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
+    }
+  };
+
+  const handleDelete = async (userId: string) => {
+    const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+    if (res.ok) {
+      setUsers(users.filter(u => u.id !== userId));
+      setShowDeleteModal(null);
+    }
   };
 
   const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.idNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -420,37 +531,31 @@ const UserManagement = () => {
           <tbody className="divide-y divide-gray-100">
             {filteredUsers.map((user) => (
               <tr key={user.id} className="hover:bg-gray-50">
-                <td className="px-4 py-4 text-sm text-gray-800">{user.name}</td>
-                <td className="px-4 py-4 text-sm text-gray-600">{user.idNumber}</td>
+                <td className="px-4 py-4 text-sm text-gray-800">{user.fullName}</td>
+                <td className="px-4 py-4 text-sm text-gray-600">DOSTX{user.id.slice(0, 6).toUpperCase()}</td>
                 <td className="px-4 py-4 text-sm text-cyan-600 hover:underline cursor-pointer">{user.email}</td>
                 <td className="px-4 py-4">
                   <select
-                    value={user.role}
-                    onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                    className="px-3 py-1.5 text-sm bg-gray-100 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer"
+                    value={user.role === 'ADMIN' ? 'Admin' : 'Staff'}
+                    onChange={(e) => handleRoleChange(user.id, e.target.value === 'Admin' ? 'ADMIN' : 'STAFF')}
+                    disabled={user.id === currentUserId}
+                    className="px-3 py-1.5 text-sm bg-gray-100 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer disabled:cursor-not-allowed"
                   >
-                    <option value="User">User</option>
+                    <option value="Staff">Staff</option>
                     <option value="Admin">Admin</option>
                   </select>
                 </td>
                 <td className="px-4 py-4">
-                  {user.role === 'Admin' ? (
+                  {user.id === currentUserId ? (
                     <div className="flex items-center justify-center">
-                      <UserRoundMinus className="w-5 h-5 text-gray-400 hover:text-gray-600 transition-colors" />
+                      <UserRoundMinus className="w-5 h-5 text-gray-400" />
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
                       <button
-                        className="w-7 h-7 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600 transition-colors"
-                        title="Approve"
-                      >
-                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </button>
-                      <button
+                        onClick={() => setShowDeleteModal(user.id)}
                         className="w-7 h-7 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
-                        title="Reject"
+                        title="Delete user"
                       >
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -470,6 +575,32 @@ const UserManagement = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm mx-4 p-6">
+            <h2 className="text-lg font-bold text-gray-800 text-center mb-2">Delete User</h2>
+            <p className="text-sm text-gray-600 text-center mb-6">
+              Are you sure you want to delete this user? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => handleDelete(showDeleteModal)}
+                className="px-5 py-2 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(null)}
+                className="px-5 py-2 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

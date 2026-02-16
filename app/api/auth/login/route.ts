@@ -20,5 +20,8 @@ export async function POST(req: NextRequest) {
     email: user.email,
     fullName: user.fullName,
     role: user.role,
+    contactNo: user.contactNo,
+    birthday: user.birthday,
+    profileImageUrl: user.profileImageUrl,
   });
 }

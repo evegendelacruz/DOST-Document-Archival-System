@@ -46,6 +46,7 @@ model User {
   contactNo    String?
   birthday     DateTime? @db.Date
   role              Role      @default(STAFF)
+  profileImageUrl   String?
   resetOtp          String?
   resetOtpExpiresAt DateTime?
   createdAt         DateTime  @default(now())
