@@ -16,7 +16,10 @@ export default function Header() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> ace97289ad4eb8173284b55fc7a3ef78ad1bd8b0
   // Fetch user data including profile image
   const fetchUserData = async () => {
     try {
@@ -24,7 +27,11 @@ export default function Header() {
       if (stored) {
         const user = JSON.parse(stored);
         if (user.fullName) setUserName(user.fullName);
+<<<<<<< HEAD
        
+=======
+        
+>>>>>>> ace97289ad4eb8173284b55fc7a3ef78ad1bd8b0
         // Fetch fresh user data including profile image
         if (user.id) {
           const res = await fetch(`/api/users/${user.id}`);
@@ -37,17 +44,26 @@ export default function Header() {
     } catch {}
   };
 
+<<<<<<< HEAD
 
   useEffect(() => {
     fetchUserData();
 
 
+=======
+  useEffect(() => {
+    fetchUserData();
+
+>>>>>>> ace97289ad4eb8173284b55fc7a3ef78ad1bd8b0
     // Listen for profile image updates
     const handleProfileUpdate = () => {
       fetchUserData();
     };
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> ace97289ad4eb8173284b55fc7a3ef78ad1bd8b0
     window.addEventListener('profileImageUpdated', handleProfileUpdate);
     return () => window.removeEventListener('profileImageUpdated', handleProfileUpdate);
   }, []);
@@ -92,7 +108,7 @@ export default function Header() {
         </div>
       </div>
       <div className="flex items-center gap-2.5">
-        <Link href="/maps" className="flex items-center justify-center no-underline w-8 h-8 rounded-full text-accent bg-accent/10 transition-all duration-300 [animation:compassPulse_2.5s_ease-in-out_infinite] hover:bg-accent hover:text-white hover:scale-115 hover:rotate-[15deg] hover:shadow-[0_4px_14px_rgba(0,174,239,0.4)] hover:[animation:none] active:scale-90 active:-rotate-[10deg] active:transition-all active:duration-100" title="Maps">
+        <Link href="/maps" className="flex items-center justify-center no-underline w-8 h-8 rounded-full color-#666 text-gray-500 transition-all duration-300 hover:bg-accent hover:text-white hover:scale-115 hover:rotate-[15deg] hover:shadow-[0_4px_14px_rgba(0,174,239,0.4)] hover:[animation:none] active:scale-90 active:-rotate-[10deg] active:transition-all active:duration-100" title="Maps">
           <Icon icon="mdi:compass-outline" width={24} height={24} />
         </Link>
         <NotificationDropdown />

@@ -300,7 +300,7 @@ export default function MapsPage() {
     <DashboardLayout activePath="/maps">
       <main className="flex-1 relative overflow-hidden min-h-0">
         {/* Map View */}
-        <div className="w-full h-full">
+        <div className="absolute inset-0 w-full h-full z-0">
           <MapComponent activePrograms={activePrograms} activeDistrict={activeDistrict} setupProjects={setupProjects} />
         </div>
 
