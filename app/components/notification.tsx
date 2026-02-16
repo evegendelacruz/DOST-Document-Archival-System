@@ -89,7 +89,7 @@ const getNotificationIcon = (type: Notification['type'], size: 'sm' | 'md' = 'sm
     case 'untagging':
       return <Tag className={`${className} text-purple-500`} />;
     default:
-      return <Icon icon="mdi:bell" className={`${className} text-gray-500`} />;
+      return <Icon icon="mdi:bell" className={`${className} text-gray-500 transition-all duration-300 hover:text-accent hover:scale-110 active:scale-90 active:transition-all active:duration-100`} />;
   }
 };
 
