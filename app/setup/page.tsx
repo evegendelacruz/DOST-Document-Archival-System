@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { Icon } from '@iconify/react';
 import jsPDF from 'jspdf';
@@ -157,6 +157,39 @@ export default function SetupPage() {
   const [deleting, setDeleting] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
   const filterRef = useRef<HTMLDivElement>(null);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const [tableScrollWidth, setTableScrollWidth] = useState(0);
+  const isSyncingScroll = useRef(false);
+
+  // Keep top scrollbar width in sync with table content width
+  useEffect(() => {
+    const tableEl = tableScrollRef.current;
+    if (!tableEl) return;
+    const update = () => setTableScrollWidth(tableEl.scrollWidth);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(tableEl);
+    return () => observer.disconnect();
+  }, [projects, activeFilter, searchQuery, filterCategory, filterValue]);
+
+  const handleTableScroll = useCallback(() => {
+    if (isSyncingScroll.current) return;
+    isSyncingScroll.current = true;
+    if (topScrollRef.current && tableScrollRef.current) {
+      topScrollRef.current.scrollLeft = tableScrollRef.current.scrollLeft;
+    }
+    isSyncingScroll.current = false;
+  }, []);
+
+  const handleTopScroll = useCallback(() => {
+    if (isSyncingScroll.current) return;
+    isSyncingScroll.current = true;
+    if (tableScrollRef.current && topScrollRef.current) {
+      tableScrollRef.current.scrollLeft = topScrollRef.current.scrollLeft;
+    }
+    isSyncingScroll.current = false;
+  }, []);
 
   const fetchProjects = async () => {
     try {
@@ -590,7 +623,17 @@ export default function SetupPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Top scrollbar - stays sticky when scrolling down */}
+          <div
+            ref={topScrollRef}
+            onScroll={handleTopScroll}
+            className="overflow-x-auto overflow-y-hidden sticky top-0 z-10 bg-white"
+            style={{ height: '12px', marginBottom: '-1px' }}
+          >
+            <div style={{ width: tableScrollWidth, height: '1px' }} />
+          </div>
+
+          <div className="overflow-x-auto scrollbar-hide" ref={tableScrollRef} onScroll={handleTableScroll}>
             <table className="w-full border-collapse text-xs">
               <thead>
                 <tr>

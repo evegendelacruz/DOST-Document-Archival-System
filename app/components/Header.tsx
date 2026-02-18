@@ -40,6 +40,7 @@ export default function Header() {
           const res = await fetch(`/api/users/${user.id}`);
           if (res.ok) {
             const userData = await res.json();
+            if (userData.fullName) setUserName(userData.fullName);
             setProfileImage(userData.profileImageUrl || null);
           }
 

@@ -1,8 +1,10 @@
 'use client';
 
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Icon } from '@iconify/react';
+
 
 export interface NavItem {
   type: 'link' | 'button';
@@ -15,6 +17,7 @@ export interface NavItem {
   permissionKey?: string;
 }
 
+
 export interface UserPermissions {
   canAccessSetup: boolean;
   canAccessCest: boolean;
@@ -24,10 +27,12 @@ export interface UserPermissions {
   canManageUsers: boolean;
 }
 
+
 interface SidebarProps {
   activePath: string;
   items?: NavItem[];
 }
+
 
 function getDefaultItems(activePath: string): NavItem[] {
   return [
@@ -39,18 +44,22 @@ function getDefaultItems(activePath: string): NavItem[] {
   ];
 }
 
+
 export default function Sidebar({ activePath, items }: SidebarProps) {
   const [expanded, setExpanded] = useState(false);
   const [permissions, setPermissions] = useState<UserPermissions | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+
 
   useEffect(() => {
     const fetchPermissions = async () => {
       const stored = localStorage.getItem('user');
       if (!stored) return;
 
+
       const { id, role } = JSON.parse(stored);
       setUserRole(role);
+
 
       // Admins have full access by default
       if (role === 'ADMIN') {
@@ -65,6 +74,7 @@ export default function Sidebar({ activePath, items }: SidebarProps) {
         return;
       }
 
+
       // Fetch permissions for staff
       if (id) {
         const res = await fetch(`/api/user-permissions/${id}`);
@@ -75,22 +85,28 @@ export default function Sidebar({ activePath, items }: SidebarProps) {
       }
     };
 
+
     fetchPermissions();
+
 
     // Poll for permission changes every 3 seconds
     const pollInterval = setInterval(fetchPermissions, 3000);
 
+
     return () => clearInterval(pollInterval);
   }, []);
 
+
   const defaultItems = getDefaultItems(activePath);
   const navItems = items || defaultItems;
+
 
   // Filter items based on permissions
   const filteredItems = navItems.filter(item => {
     if (!item.permissionKey || !permissions) return true;
     return permissions[item.permissionKey as keyof UserPermissions];
   });
+
 
   return (
     <aside className={`${expanded ? 'w-[220px]' : 'w-[70px]'} bg-primary flex flex-col pt-2.5 relative transition-[width] duration-300 overflow-visible z-[1000] shrink-0 h-full`}>
@@ -126,3 +142,6 @@ export default function Sidebar({ activePath, items }: SidebarProps) {
     </aside>
   );
 }
+
+
+

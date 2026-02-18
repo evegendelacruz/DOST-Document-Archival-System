@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import 'leaflet/dist/leaflet.css';
 import boundaryData from './misamis-oriental-boundary.json';
+import cdoBoundaryData from './cdo-boundary.json';
 import DashboardLayout from '../components/DashboardLayout';
 
 const programFilters = [
@@ -15,12 +16,15 @@ const programFilters = [
 
 // Real Misamis Oriental boundary from OpenStreetMap data
 const misamisOrientalBoundary = boundaryData[0] as [number, number][];
+const cdoBoundary = cdoBoundaryData[0] as [number, number][];
 
 // Pin type with district tag
-// District 1 (east): Balingasag, Balingoan, Binuangan, Kinoguitan, Lagonglong, Magsaysay, Medina, Salay, Sugbongcogon, Talisayan
-// District 2 (west/coastal): Claveria, Jasaan, Villanueva, Tagoloan, Opol, El Salvador, Laguindingan, Gitagum, Libertad, Alubijid, Initao, Naawan, Manticao, Lugait
-// CDO = Highly Urbanized City (lone district), shown in both/all
-type Pin = { lat: number; lng: number; label: string; district: 1 | 2 | 0 };
+// MOR1 (east): Balingasag, Balingoan, Binuangan, Kinoguitan, Lagonglong, Magsaysay, Medina, Salay, Sugbongcogon, Talisayan
+// MOR2 (west/coastal): Claveria, Jasaan, Villanueva, Tagoloan, Opol, El Salvador, Laguindingan, Gitagum, Libertad, Alubijid, Initao, Naawan, Manticao, Lugait
+// CDO1 (western barangays): Puntod, Macabalan, Lapasan, Carmen, Consolacion, Nazareth, Camaman-an, Patag, Bulua, Iponan, Kauswagan, Bonbon, Bayabas, Bayanga, Mambuaya, Dansolihon, Pagalungan, San Simon, Taglimao, Tuburan, Tumpagon, Tignapoloan, Besigan, F.S. Catanico
+// CDO2 (eastern barangays): Gusa, Cugman, Macasandig, Balulang, Canitoan, Pagatpat, Puerto, Bugo, Agusan, Tablon, Tagpangi
+// district: 1=MOR1, 2=MOR2, 3=CDO1, 4=CDO2
+type Pin = { lat: number; lng: number; label: string; district: 1 | 2 | 3 | 4 };
 
 // SETUP projects fetched from DB (with coordinates)
 type SetupProjectPin = {
@@ -32,9 +36,18 @@ type SetupProjectPin = {
 };
 
 // CEST program pins - real coordinates
+// CDO District 1 (west): Bulua, Carmen, Consolacion, Nazareth, Camaman-an, Patag, Iponan, Kauswagan, Bonbon, Bayabas, Bayanga, Mambuaya, Dansolihon, Pagalungan, San Simon, Taglimao, Tuburan, Tumpagon, Tignapoloan, Besigan, F.S. Catanico, Puntod, Macabalan, Lapasan
+// CDO District 2 (east): Gusa, Cugman, Macasandig, Balulang, Canitoan, Pagatpat, Puerto, Bugo, Agusan, Tablon, Tagpangi
 const cestPins: Pin[] = [
-  { lat: 8.4655, lng: 124.6441, label: 'CDO - Macasandig', district: 0 },
-  { lat: 8.5039, lng: 124.6162, label: 'CDO - Bulua', district: 0 },
+  // CDO District 1 (west)
+  { lat: 8.5039, lng: 124.6162, label: 'CDO - Bulua', district: 3 },
+  { lat: 8.4810, lng: 124.6370, label: 'CDO - Carmen', district: 3 },
+  { lat: 8.4693, lng: 124.6470, label: 'CDO - Nazareth', district: 3 },
+  // CDO District 2 (east)
+  { lat: 8.4655, lng: 124.6441, label: 'CDO - Macasandig', district: 4 },
+  { lat: 8.4748, lng: 124.6851, label: 'CDO - Gusa', district: 4 },
+  { lat: 8.4580, lng: 124.6780, label: 'CDO - Cugman', district: 4 },
+  // MOR2
   { lat: 8.5214, lng: 124.5731, label: 'Opol - Poblacion', district: 2 },
   { lat: 8.5597, lng: 124.5271, label: 'El Salvador - Centro', district: 2 },
   { lat: 8.5705, lng: 124.4712, label: 'Alubijid - Poblacion', district: 2 },
@@ -44,6 +57,7 @@ const cestPins: Pin[] = [
   { lat: 8.5391, lng: 124.7534, label: 'Tagoloan - Poblacion', district: 2 },
   { lat: 8.5837, lng: 124.7699, label: 'Villanueva - Centro', district: 2 },
   { lat: 8.6504, lng: 124.7547, label: 'Jasaan - Poblacion', district: 2 },
+  // MOR1
   { lat: 8.7438, lng: 124.7757, label: 'Balingasag - Poblacion', district: 1 },
   { lat: 8.8058, lng: 124.7894, label: 'Lagonglong - Poblacion', district: 1 },
   { lat: 8.8591, lng: 124.7881, label: 'Salay - Poblacion', district: 1 },
@@ -52,9 +66,15 @@ const cestPins: Pin[] = [
 
 // SSCP program pins - real coordinates
 const sscpPins: Pin[] = [
-  { lat: 8.4693, lng: 124.6470, label: 'CDO - Nazareth', district: 0 },
-  { lat: 8.4992, lng: 124.6391, label: 'CDO - Kauswagan', district: 0 },
-  { lat: 8.4748, lng: 124.6851, label: 'CDO - Gusa', district: 0 },
+  // CDO District 1 (west)
+  { lat: 8.4693, lng: 124.6470, label: 'CDO - Nazareth', district: 3 },
+  { lat: 8.4992, lng: 124.6391, label: 'CDO - Kauswagan', district: 3 },
+  { lat: 8.4901, lng: 124.6463, label: 'CDO - Consolacion', district: 3 },
+  // CDO District 2 (east)
+  { lat: 8.4748, lng: 124.6851, label: 'CDO - Gusa', district: 4 },
+  { lat: 8.4655, lng: 124.6441, label: 'CDO - Macasandig', district: 4 },
+  { lat: 8.4530, lng: 124.6590, label: 'CDO - Balulang', district: 4 },
+  // MOR2
   { lat: 8.5214, lng: 124.5731, label: 'Opol - Poblacion', district: 2 },
   { lat: 8.5749, lng: 124.4439, label: 'Laguindingan - Poblacion', district: 2 },
   { lat: 8.5950, lng: 124.4078, label: 'Gitagum - Poblacion', district: 2 },
@@ -62,6 +82,7 @@ const sscpPins: Pin[] = [
   { lat: 8.3432, lng: 124.2598, label: 'Lugait - Poblacion', district: 2 },
   { lat: 8.5391, lng: 124.7534, label: 'Tagoloan - Poblacion', district: 2 },
   { lat: 8.6504, lng: 124.7547, label: 'Jasaan - Poblacion', district: 2 },
+  // MOR1
   { lat: 8.7438, lng: 124.7757, label: 'Balingasag - Poblacion', district: 1 },
   { lat: 8.8591, lng: 124.7881, label: 'Salay - Poblacion', district: 1 },
   { lat: 8.9194, lng: 124.7846, label: 'Binuangan - Poblacion', district: 1 },
@@ -71,9 +92,15 @@ const sscpPins: Pin[] = [
 
 // LGIA program pins - real coordinates
 const lgiaPins: Pin[] = [
-  { lat: 8.4810, lng: 124.6370, label: 'CDO - Carmen', district: 0 },
-  { lat: 8.4901, lng: 124.6463, label: 'CDO - Consolacion', district: 0 },
-  { lat: 8.4964, lng: 124.6051, label: 'CDO - Iponan', district: 0 },
+  // CDO District 1 (west)
+  { lat: 8.4810, lng: 124.6370, label: 'CDO - Carmen', district: 3 },
+  { lat: 8.4901, lng: 124.6463, label: 'CDO - Consolacion', district: 3 },
+  { lat: 8.4964, lng: 124.6051, label: 'CDO - Iponan', district: 3 },
+  // CDO District 2 (east)
+  { lat: 8.4748, lng: 124.6851, label: 'CDO - Gusa', district: 4 },
+  { lat: 8.5120, lng: 124.6830, label: 'CDO - Bugo', district: 4 },
+  { lat: 8.4870, lng: 124.6700, label: 'CDO - Pagatpat', district: 4 },
+  // MOR2
   { lat: 8.5597, lng: 124.5271, label: 'El Salvador - Poblacion', district: 2 },
   { lat: 8.5705, lng: 124.4712, label: 'Alubijid - Poblacion', district: 2 },
   { lat: 8.5620, lng: 124.3530, label: 'Libertad - Poblacion', district: 2 },
@@ -81,6 +108,7 @@ const lgiaPins: Pin[] = [
   { lat: 8.5391, lng: 124.7534, label: 'Tagoloan - Poblacion', district: 2 },
   { lat: 8.5837, lng: 124.7699, label: 'Villanueva - Poblacion', district: 2 },
   { lat: 8.6504, lng: 124.7547, label: 'Jasaan - Poblacion', district: 2 },
+  // MOR1
   { lat: 8.7438, lng: 124.7757, label: 'Balingasag - Poblacion', district: 1 },
   { lat: 8.8058, lng: 124.7894, label: 'Lagonglong - Poblacion', district: 1 },
   { lat: 8.8591, lng: 124.7881, label: 'Salay - Poblacion', district: 1 },
@@ -88,15 +116,57 @@ const lgiaPins: Pin[] = [
   { lat: 8.9831, lng: 124.7928, label: 'Kinoguitan - Poblacion', district: 1 },
 ];
 
+// Municipality to district mapping
+// MOR1=1, MOR2=2, CDO1=3, CDO2=4
+const mor1Municipalities = ['balingasag', 'balingoan', 'binuangan', 'kinoguitan', 'lagonglong', 'magsaysay', 'medina', 'salay', 'sugbongcogon', 'talisayan'];
+const mor2Municipalities = ['claveria', 'jasaan', 'villanueva', 'tagoloan', 'opol', 'el salvador', 'laguindingan', 'gitagum', 'libertad', 'alubijid', 'initao', 'naawan', 'manticao', 'lugait'];
+
+// CDO District 1 (western barangays)
+const cdo1Barangays = ['bonbon', 'bayabas', 'bayanga', 'besigan', 'bulua', 'camaman-an', 'carmen', 'consolacion', 'dansolihon', 'f.s. catanico', 'iponan', 'kauswagan', 'lapasan', 'macabalan', 'mambuaya', 'nazareth', 'pagalungan', 'patag', 'puntod', 'san simon', 'taglimao', 'tignapoloan', 'tuburan', 'tumpagon'];
+// CDO District 2 (eastern barangays)
+const cdo2Barangays = ['agusan', 'balulang', 'bugo', 'canitoan', 'cugman', 'gusa', 'macasandig', 'pagatpat', 'puerto', 'tablon', 'tagpangi'];
+
+const getDistrictFromAddress = (address: string | null): 1 | 2 | 3 | 4 | 0 => {
+  if (!address) return 0;
+  const lower = address.toLowerCase();
+  // Check CDO first (barangay-level)
+  if (lower.includes('cagayan de oro')) {
+    if (cdo1Barangays.some(b => lower.includes(b))) return 3;
+    if (cdo2Barangays.some(b => lower.includes(b))) return 4;
+    return 3; // default CDO to district 1
+  }
+  if (mor1Municipalities.some(m => lower.includes(m))) return 1;
+  if (mor2Municipalities.some(m => lower.includes(m))) return 2;
+  return 0;
+};
+
+const districtMap: Record<string, number[]> = {
+  mor1: [1],
+  mor2: [2],
+  cdo1: [3],
+  cdo2: [4],
+  all: [1, 2, 3, 4, 0],
+};
+
 // Filter pins by active district
 const filterByDistrict = (pins: Pin[], district: string) => {
   if (district === 'all') return pins;
-  const d = district === 'district1' ? 1 : 2;
-  return pins.filter(p => p.district === d || p.district === 0);
+  const allowed = districtMap[district] || [];
+  return pins.filter(p => allowed.includes(p.district));
+};
+
+// Filter SETUP projects by active district
+const filterSetupByDistrict = (projects: SetupProjectPin[], district: string) => {
+  if (district === 'all') return projects;
+  const allowed = districtMap[district] || [];
+  return projects.filter(p => {
+    const pd = getDistrictFromAddress(p.address);
+    return allowed.includes(pd);
+  });
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function MapComponent({ activePrograms, activeDistrict, setupProjects }: { activePrograms: string[]; activeDistrict: string; setupProjects: SetupProjectPin[] }) {
+function MapComponent({ activePrograms, activeDistrict, setupProjects, flyToCoords }: { activePrograms: string[]; activeDistrict: string; setupProjects: SetupProjectPin[]; flyToCoords: { lat: number; lng: number; key: number } | null }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [components, setComponents] = useState<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -129,6 +199,18 @@ function MapComponent({ activePrograms, activeDistrict, setupProjects }: { activ
       observer.observe(container);
       return () => observer.disconnect();
     }, [map]);
+    return null;
+  }
+
+  // Fly to coordinates when search is triggered
+  function FlyToHandler() {
+    const map = useMap();
+    useEffect(() => {
+      if (flyToCoords) {
+        map.flyTo([flyToCoords.lat, flyToCoords.lng], 16, { duration: 1.5 });
+      }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [flyToCoords?.key]);
     return null;
   }
 
@@ -218,6 +300,7 @@ function MapComponent({ activePrograms, activeDistrict, setupProjects }: { activ
       zoomControl={false}
     >
       <ResizeHandler />
+      <FlyToHandler />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -230,7 +313,16 @@ function MapComponent({ activePrograms, activeDistrict, setupProjects }: { activ
           fill: false,
         }}
       />
-      {showSetup && setupProjects.map((project) => {
+      <Polygon
+        positions={cdoBoundary}
+        pathOptions={{
+          color: '#dc2626',
+          weight: 3,
+          fill: false,
+          dashArray: '8, 6',
+        }}
+      />
+      {showSetup && filterSetupByDistrict(setupProjects, activeDistrict).map((project) => {
         const [lat, lng] = project.coordinates!.split(',').map(s => parseFloat(s.trim()));
         if (isNaN(lat) || isNaN(lng)) return null;
         return (
@@ -282,6 +374,24 @@ export default function MapsPage() {
   const [activeDistrict, setActiveDistrict] = useState('all');
   const [activePrograms, setActivePrograms] = useState<string[]>([]);
   const [setupProjects, setSetupProjects] = useState<SetupProjectPin[]>([]);
+  const [coordSearch, setCoordSearch] = useState('');
+  const [flyToCoords, setFlyToCoords] = useState<{ lat: number; lng: number; key: number } | null>(null);
+  const [coordError, setCoordError] = useState('');
+
+  const handleCoordSearch = () => {
+    setCoordError('');
+    const parts = coordSearch.split(',').map(s => parseFloat(s.trim()));
+    if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) {
+      setCoordError('Enter valid coordinates (e.g. 8.477, 124.646)');
+      return;
+    }
+    const [lat, lng] = parts;
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      setCoordError('Coordinates out of range');
+      return;
+    }
+    setFlyToCoords({ lat, lng, key: Date.now() });
+  };
 
   useEffect(() => {
     fetch('/api/setup-projects')
@@ -301,20 +411,32 @@ export default function MapsPage() {
       <main className="flex-1 relative overflow-hidden min-h-0">
         {/* Map View */}
         <div className="absolute inset-0 w-full h-full z-0">
-          <MapComponent activePrograms={activePrograms} activeDistrict={activeDistrict} setupProjects={setupProjects} />
+          <MapComponent activePrograms={activePrograms} activeDistrict={activeDistrict} setupProjects={setupProjects} flyToCoords={flyToCoords} />
         </div>
 
         {/* District Tabs - overlay on top of map */}
         <div className="absolute top-[15px] left-1/2 -translate-x-1/2 flex bg-white rounded-[25px] shadow-[0_2px_10px_rgba(0,0,0,0.15)] z-[1000] overflow-hidden pointer-events-auto">
           <button
-            className={`py-2.5 px-[22px] border-none text-[13px] font-semibold cursor-pointer transition-all duration-200 font-sans ${activeDistrict === 'district1' ? 'bg-primary text-white' : 'bg-white text-[#666] hover:bg-[#f0f0f0]'}`}
-            onClick={() => setActiveDistrict('district1')}
+            className={`py-2.5 px-[22px] border-none text-[13px] font-semibold cursor-pointer transition-all duration-200 font-sans ${activeDistrict === 'mor1' ? 'bg-primary text-white' : 'bg-white text-[#666] hover:bg-[#f0f0f0]'}`}
+            onClick={() => setActiveDistrict(prev => prev === 'mor1' ? 'all' : 'mor1')}
+          >
+            MOR1
+          </button>
+          <button
+            className={`py-2.5 px-[22px] border-none text-[13px] font-semibold cursor-pointer transition-all duration-200 font-sans ${activeDistrict === 'mor2' ? 'bg-primary text-white' : 'bg-white text-[#666] hover:bg-[#f0f0f0]'}`}
+            onClick={() => setActiveDistrict(prev => prev === 'mor2' ? 'all' : 'mor2')}
+          >
+            MOR2
+          </button>
+          <button
+            className={`py-2.5 px-[22px] border-none text-[13px] font-semibold cursor-pointer transition-all duration-200 font-sans ${activeDistrict === 'cdo1' ? 'bg-primary text-white' : 'bg-white text-[#666] hover:bg-[#f0f0f0]'}`}
+            onClick={() => setActiveDistrict(prev => prev === 'cdo1' ? 'all' : 'cdo1')}
           >
             District 1
           </button>
           <button
-            className={`py-2.5 px-[22px] border-none text-[13px] font-semibold cursor-pointer transition-all duration-200 font-sans ${activeDistrict === 'district2' ? 'bg-primary text-white' : 'bg-white text-[#666] hover:bg-[#f0f0f0]'}`}
-            onClick={() => setActiveDistrict('district2')}
+            className={`py-2.5 px-[22px] border-none text-[13px] font-semibold cursor-pointer transition-all duration-200 font-sans ${activeDistrict === 'cdo2' ? 'bg-primary text-white' : 'bg-white text-[#666] hover:bg-[#f0f0f0]'}`}
+            onClick={() => setActiveDistrict(prev => prev === 'cdo2' ? 'all' : 'cdo2')}
           >
             District 2
           </button>
@@ -324,6 +446,32 @@ export default function MapsPage() {
           >
             All
           </button>
+        </div>
+
+        {/* Coordinate Search Bar - top right */}
+        <div className="absolute top-[15px] right-[15px] z-[1000] pointer-events-auto">
+          <div className="flex items-center bg-white rounded-full shadow-[0_2px_10px_rgba(0,0,0,0.15)] overflow-hidden">
+            <Icon icon="mdi:map-marker-outline" className="ml-3 text-[#999]" width={18} height={18} />
+            <input
+              type="text"
+              placeholder="Search coordinates (e.g. 8.477, 124.646)"
+              value={coordSearch}
+              onChange={(e) => { setCoordSearch(e.target.value); setCoordError(''); }}
+              onKeyDown={(e) => e.key === 'Enter' && handleCoordSearch()}
+              className="w-[280px] py-2.5 px-2 border-none outline-none text-[13px] bg-transparent placeholder:text-[#999] font-sans"
+            />
+            <button
+              onClick={handleCoordSearch}
+              className="flex items-center justify-center w-9 h-9 mr-1 bg-primary text-white border-none rounded-full cursor-pointer transition-colors duration-200 hover:bg-accent"
+            >
+              <Icon icon="mdi:magnify" width={18} height={18} />
+            </button>
+          </div>
+          {coordError && (
+            <div className="mt-1 bg-white text-[#dc3545] text-[11px] font-medium py-1.5 px-3 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
+              {coordError}
+            </div>
+          )}
         </div>
 
         {/* Program Filter Sidebar - overlay on top of map */}
