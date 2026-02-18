@@ -61,6 +61,7 @@ const ProfilePage = () => {
       });
 
       setShowUploadModal(true);
+      window.dispatchEvent(new Event('userUpdated'));
     };
     reader.readAsDataURL(file);
   };
@@ -305,6 +306,7 @@ const AccountSettings = ({ user, onSave }: { user: UserData; onSave: () => void 
     setShowConfirmPassword(false);
     setShowSuccessModal(true);
     onSave();
+    window.dispatchEvent(new Event('userUpdated'));
   };
 
   const inputBaseClass = "w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none";
