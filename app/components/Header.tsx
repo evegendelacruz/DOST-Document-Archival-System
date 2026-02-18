@@ -1,11 +1,13 @@
 'use client';
 
+
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import NotificationDropdown from './notification';
+
 
 export default function Header() {
   const [userName, setUserName] = useState('User');
@@ -14,6 +16,7 @@ export default function Header() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+
   // Fetch user data including profile image
   const fetchUserData = async () => {
     try {
@@ -21,7 +24,7 @@ export default function Header() {
       if (stored) {
         const user = JSON.parse(stored);
         if (user.fullName) setUserName(user.fullName);
-        
+       
         // Fetch fresh user data including profile image
         if (user.id) {
           const res = await fetch(`/api/users/${user.id}`);
@@ -34,17 +37,21 @@ export default function Header() {
     } catch {}
   };
 
+
   useEffect(() => {
     fetchUserData();
+
 
     // Listen for profile image updates
     const handleProfileUpdate = () => {
       fetchUserData();
     };
 
+
     window.addEventListener('profileImageUpdated', handleProfileUpdate);
     return () => window.removeEventListener('profileImageUpdated', handleProfileUpdate);
   }, []);
+
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -54,20 +61,24 @@ export default function Header() {
       }
     };
 
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
 
   const handleMyProfile = () => {
     setIsDropdownOpen(false);
     router.push('/profile');
   };
 
+
   const handleLogout = () => {
     setIsDropdownOpen(false);
     localStorage.removeItem('user');
     router.push('/');
   };
+
 
   return (
     <header className="flex justify-between items-center py-2 px-6 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.1)] z-[100] max-md:py-1.5 max-md:px-3.5">
@@ -85,7 +96,7 @@ export default function Header() {
           <Icon icon="mdi:compass-outline" width={24} height={24} />
         </Link>
         <NotificationDropdown />
-        
+       
         {/* User Profile Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
@@ -103,6 +114,7 @@ export default function Header() {
             )}
             <span className="text-[13px] text-[#333] font-medium max-md:hidden">{userName}</span>
           </button>
+
 
           {/* Dropdown Menu */}
           {isDropdownOpen && (
@@ -129,3 +141,4 @@ export default function Header() {
     </header>
   );
 }
+

@@ -2167,9 +2167,16 @@ export default function ProjectDetailPage() {
         {/* Project Content */}
         <div className="flex gap-5 items-start">
           <div className="w-[100px] h-[100px] min-w-[100px] rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-            {/* Default circle for project logo - can upload image here */}
-            <Icon icon="mdi:store" width={48} height={48} color="#999" />
-          </div>
+  {project.companyLogoUrl ? (
+    <img 
+      src={project.companyLogoUrl} 
+      alt={`${project.firm || 'Company'} logo`}
+      className="w-full h-full object-cover"
+    />
+  ) : (
+    <Icon icon="mdi:store" width={48} height={48} color="#999" />
+  )}
+</div>
           <div className="flex-1 flex gap-5">
             <div className="flex-1">
               <div className="flex items-center gap-2 text-[13px] mb-1">
