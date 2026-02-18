@@ -7,6 +7,15 @@ import DashboardLayout from '../components/DashboardLayout';
 import { NavItem } from '../components/Sidebar';
 import { CheckCircle2, AlertCircle } from 'lucide-react'
 
+interface UserPermissions {
+  canAccessSetup: boolean;
+  canAccessCest: boolean;
+  canAccessMaps: boolean;
+  canAccessCalendar: boolean;
+  canAccessArchival: boolean;
+  canManageUsers: boolean;
+}
+
 interface BookingFormData {
   eventTitle: string;
   eventDate: string;
@@ -84,6 +93,7 @@ export default function DashboardPage() {
   const [showBookingConfirm, setShowBookingConfirm] = useState(false);
   const [bookingStatus, setBookingStatus] = useState<'success' | 'error'>('success');
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [permissions, setPermissions] = useState<UserPermissions | null>(null);
   const [bookingForm, setBookingForm] = useState<BookingFormData>({
     eventTitle: '',
     eventDate: '',
@@ -104,6 +114,49 @@ export default function DashboardPage() {
   const [eventToDelete, setEventToDelete] = useState<CalendarEvent | null>(null);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+
+  // Fetch user permissions with real-time polling
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      const stored = localStorage.getItem('user');
+      if (!stored) return;
+
+      const { id, role } = JSON.parse(stored);
+
+      // Admins have full access
+      if (role === 'ADMIN') {
+        setPermissions({
+          canAccessSetup: true,
+          canAccessCest: true,
+          canAccessMaps: true,
+          canAccessCalendar: true,
+          canAccessArchival: true,
+          canManageUsers: true,
+        });
+        return;
+      }
+
+      // Fetch permissions for staff
+      if (id) {
+        const res = await fetch(`/api/user-permissions/${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setPermissions(data);
+          // If user doesn't have calendar access, default to archival view
+          if (!data.canAccessCalendar && activeNav === 'calendar') {
+            setActiveNav('archival');
+          }
+        }
+      }
+    };
+
+    fetchPermissions();
+
+    // Poll for permission changes every 3 seconds
+    const pollInterval = setInterval(fetchPermissions, 3000);
+
+    return () => clearInterval(pollInterval);
+  }, [activeNav]);
 
   // Fetch all projects once for suggestions
   useEffect(() => {
@@ -397,18 +450,33 @@ export default function DashboardPage() {
 
   const calendarDays = generateCalendarDays();
 
+  // Build sidebar items based on permissions
   const sidebarItems: NavItem[] = [
-    { type: 'button', icon: 'mdi:view-grid', label: 'Dashboard', active: activeNav === 'calendar', onClick: () => setActiveNav('calendar') },
-    { type: 'button', icon: 'mdi:magnify', label: 'Archival', active: activeNav === 'archival', onClick: () => { setActiveNav('archival'); setShowResults(false); } },
-    { type: 'link', href: '/setup', icon: 'mdi:office-building', logo: '/setup-logo.png', label: 'SETUP 4.0' },
-    { type: 'link', href: '/cest', icon: 'mdi:leaf', logo: '/cest-logo.png', label: 'CEST' },
+    // Only show Dashboard/Calendar if user has calendar access
+    ...((permissions === null || permissions.canAccessCalendar) ? [{
+      type: 'button' as const,
+      icon: 'mdi:view-grid',
+      label: 'Dashboard',
+      active: activeNav === 'calendar',
+      onClick: () => setActiveNav('calendar'),
+    }] : []),
+    // Only show Archival if user has archival access
+    ...((permissions === null || permissions.canAccessArchival) ? [{
+      type: 'button' as const,
+      icon: 'mdi:magnify',
+      label: 'Archival',
+      active: activeNav === 'archival',
+      onClick: () => { setActiveNav('archival'); setShowResults(false); },
+    }] : []),
+    { type: 'link', href: '/setup', icon: 'mdi:office-building', logo: '/setup-logo.png', label: 'SETUP 4.0', permissionKey: 'canAccessSetup' },
+    { type: 'link', href: '/cest', icon: 'mdi:leaf', logo: '/cest-logo.png', label: 'CEST', permissionKey: 'canAccessCest' },
     { type: 'button', icon: 'mdi:clock-outline', label: 'Recent Activity' },
   ];
 
   return (
     <DashboardLayout activePath="/dashboard" sidebarItems={sidebarItems}>
       <main className={`flex-1 py-6 px-[60px] flex flex-col items-center max-md:py-[30px] max-md:px-5 ${showResults ? 'items-start' : ''}`}>
-        {activeNav === 'calendar' && (
+        {activeNav === 'calendar' && (!permissions || permissions.canAccessCalendar) && (
           <div className="flex w-full gap-[30px] items-start">
             <div className="flex-1 bg-white rounded-[15px] p-[30px] shadow-[0_2px_10px_rgba(0,0,0,0.05)]">
               <div className="flex items-center justify-center gap-5 mb-2">
@@ -555,7 +623,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {activeNav === 'archival' && !showResults && (
+        {activeNav === 'archival' && !showResults && (!permissions || permissions.canAccessArchival) && (
           <>
             <h1 className="text-6xl font-bold text-primary mb-[20px] mt-8 max-md:text-[32px] mt-25">Archival</h1>
             <div className="relative w-full max-w-[600px] mt-2">
@@ -584,7 +652,24 @@ export default function DashboardPage() {
           </>
         )}
 
-        {activeNav === 'archival' && showResults && (
+        {/* Show message if user has no access to current view */}
+        {permissions && !permissions.canAccessCalendar && activeNav === 'calendar' && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Icon icon="mdi:lock" width={64} height={64} className="text-gray-300 mb-4" />
+            <h2 className="text-xl font-semibold text-gray-600 mb-2">Access Restricted</h2>
+            <p className="text-sm text-gray-500">You don't have permission to access the Calendar.</p>
+          </div>
+        )}
+
+        {permissions && !permissions.canAccessArchival && activeNav === 'archival' && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Icon icon="mdi:lock" width={64} height={64} className="text-gray-300 mb-4" />
+            <h2 className="text-xl font-semibold text-gray-600 mb-2">Access Restricted</h2>
+            <p className="text-sm text-gray-500">You don't have permission to access Archival.</p>
+          </div>
+        )}
+
+        {activeNav === 'archival' && showResults && (!permissions || permissions.canAccessArchival) && (
           <div className="w-full max-w-[800px] self-start">
             <div className="relative w-full mb-[30px] z-50">
               <input

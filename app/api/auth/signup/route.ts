@@ -40,5 +40,6 @@ export async function POST(req: NextRequest) {
     contactNo: user.contactNo,
     birthday: user.birthday,
     role: user.role,
+    isApproved: user.isApproved,
   }, { status: 201 });
 }

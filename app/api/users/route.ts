@@ -9,6 +9,7 @@ export async function GET() {
       fullName: true,
       contactNo: true,
       role: true,
+      isApproved: true,
       createdAt: true,
     },
     orderBy: { createdAt: 'desc' },

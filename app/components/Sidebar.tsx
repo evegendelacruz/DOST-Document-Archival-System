@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Icon } from '@iconify/react';
 
@@ -12,6 +12,16 @@ export interface NavItem {
   label?: string;
   active?: boolean;
   onClick?: () => void;
+  permissionKey?: string;
+}
+
+export interface UserPermissions {
+  canAccessSetup: boolean;
+  canAccessCest: boolean;
+  canAccessMaps: boolean;
+  canAccessCalendar: boolean;
+  canAccessArchival: boolean;
+  canManageUsers: boolean;
 }
 
 interface SidebarProps {
@@ -22,17 +32,65 @@ interface SidebarProps {
 function getDefaultItems(activePath: string): NavItem[] {
   return [
     { type: 'link', href: '/dashboard', icon: 'mdi:view-grid', label: 'Dashboard', active: activePath === '/dashboard' },
-    { type: 'link', href: '/dashboard', icon: 'mdi:magnify', label: 'Archival' },
-    { type: 'link', href: '/setup', icon: 'mdi:office-building', logo: '/setup-logo.png', label: 'SETUP 4.0', active: activePath === '/setup' },
-    { type: 'link', href: '/cest', icon: 'mdi:leaf', logo: '/cest-logo.png', label: 'CEST', active: activePath === '/cest' },
+    { type: 'link', href: '/dashboard', icon: 'mdi:magnify', label: 'Archival', permissionKey: 'canAccessArchival' },
+    { type: 'link', href: '/setup', icon: 'mdi:office-building', logo: '/setup-logo.png', label: 'SETUP 4.0', active: activePath === '/setup', permissionKey: 'canAccessSetup' },
+    { type: 'link', href: '/cest', icon: 'mdi:leaf', logo: '/cest-logo.png', label: 'CEST', active: activePath === '/cest', permissionKey: 'canAccessCest' },
     { type: 'button', icon: 'mdi:clock-outline', label: 'Recent Activity' },
   ];
 }
 
 export default function Sidebar({ activePath, items }: SidebarProps) {
   const [expanded, setExpanded] = useState(false);
+  const [permissions, setPermissions] = useState<UserPermissions | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
-  const navItems = items || getDefaultItems(activePath);
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      const stored = localStorage.getItem('user');
+      if (!stored) return;
+
+      const { id, role } = JSON.parse(stored);
+      setUserRole(role);
+
+      // Admins have full access by default
+      if (role === 'ADMIN') {
+        setPermissions({
+          canAccessSetup: true,
+          canAccessCest: true,
+          canAccessMaps: true,
+          canAccessCalendar: true,
+          canAccessArchival: true,
+          canManageUsers: true,
+        });
+        return;
+      }
+
+      // Fetch permissions for staff
+      if (id) {
+        const res = await fetch(`/api/user-permissions/${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setPermissions(data);
+        }
+      }
+    };
+
+    fetchPermissions();
+
+    // Poll for permission changes every 3 seconds
+    const pollInterval = setInterval(fetchPermissions, 3000);
+
+    return () => clearInterval(pollInterval);
+  }, []);
+
+  const defaultItems = getDefaultItems(activePath);
+  const navItems = items || defaultItems;
+
+  // Filter items based on permissions
+  const filteredItems = navItems.filter(item => {
+    if (!item.permissionKey || !permissions) return true;
+    return permissions[item.permissionKey as keyof UserPermissions];
+  });
 
   return (
     <aside className={`${expanded ? 'w-[220px]' : 'w-[70px]'} bg-primary flex flex-col pt-2.5 relative transition-[width] duration-300 overflow-visible z-[1000] shrink-0 h-full`}>
@@ -40,7 +98,7 @@ export default function Sidebar({ activePath, items }: SidebarProps) {
         <Icon icon={expanded ? "mdi:chevron-left" : "mdi:chevron-right"} width={16} height={16} color="#fff" />
       </button>
       <nav className="flex flex-col gap-1 mt-[30px] w-full px-2.5 overflow-hidden">
-        {navItems.map((item, index) => {
+        {filteredItems.map((item, index) => {
           const iconEl = item.logo
             ? <img src={item.logo} alt="" className="w-[22px] h-[22px] object-contain" />
             : <Icon icon={item.icon} width={22} height={22} />;

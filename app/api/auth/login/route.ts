@@ -15,6 +15,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
   }
 
+  // Admins don't need approval, only staff users do
+  if (!user.isApproved && user.role !== 'ADMIN') {
+    return NextResponse.json({ error: 'Your account is pending admin approval' }, { status: 403 });
+  }
+
   // Log the user login
   await prisma.userLog.create({
     data: {

@@ -21,7 +21,8 @@ export default function SignUpPage() {
   const [nameStatus, setNameStatus] = useState<FieldStatus>('idle');
   const [emailStatus, setEmailStatus] = useState<FieldStatus>('idle');
   const [loading, setLoading] = useState(false);
-  const [modal, setModal] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [modal, setModal] = useState<{ type: 'success' | 'error' | 'waiting' | 'approved'; message: string } | null>(null);
+  const [registeredUserId, setRegisteredUserId] = useState<string | null>(null);
   const router = useRouter();
   const nameDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const emailDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -58,6 +59,31 @@ export default function SignUpPage() {
     return () => { if (emailDebounce.current) clearTimeout(emailDebounce.current); };
   }, [email]);
 
+  // Poll for approval status
+  useEffect(() => {
+    if (!registeredUserId || modal?.type !== 'waiting') return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/users/${registeredUserId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.isApproved) {
+            setModal({ type: 'approved', message: 'Your account has been approved! Redirecting to login...' });
+            clearInterval(pollInterval);
+            setTimeout(() => {
+              router.push('/');
+            }, 2000);
+          }
+        }
+      } catch {
+        // silently fail
+      }
+    }, 2000); // Poll every 2 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [registeredUserId, modal?.type, router]);
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -80,8 +106,8 @@ export default function SignUpPage() {
         setModal({ type: 'error', message: data.error || 'Registration failed. Please try again.' });
         return;
       }
-      localStorage.setItem('user', JSON.stringify(data));
-      setModal({ type: 'success', message: 'Account created successfully!' });
+      setRegisteredUserId(data.id);
+      setModal({ type: 'waiting', message: 'Your registration is pending admin approval. Please wait...' });
     } catch {
       setModal({ type: 'error', message: 'Something went wrong. Please try again.' });
     } finally {
@@ -231,13 +257,17 @@ export default function SignUpPage() {
       {modal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => { if (modal.type === 'error') setModal(null); }}>
           <div className="bg-white rounded-2xl py-7 px-6 max-w-[300px] w-[90%] text-center shadow-[0_10px_40px_rgba(0,0,0,0.2)] max-[480px]:max-w-[260px] max-[480px]:py-[22px] max-[480px]:px-[18px]" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-3.5">
-              {modal.type === 'success' ? (
+            <div className="mb-3.5 flex justify-center">
+              {modal.type === 'approved' && (
                 <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
                   <circle cx="24" cy="24" r="24" fill="#16a34a" />
                   <path d="M15 24l6 6 12-12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-              ) : (
+              )}
+              {modal.type === 'waiting' && (
+                <div className="w-12 h-12 border-4 border-cyan-200 border-t-cyan-500 rounded-full animate-spin" />
+              )}
+              {modal.type === 'error' && (
                 <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
                   <circle cx="24" cy="24" r="24" fill="#dc2626" />
                   <path d="M16 16l16 16M32 16l-16 16" stroke="white" strokeWidth="3" strokeLinecap="round" />
@@ -245,21 +275,25 @@ export default function SignUpPage() {
               )}
             </div>
             <h3 className="text-base font-bold text-[#333] mb-1.5 max-[480px]:text-sm">
-              {modal.type === 'success' ? 'Registration Successful' : 'Registration Failed'}
+              {modal.type === 'approved' && 'Account Approved!'}
+              {modal.type === 'waiting' && 'Waiting for Approval'}
+              {modal.type === 'error' && 'Registration Failed'}
             </h3>
             <p className="text-xs text-[#666] mb-[18px] max-[480px]:text-[11px]">{modal.message}</p>
-            <button
-              className={`w-full py-[9px] border-none rounded-lg text-xs font-semibold cursor-pointer text-white transition-opacity duration-200 hover:opacity-90 ${modal.type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}
-              onClick={() => {
-                if (modal.type === 'success') {
-                  router.push('/');
-                } else {
-                  setModal(null);
-                }
-              }}
-            >
-              {modal.type === 'success' ? 'Go to Login' : 'Try Again'}
-            </button>
+            {modal.type === 'error' && (
+              <button
+                className="w-full py-[9px] border-none rounded-lg text-xs font-semibold cursor-pointer text-white transition-opacity duration-200 hover:opacity-90 bg-red-600"
+                onClick={() => setModal(null)}
+              >
+                Try Again
+              </button>
+            )}
+            {modal.type === 'approved' && (
+              <p className="text-xs text-cyan-600 font-medium">Redirecting to login...</p>
+            )}
+            {modal.type === 'waiting' && (
+              <p className="text-xs text-gray-500">This page will update automatically when approved.</p>
+            )}
           </div>
         </div>
       )}

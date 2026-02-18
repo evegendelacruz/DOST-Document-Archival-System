@@ -9,28 +9,57 @@ import { Icon } from '@iconify/react';
 import NotificationDropdown from './notification';
 
 
+interface UserPermissions {
+  canAccessSetup: boolean;
+  canAccessCest: boolean;
+  canAccessMaps: boolean;
+  canAccessCalendar: boolean;
+  canAccessArchival: boolean;
+  canManageUsers: boolean;
+}
+
 export default function Header() {
   const [userName, setUserName] = useState('User');
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [permissions, setPermissions] = useState<UserPermissions | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
 
-  // Fetch user data including profile image
+  // Fetch user data including profile image and permissions
   const fetchUserData = async () => {
     try {
       const stored = localStorage.getItem('user');
       if (stored) {
         const user = JSON.parse(stored);
         if (user.fullName) setUserName(user.fullName);
-       
+
         // Fetch fresh user data including profile image
         if (user.id) {
           const res = await fetch(`/api/users/${user.id}`);
           if (res.ok) {
             const userData = await res.json();
             setProfileImage(userData.profileImageUrl || null);
+          }
+
+          // Admins have full access
+          if (user.role === 'ADMIN') {
+            setPermissions({
+              canAccessSetup: true,
+              canAccessCest: true,
+              canAccessMaps: true,
+              canAccessCalendar: true,
+              canAccessArchival: true,
+              canManageUsers: true,
+            });
+          } else {
+            // Fetch permissions for staff
+            const permRes = await fetch(`/api/user-permissions/${user.id}`);
+            if (permRes.ok) {
+              const permData = await permRes.json();
+              setPermissions(permData);
+            }
           }
         }
       }
@@ -41,15 +70,20 @@ export default function Header() {
   useEffect(() => {
     fetchUserData();
 
-
     // Listen for profile image updates
     const handleProfileUpdate = () => {
       fetchUserData();
     };
 
-
     window.addEventListener('profileImageUpdated', handleProfileUpdate);
-    return () => window.removeEventListener('profileImageUpdated', handleProfileUpdate);
+
+    // Poll for permission changes every 3 seconds
+    const pollInterval = setInterval(fetchUserData, 3000);
+
+    return () => {
+      window.removeEventListener('profileImageUpdated', handleProfileUpdate);
+      clearInterval(pollInterval);
+    };
   }, []);
 
 
@@ -92,9 +126,11 @@ export default function Header() {
         </div>
       </div>
       <div className="flex items-center gap-2.5">
-        <Link href="/maps" className="flex items-center justify-center no-underline w-8 h-8 rounded-full color-#666 text-gray-500 transition-all duration-300 hover:bg-accent hover:text-white hover:scale-115 hover:rotate-[15deg] hover:shadow-[0_4px_14px_rgba(0,174,239,0.4)] hover:[animation:none] active:scale-90 active:-rotate-[10deg] active:transition-all active:duration-100" title="Maps">
-          <Icon icon="mdi:compass-outline" width={24} height={24} />
-        </Link>
+        {(!permissions || permissions.canAccessMaps) && (
+          <Link href="/maps" className="flex items-center justify-center no-underline w-8 h-8 rounded-full color-#666 text-gray-500 transition-all duration-300 hover:bg-accent hover:text-white hover:scale-115 hover:rotate-[15deg] hover:shadow-[0_4px_14px_rgba(0,174,239,0.4)] hover:[animation:none] active:scale-90 active:-rotate-[10deg] active:transition-all active:duration-100" title="Maps">
+            <Icon icon="mdi:compass-outline" width={24} height={24} />
+          </Link>
+        )}
         <NotificationDropdown />
        
         {/* User Profile Dropdown */}

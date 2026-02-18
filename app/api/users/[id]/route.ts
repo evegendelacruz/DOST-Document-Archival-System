@@ -16,6 +16,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       contactNo: true,
       birthday: true,
       role: true,
+      isApproved: true,
       profileImageUrl: true,
       createdAt: true,
     },
@@ -38,7 +39,14 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   if (body.email !== undefined) updateData.email = body.email;
   if (body.contactNo !== undefined) updateData.contactNo = body.contactNo;
   if (body.birthday !== undefined) updateData.birthday = body.birthday ? new Date(body.birthday) : null;
-  if (body.role !== undefined) updateData.role = body.role;
+  if (body.role !== undefined) {
+    updateData.role = body.role;
+    // Auto-approve users when promoted to ADMIN
+    if (body.role === 'ADMIN') {
+      updateData.isApproved = true;
+    }
+  }
+  if (body.isApproved !== undefined) updateData.isApproved = body.isApproved;
   if (body.profileImageUrl !== undefined) updateData.profileImageUrl = body.profileImageUrl;
 
   if (body.password && body.password.trim() !== '') {
@@ -55,6 +63,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       contactNo: true,
       birthday: true,
       role: true,
+      isApproved: true,
       profileImageUrl: true,
       createdAt: true,
     },
