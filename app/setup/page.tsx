@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Icon } from '@iconify/react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 import DashboardLayout from '../components/DashboardLayout';
 import 'leaflet/dist/leaflet.css';
 import Image from 'next/image';
@@ -492,17 +492,25 @@ export default function SetupPage() {
   };
 
   const handleExportExcel = () => {
-    const projectsToExport = selectedProjects.length > 0
-      ? filteredProjects.filter(p => selectedProjects.includes(p.id))
-      : filteredProjects;
-    if (projectsToExport.length === 0) return;
+  const projectsToExport = selectedProjects.length > 0
+    ? filteredProjects.filter(p => selectedProjects.includes(p.id))
+    : filteredProjects;
+  if (projectsToExport.length === 0) return;
 
-    const headers = ['#', 'Code', 'Project Title', 'Firm', 'Address', 'Corporator', 'Contact', 'Email', 'Status', 'Sector', 'Size', 'Year'];
-    const data = projectsToExport.map((p, i) => [
+  const wb = XLSX.utils.book_new();
+
+  // Title row + metadata
+  const titleRows = [
+    ['SETUP 4.0 — Project Masterlist'],
+    [`Exported: ${new Date().toLocaleDateString()} | ${projectsToExport.length} project(s)`],
+    [], // blank spacer
+    ['#', 'Code', 'Project Title', 'Firm', 'Type of Firm', 'Address', "Corporator's Name", 'Contact No.', 'Email', 'Status', 'Priority Sector', 'Firm Size', 'Fund', 'Type of Fund', 'Year', 'Assignee'],
+    ...projectsToExport.map((p, i) => [
       i + 1,
       `#${p.code}`,
       p.title,
       p.firm || '—',
+      p.typeOfFirm || '—',
       p.address || '—',
       p.corporatorName || '—',
       p.contactNumbers.join(', ') || '—',
@@ -510,19 +518,129 @@ export default function SetupPage() {
       statusDisplay[p.status] || p.status,
       p.prioritySector || '—',
       p.firmSize || '—',
+      p.fund || '—',
+      p.typeOfFund || '—',
       p.year || '—',
-    ]);
+      p.assignee || '—',
+    ]),
+  ];
 
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
-    // Auto-size columns based on content width
-    ws['!cols'] = headers.map((h, i) => {
-      const maxLen = Math.max(h.length, ...data.map(row => String(row[i]).length));
-      return { wch: Math.min(maxLen + 2, 40) };
-    });
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'SETUP Masterlist');
-    XLSX.writeFile(wb, `SETUP_Masterlist_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  const ws = XLSX.utils.aoa_to_sheet(titleRows);
+
+  const totalCols = 16;
+
+  // Merge title across all columns
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }, // Title
+    { s: { r: 1, c: 0 }, e: { r: 1, c: totalCols - 1 } }, // Subtitle
+  ];
+
+  // Column widths
+  ws['!cols'] = [
+    { wch: 4 },  // #
+    { wch: 8 },  // Code
+    { wch: 42 }, // Project Title
+    { wch: 22 }, // Firm
+    { wch: 18 }, // Type of Firm
+    { wch: 28 }, // Address
+    { wch: 22 }, // Corporator
+    { wch: 16 }, // Contact
+    { wch: 26 }, // Email
+    { wch: 13 }, // Status
+    { wch: 18 }, // Priority Sector
+    { wch: 10 }, // Firm Size
+    { wch: 12 }, // Fund
+    { wch: 13 }, // Type of Fund
+    { wch: 7 },  // Year
+    { wch: 18 }, // Assignee
+  ];
+
+  // Row heights
+  ws['!rows'] = [
+    { hpt: 28 }, // Title
+    { hpt: 16 }, // Subtitle
+    { hpt: 8 },  // Spacer
+    { hpt: 20 }, // Header
+    ...projectsToExport.map((_, i) => ({ hpt: i % 2 === 0 ? 16 : 16 })),
+  ];
+
+  // Style helpers
+  const titleStyle = {
+    font: { bold: true, sz: 16, color: { rgb: 'FFFFFF' } },
+    fill: { fgColor: { rgb: '146184' } },
+    alignment: { horizontal: 'left', vertical: 'center' },
   };
+  const subtitleStyle = {
+    font: { sz: 10, color: { rgb: 'FFFFFF' }, italic: true },
+    fill: { fgColor: { rgb: '1a7a9a' } },
+    alignment: { horizontal: 'left', vertical: 'center' },
+  };
+  const headerStyle = {
+    font: { bold: true, sz: 10, color: { rgb: 'FFFFFF' } },
+    fill: { fgColor: { rgb: '1a6b7a' } },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    border: {
+      top: { style: 'thin', color: { rgb: 'FFFFFF' } },
+      bottom: { style: 'thin', color: { rgb: 'FFFFFF' } },
+      left: { style: 'thin', color: { rgb: 'FFFFFF' } },
+      right: { style: 'thin', color: { rgb: 'FFFFFF' } },
+    },
+  };
+  const evenRowStyle = {
+    font: { sz: 9 },
+    fill: { fgColor: { rgb: 'F0F8FA' } },
+    alignment: { vertical: 'center', wrapText: false },
+    border: {
+      bottom: { style: 'hair', color: { rgb: 'D0E8EE' } },
+    },
+  };
+  const oddRowStyle = {
+    font: { sz: 9 },
+    fill: { fgColor: { rgb: 'FFFFFF' } },
+    alignment: { vertical: 'center', wrapText: false },
+    border: {
+      bottom: { style: 'hair', color: { rgb: 'D0E8EE' } },
+    },
+  };
+
+  // Apply title styles
+  const titleCell = XLSX.utils.encode_cell({ r: 0, c: 0 });
+  if (!ws[titleCell]) ws[titleCell] = {};
+  ws[titleCell].s = titleStyle;
+
+  const subtitleCell = XLSX.utils.encode_cell({ r: 1, c: 0 });
+  if (!ws[subtitleCell]) ws[subtitleCell] = {};
+  ws[subtitleCell].s = subtitleStyle;
+
+  // Fill title/subtitle bg across all merged cols
+  for (let c = 1; c < totalCols; c++) {
+    const r0 = XLSX.utils.encode_cell({ r: 0, c });
+    const r1 = XLSX.utils.encode_cell({ r: 1, c });
+    ws[r0] = { s: { fill: { fgColor: { rgb: '146184' } } } };
+    ws[r1] = { s: { fill: { fgColor: { rgb: '1a7a9a' } } } };
+  }
+
+  // Apply header row styles (row index 3)
+  for (let c = 0; c < totalCols; c++) {
+    const cellRef = XLSX.utils.encode_cell({ r: 3, c });
+    if (!ws[cellRef]) ws[cellRef] = {};
+    ws[cellRef].s = headerStyle;
+  }
+
+  // Apply data row styles
+  projectsToExport.forEach((_, i) => {
+    const rowIdx = 4 + i;
+    const style = i % 2 === 0 ? evenRowStyle : oddRowStyle;
+    for (let c = 0; c < totalCols; c++) {
+      const cellRef = XLSX.utils.encode_cell({ r: rowIdx, c });
+      if (!ws[cellRef]) ws[cellRef] = { v: '', t: 's' };
+      ws[cellRef].s = { ...style };
+    }
+  });
+
+  XLSX.utils.book_append_sheet(wb, ws, 'SETUP Masterlist');
+  XLSX.writeFile(wb, `SETUP_Masterlist_${new Date().toISOString().slice(0, 10)}.xlsx`);
+};
 
   const getStatusClass = (status: string) => statusColors[status] || statusColors.PROPOSAL;
 

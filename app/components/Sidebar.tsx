@@ -40,7 +40,7 @@ function getDefaultItems(activePath: string): NavItem[] {
     { type: 'link', href: '/dashboard', icon: 'mdi:magnify', label: 'Archival', permissionKey: 'canAccessArchival' },
     { type: 'link', href: '/setup', icon: 'mdi:office-building', logo: '/setup-logo.png', label: 'SETUP 4.0', active: activePath === '/setup', permissionKey: 'canAccessSetup' },
     { type: 'link', href: '/cest', icon: 'mdi:leaf', logo: '/cest-logo.png', label: 'CEST', active: activePath === '/cest', permissionKey: 'canAccessCest' },
-    { type: 'link', href: '/recent-activity',icon: 'mdi:clock-outline', label: 'Recent Activity' },
+    { type: 'link', href: '/recent-activity',icon: 'mdi:clock-outline', label: 'Recent Activity', active: activePath === '/recent-activity' },
   ];
 }
 
