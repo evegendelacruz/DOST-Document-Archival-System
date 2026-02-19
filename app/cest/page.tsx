@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import Link from 'next/link';
 import DashboardLayout from '../components/DashboardLayout';
 import Image from 'next/image';
 
@@ -390,7 +391,11 @@ export default function CestPage() {
                         />
                       </td>
                       <td className="text-primary font-semibold whitespace-nowrap py-3 px-1.5 border-b border-[#e0e0e0]">{project.code}</td>
-                      <td className="max-w-[250px] text-[#333] font-medium whitespace-normal break-words py-3 px-1.5 border-b border-[#e0e0e0]">{project.projectTitle}</td>
+                      <td className="max-w-[250px] text-[#333] font-medium whitespace-normal break-words py-3 px-1.5 border-b border-[#e0e0e0]">
+                        <Link href={`/cest/${project.id}`} className="text-primary hover:text-accent no-underline hover:underline transition-colors">
+                          {project.projectTitle}
+                        </Link>
+                      </td>
                       <td className="py-3 px-1.5 border-b border-[#e0e0e0]">{project.location ?? '—'}</td>
                       <td className="py-3 px-1.5 border-b border-[#e0e0e0]">{project.beneficiaries ?? '—'}</td>
                       <td className="py-3 px-1.5 border-b border-[#e0e0e0]">

@@ -7,7 +7,214 @@ datasource db {
   provider = "postgresql"
 }
 
-// ─── Enums ───────────────────────────────────────────────────────────
+model User {
+  id                String          @id @default(uuid()) @db.Uuid
+  email             String          @unique
+  passwordHash      String
+  fullName          String
+  role              Role            @default(STAFF)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  birthday          DateTime?       @db.Date
+  contactNo         String?
+  resetOtp          String?
+  resetOtpExpiresAt DateTime?
+  profileImageUrl   String?
+  isApproved        Boolean         @default(false)
+  logs              UserLog[]
+  permissions       UserPermission?
+
+  @@map("users")
+}
+
+model UserLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid
+  action        String   @default("LOGIN")
+  timestamp     DateTime @default(now())
+  details       String?
+  resourceId    String?  @db.Uuid
+  resourceTitle String?
+  resourceType  String   @default("AUTH")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([action])
+  @@index([resourceType])
+  @@index([timestamp])
+  @@index([userId])
+  @@map("user_logs")
+}
+
+model UserPermission {
+  id                String  @id @default(uuid()) @db.Uuid
+  userId            String  @unique @db.Uuid
+  canAccessSetup    Boolean @default(true)
+  canAccessCest     Boolean @default(true)
+  canAccessMaps     Boolean @default(true)
+  canAccessCalendar Boolean @default(true)
+  canAccessArchival Boolean @default(true)
+  canManageUsers    Boolean @default(false)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_permissions")
+}
+
+model SetupProject {
+  id             String            @id @default(uuid()) @db.Uuid
+  code           String            @unique
+  title          String
+  firm           String?
+  typeOfFirm     String?
+  address        String?
+  coordinates    String?
+  corporatorName String?
+  contactNumbers String[]
+  emails         String[]
+  status         SetupStatus       @default(PROPOSAL)
+  prioritySector String?
+  firmSize       String?
+  fund           String?
+  typeOfFund     String?
+  assignee       String?
+  companyLogoUrl String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  year           String?
+  dropdownData   Json?
+  documents      ProjectDocument[]
+
+  @@map("setup_projects")
+}
+
+model ProjectDocument {
+  id             String        @id @default(uuid()) @db.Uuid
+  projectId      String        @db.Uuid
+  phase          DocumentPhase
+  templateItemId String?
+  fileName       String
+  fileUrl        String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  fileData       Bytes?
+  mimeType       String        @default("application/octet-stream")
+  project        SetupProject  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_documents")
+}
+
+model CestProject {
+  id              String                @id @default(uuid()) @db.Uuid
+  code            String                @unique
+  projectTitle    String
+  location        String?
+  beneficiaries   String?
+  programFunding  String?
+  status          String?
+  approvedAmount  Float?
+  releasedAmount  Float?
+  projectDuration String?
+  staffAssigned   String?
+  year            String?
+  dateOfApproval  String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  documents       CestProjectDocument[]
+
+  @@map("cest_projects")
+}
+
+model CestProjectDocument {
+  id             String        @id @default(uuid()) @db.Uuid
+  projectId      String        @db.Uuid
+  phase          DocumentPhase
+  templateItemId String?
+  fileName       String
+  fileUrl        String
+  mimeType       String        @default("application/octet-stream")
+  fileData       Bytes?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  project        CestProject   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("cest_project_documents")
+}
+
+model MapPin {
+  id        String     @id @default(uuid()) @db.Uuid
+  lat       Float
+  lng       Float
+  label     String
+  district  Int
+  program   MapProgram
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("map_pins")
+}
+
+model ArchivalRecord {
+  id        String   @id @default(uuid()) @db.Uuid
+  userName  String
+  title     String
+  company   String?
+  contact   String?
+  year      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("archival_records")
+}
+
+model CalendarEvent {
+  id              String   @id @default(uuid()) @db.Uuid
+  title           String
+  date            String
+  location        String
+  bookedBy        String?
+  bookedService   String?
+  bookedPersonnel String?
+  priority        String   @default("Normal")
+  staffInvolved   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("calendar_events")
+}
+
+model Province {
+  id             String         @id @default(uuid()) @db.Uuid
+  name           String         @unique
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  municipalities Municipality[]
+
+  @@map("provinces")
+}
+
+model Municipality {
+  id         String     @id @default(uuid()) @db.Uuid
+  name       String
+  provinceId String     @db.Uuid
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  barangays  Barangay[]
+  province   Province   @relation(fields: [provinceId], references: [id], onDelete: Cascade)
+
+  @@unique([name, provinceId])
+  @@map("municipalities")
+}
+
+model Barangay {
+  id             String       @id @default(uuid()) @db.Uuid
+  name           String
+  municipalityId String       @db.Uuid
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  municipality   Municipality @relation(fields: [municipalityId], references: [id], onDelete: Cascade)
+
+  @@unique([name, municipalityId])
+  @@map("barangays")
+}
 
 enum Role {
   ADMIN
@@ -27,6 +234,7 @@ enum SetupStatus {
 enum DocumentPhase {
   INITIATION
   IMPLEMENTATION
+  MONITORING
 }
 
 enum MapProgram {
@@ -34,212 +242,4 @@ enum MapProgram {
   CEST
   SSCP
   LGIA
-}
-
-// ─── User ────────────────────────────────────────────────────────────
-
-model User {
-  id           String    @id @default(uuid()) @db.Uuid
-  email        String    @unique
-  passwordHash String
-  fullName     String
-  contactNo    String?
-  birthday     DateTime? @db.Date
-  role              Role      @default(STAFF)
-  isApproved        Boolean   @default(false)
-  profileImageUrl   String?
-  resetOtp          String?
-  resetOtpExpiresAt DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-
-  logs        UserLog[]
-  permissions UserPermission?
-
-  @@map("users")
-}
-
-// ─── User Logs ──────────────────────────────────────────────────────
-
-model UserLog {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  action    String   @default("LOGIN")
-  timestamp DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("user_logs")
-}
-
-// ─── User Permissions ───────────────────────────────────────────────
-
-model UserPermission {
-  id              String  @id @default(uuid()) @db.Uuid
-  userId          String  @unique @db.Uuid
-  canAccessSetup  Boolean @default(true)
-  canAccessCest   Boolean @default(true)
-  canAccessMaps   Boolean @default(true)
-  canAccessCalendar Boolean @default(true)
-  canAccessArchival Boolean @default(true)
-  canManageUsers  Boolean @default(false)
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("user_permissions")
-}
-
-// ─── SETUP Projects ──────────────────────────────────────────────────
-
-model SetupProject {
-  id              String      @id @default(uuid()) @db.Uuid
-  code            String      @unique
-  title           String
-  firm            String?
-  typeOfFirm      String?
-  address         String?
-  coordinates     String?
-  corporatorName  String?
-  contactNumbers  String[]
-  emails          String[]
-  status          SetupStatus @default(PROPOSAL)
-  prioritySector  String?
-  firmSize        String?
-  fund            String?
-  typeOfFund      String?
-  assignee        String?
-  year            String?
-  companyLogoUrl  String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-
-  documents ProjectDocument[]
-
-  @@map("setup_projects")
-}
-
-// ─── Project Documents ───────────────────────────────────────────────
-
-model ProjectDocument {
-  id             String        @id @default(uuid()) @db.Uuid
-  projectId      String        @db.Uuid
-  phase          DocumentPhase
-  templateItemId String?
-  fileName       String
-  fileUrl        String
-  mimeType       String        @default("application/octet-stream")
-  fileData       Bytes?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  project SetupProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@map("project_documents")
-}
-
-// ─── CEST Projects ───────────────────────────────────────────────────
-
-model CestProject {
-  id              String   @id @default(uuid()) @db.Uuid
-  code            String   @unique
-  projectTitle    String
-  location        String?
-  beneficiaries   String?
-  programFunding  String?
-  status          String?
-  approvedAmount  Float?
-  releasedAmount  Float?
-  projectDuration String?
-  staffAssigned   String?
-  year            String?
-  dateOfApproval  String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@map("cest_projects")
-}
-
-// ─── Map Pins ────────────────────────────────────────────────────────
-
-model MapPin {
-  id       String     @id @default(uuid()) @db.Uuid
-  lat      Float
-  lng      Float
-  label    String
-  district Int
-  program  MapProgram
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  @@map("map_pins")
-}
-
-// ─── Archival Records ────────────────────────────────────────────────
-
-model ArchivalRecord {
-  id        String   @id @default(uuid()) @db.Uuid
-  userName  String
-  title     String
-  company   String?
-  contact   String?
-  year      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("archival_records")
-}
-
-// ─── Calendar Events ────────────────────────────────────────────────
-
-model CalendarEvent {
-  id              String   @id @default(uuid()) @db.Uuid
-  title           String
-  date            String
-  location        String
-  bookedBy        String?
-  bookedService   String?
-  bookedPersonnel String?
-  priority        String   @default("Normal")
-  staffInvolved   String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@map("calendar_events")
-}
-
-// ─── Address Hierarchy ───────────────────────────────────────────────
-
-model Province {
-  id             String         @id @default(uuid()) @db.Uuid
-  name           String         @unique
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  municipalities Municipality[]
-
-  @@map("provinces")
-}
-
-model Municipality {
-  id         String     @id @default(uuid()) @db.Uuid
-  name       String
-  provinceId String     @db.Uuid
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-  province   Province   @relation(fields: [provinceId], references: [id], onDelete: Cascade)
-  barangays  Barangay[]
-
-  @@unique([name, provinceId])
-  @@map("municipalities")
-}
-
-model Barangay {
-  id             String       @id @default(uuid()) @db.Uuid
-  name           String
-  municipalityId String       @db.Uuid
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  municipality   Municipality @relation(fields: [municipalityId], references: [id], onDelete: Cascade)
-
-  @@unique([name, municipalityId])
-  @@map("barangays")
 }
