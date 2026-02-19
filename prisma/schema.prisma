@@ -27,6 +27,7 @@ enum SetupStatus {
 enum DocumentPhase {
   INITIATION
   IMPLEMENTATION
+  MONITORING
 }
 
 enum MapProgram {
@@ -62,13 +63,21 @@ model User {
 // ─── User Logs ──────────────────────────────────────────────────────
 
 model UserLog {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  action    String   @default("LOGIN")
-  timestamp DateTime @default(now())
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid
+  action        String   @default("LOGIN")
+  details       String?
+  resourceId    String?  @db.Uuid
+  resourceTitle String?
+  resourceType  String   @default("AUTH")
+  timestamp     DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([action])
+  @@index([resourceType])
+  @@index([timestamp])
+  @@index([userId])
   @@map("user_logs")
 }
 
@@ -110,6 +119,7 @@ model SetupProject {
   assignee        String?
   year            String?
   companyLogoUrl  String?
+  dropdownData    Json?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -156,7 +166,28 @@ model CestProject {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  documents CestProjectDocument[]
+
   @@map("cest_projects")
+}
+
+// ─── CEST Project Documents ─────────────────────────────────────────
+
+model CestProjectDocument {
+  id             String        @id @default(uuid()) @db.Uuid
+  projectId      String        @db.Uuid
+  phase          DocumentPhase
+  templateItemId String?
+  fileName       String
+  fileUrl        String
+  mimeType       String        @default("application/octet-stream")
+  fileData       Bytes?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  project CestProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("cest_project_documents")
 }
 
 // ─── Map Pins ────────────────────────────────────────────────────────
