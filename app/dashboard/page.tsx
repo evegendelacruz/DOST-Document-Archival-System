@@ -6,6 +6,7 @@ import { Icon } from '@iconify/react';
 import DashboardLayout from '../components/DashboardLayout';
 import { NavItem } from '../components/Sidebar';
 import { CheckCircle2, AlertCircle } from 'lucide-react'
+import UserMentionInput from '../components/UserMentionInput';
 
 // Helper to get userId for activity logging
 function getUserId(): string | null {
@@ -39,10 +40,25 @@ interface BookingFormData {
   eventDate: string;
   location: string;
   bookedBy: string;
+  bookedById: string;
   priorityLevel: string;
   bookedPersonnel: string;
+  bookedPersonnelId: string;
   bookedService: string;
   staffInvolved: string;
+  staffInvolvedIds: string[];
+}
+
+interface CurrentUser {
+  id: string;
+  fullName: string;
+  profileImageUrl: string | null;
+}
+
+interface StaffUser {
+  id: string;
+  fullName: string;
+  profileImageUrl: string | null;
 }
 
 interface CalendarEvent {
@@ -51,17 +67,25 @@ interface CalendarEvent {
   date: string;
   location: string;
   bookedBy: string;
+  bookedById: string | null;
+  bookedByUser?: StaffUser | null;
   bookedService: string;
   bookedPersonnel: string;
+  bookedPersonnelId: string | null;
+  bookedPersonnelUser?: StaffUser | null;
   priority: 'Done' | 'High' | 'Normal' | 'Urgent' | 'Low' | 'Ongoing';
   staffInvolved: string;
+  staffInvolvedIds: string[];
+  staffInvolvedNames?: string;
+  staffInvolvedUsers?: StaffUser[];
+  createdAt?: string;
 }
 
 const priorityColors: Record<string, { bg: string; text: string; border: string; dot: string }> = {
   Done: { bg: 'bg-[#e8f5e9]', text: 'text-[#4caf50]', border: 'border-l-[#4caf50]', dot: 'bg-[#4caf50]' },
   High: { bg: 'bg-[#fff3e0]', text: 'text-[#ff9800]', border: 'border-l-[#ff9800]', dot: 'bg-[#ff9800]' },
   Normal: { bg: 'bg-[#f5f5f5]', text: 'text-[#9e9e9e]', border: 'border-l-[#9e9e9e]', dot: 'bg-[#9e9e9e]' },
-  Urgent: { bg: 'bg-[#e3f2fd]', text: 'text-[#00AEEF]', border: 'border-l-[#00AEEF]', dot: 'bg-[#00AEEF]' },
+  Urgent: { bg: 'bg-[#ffebee]', text: 'text-[#f44336]', border: 'border-l-[#f44336]', dot: 'bg-[#f44336]' },
   Low: { bg: 'bg-[#f3e5f5]', text: 'text-[#9c27b0]', border: 'border-l-[#9c27b0]', dot: 'bg-[#9c27b0]' },
   Ongoing: { bg: 'bg-[#fff8e1]', text: 'text-[#ffc107]', border: 'border-l-[#ffc107]', dot: 'bg-[#ffc107]' },
 };
@@ -112,15 +136,20 @@ export default function DashboardPage() {
   const [bookingStatus, setBookingStatus] = useState<'success' | 'error'>('success');
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [permissions, setPermissions] = useState<UserPermissions | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [allUsers, setAllUsers] = useState<{id: string; fullName: string; profileImageUrl: string | null}[]>([]);
   const [bookingForm, setBookingForm] = useState<BookingFormData>({
     eventTitle: '',
     eventDate: '',
     location: '',
     bookedBy: '',
+    bookedById: '',
     priorityLevel: '',
     bookedPersonnel: '',
+    bookedPersonnelId: '',
     bookedService: '',
     staffInvolved: '',
+    staffInvolvedIds: [],
   });
   const [serviceOptions, setServiceOptions] = useState<string[]>(['Transportation', 'Catering', 'Equipment', 'Venue']);
   const [showAddService, setShowAddService] = useState(false);
@@ -143,7 +172,12 @@ export default function DashboardPage() {
       const stored = localStorage.getItem('user');
       if (!stored) return;
 
-      const { id, role } = JSON.parse(stored);
+      const { id, role, fullName, profileImageUrl } = JSON.parse(stored);
+
+      // Set current user for booked by field
+      if (id && fullName) {
+        setCurrentUser({ id, fullName, profileImageUrl: profileImageUrl || null });
+      }
 
       // Admins have full access
       if (role === 'ADMIN') {
@@ -185,6 +219,14 @@ export default function DashboardPage() {
     fetch('/api/setup-projects').then(r => r.json()).then(setAllProjects).catch(() => {});
   }, []);
 
+  // Fetch all users for personnel dropdown
+  useEffect(() => {
+    fetch('/api/users')
+      .then(r => r.json())
+      .then(setAllUsers)
+      .catch(() => {});
+  }, []);
+
   // Fetch calendar events from API
   const fetchEvents = useCallback(() => {
     fetch('/api/calendar-events')
@@ -196,6 +238,22 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
+
+  // Listen for openEventModal custom event from notifications
+  useEffect(() => {
+    const handleOpenEventModal = (e: Event) => {
+      const customEvent = e as CustomEvent<{ eventId: string }>;
+      const eventId = customEvent.detail.eventId;
+      const eventToShow = events.find(ev => ev.id === eventId);
+      if (eventToShow) {
+        setSelectedEvent(eventToShow);
+        setShowEventDetailModal(true);
+      }
+    };
+
+    window.addEventListener('openEventModal', handleOpenEventModal);
+    return () => window.removeEventListener('openEventModal', handleOpenEventModal);
+  }, [events]);
 
   // Build suggestions from real project titles, codes, and firms
   const filteredSuggestions = searchQuery.trim()
@@ -292,11 +350,16 @@ export default function DashboardPage() {
         title: bookingForm.eventTitle,
         date: bookingForm.eventDate,
         location: bookingForm.location,
-        bookedBy: bookingForm.bookedBy || 'N/A',
+        bookedBy: currentUser?.fullName || bookingForm.bookedBy || 'N/A',
+        bookedById: currentUser?.id || undefined,
         bookedService: bookingForm.bookedService || 'N/A',
-        bookedPersonnel: bookingForm.bookedPersonnel || 'N/A',
+        bookedPersonnel: bookingForm.bookedPersonnelId
+          ? allUsers.find(u => u.id === bookingForm.bookedPersonnelId)?.fullName || 'N/A'
+          : 'N/A',
+        bookedPersonnelId: bookingForm.bookedPersonnelId || undefined,
         priority: bookingForm.priorityLevel,
         staffInvolved: bookingForm.staffInvolved || 'N/A',
+        staffInvolvedIds: bookingForm.staffInvolvedIds,
       }),
     });
 
@@ -314,10 +377,13 @@ export default function DashboardPage() {
       eventDate: '',
       location: '',
       bookedBy: '',
+      bookedById: '',
       priorityLevel: '',
       bookedPersonnel: '',
+      bookedPersonnelId: '',
       bookedService: '',
       staffInvolved: '',
+      staffInvolvedIds: [],
     });
   } catch {
     setBookingStatus('error');
@@ -335,32 +401,27 @@ export default function DashboardPage() {
 
   // Sort events: Today first, then Urgent/High/Normal for future dates, Done at bottom
   const sortedEvents = [...events].sort((a, b) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const dateA = new Date(a.date);
-    const dateB = new Date(b.date);
-    dateA.setHours(0, 0, 0, 0);
-    dateB.setHours(0, 0, 0, 0);
-
-    const isAToday = dateA.getTime() === today.getTime();
-    const isBToday = dateB.getTime() === today.getTime();
     const isADone = a.priority === 'Done';
     const isBDone = b.priority === 'Done';
+    const isAUrgent = a.priority === 'Urgent';
+    const isBUrgent = b.priority === 'Urgent';
 
-    // Today events first
-    if (isAToday && !isBToday) return -1;
-    if (!isAToday && isBToday) return 1;
-
-    // Done events last
+    // Done events always at the very bottom
     if (isADone && !isBDone) return 1;
     if (!isADone && isBDone) return -1;
 
-    // Sort by date (ascending)
-    if (dateA.getTime() !== dateB.getTime()) {
-      return dateA.getTime() - dateB.getTime();
+    // Urgent events always on top
+    if (isAUrgent && !isBUrgent) return -1;
+    if (!isAUrgent && isBUrgent) return 1;
+
+    // For urgent events, sort by most recently created first
+    if (isAUrgent && isBUrgent) {
+      const createdAtA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const createdAtB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return createdAtB - createdAtA; // Latest first
     }
 
-    // Same date: sort by priority
+    // Sort by priority level
     const priorityOrder: Record<string, number> = {
       'Urgent': 1,
       'High': 2,
@@ -369,7 +430,13 @@ export default function DashboardPage() {
       'Ongoing': 5,
       'Done': 6
     };
-    return (priorityOrder[a.priority] || 99) - (priorityOrder[b.priority] || 99);
+    const priorityDiff = (priorityOrder[a.priority] || 99) - (priorityOrder[b.priority] || 99);
+    if (priorityDiff !== 0) return priorityDiff;
+
+    // Same priority: sort by date (ascending)
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    return dateA.getTime() - dateB.getTime();
   });
 
   const handleServiceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -440,10 +507,13 @@ export default function DashboardPage() {
             date: editingEvent.date,
             location: editingEvent.location,
             bookedBy: editingEvent.bookedBy,
+            bookedById: editingEvent.bookedById || undefined,
             bookedService: editingEvent.bookedService,
             bookedPersonnel: editingEvent.bookedPersonnel,
+            bookedPersonnelId: editingEvent.bookedPersonnelId || undefined,
             priority: editingEvent.priority,
             staffInvolved: editingEvent.staffInvolved,
+            staffInvolvedIds: editingEvent.staffInvolvedIds,
           }),
         });
         if (!res.ok) throw new Error('Failed to update event');
@@ -527,10 +597,10 @@ export default function DashboardPage() {
                 </button>
               </div>
               {/* Legend */}
-              <div className="flex items-center justify-center gap-4 mb-4">
+              <div className="flex items-center justify-center gap-4 mb-4 flex-wrap">
                 <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-sm bg-[#4caf50]"></div>
-                  <span className="text-xs text-[#666]">Done</span>
+                  <div className="w-3 h-3 rounded-sm bg-[#f44336]"></div>
+                  <span className="text-xs text-[#666]">Urgent</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 rounded-sm bg-[#ff9800]"></div>
@@ -539,6 +609,10 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 rounded-sm bg-[#9e9e9e]"></div>
                   <span className="text-xs text-[#666]">Normal</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm bg-[#4caf50]"></div>
+                  <span className="text-xs text-[#666]">Done</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 rounded-sm bg-[#00AEEF]"></div>
@@ -584,7 +658,21 @@ export default function DashboardPage() {
                               <p className="text-xs font-bold text-primary mb-1">{event.title}</p>
                               <p className="text-[10px] text-gray-600"><span className="font-semibold">Date:</span> {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                               <p className="text-[10px] text-gray-600"><span className="font-semibold">Location:</span> {event.location}</p>
-                              <p className="text-[10px] text-gray-600"><span className="font-semibold">Booked by:</span> {event.bookedBy}</p>
+                              <div className="text-[10px] text-gray-600 flex items-center gap-1">
+                                <span className="font-semibold">Booked by:</span>
+                                {event.bookedByUser ? (
+                                  <span className="flex items-center gap-1">
+                                    {event.bookedByUser.profileImageUrl ? (
+                                      <img src={event.bookedByUser.profileImageUrl} alt={event.bookedByUser.fullName} className="w-3 h-3 rounded-full object-cover" />
+                                    ) : (
+                                      <Icon icon="mdi:account-circle" width={12} height={12} className="text-gray-400" />
+                                    )}
+                                    {event.bookedByUser.fullName}
+                                  </span>
+                                ) : (
+                                  event.bookedBy
+                                )}
+                              </div>
                               <p className="text-[10px] text-gray-600"><span className="font-semibold">Priority:</span> <span className={priorityColors[event.priority]?.text}>{event.priority}</span></p>
                             </div>
                           </div>
@@ -627,14 +715,59 @@ export default function DashboardPage() {
                       <div className="text-[11px] text-[#666] leading-relaxed space-y-0.5">
                         <p><span className="font-semibold text-[#333]">Event Date:</span> {new Date(event.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
                         <p><span className="font-semibold text-[#333]">Location:</span> {event.location}</p>
-                        <p><span className="font-semibold text-[#333]">Booked by:</span> {event.bookedBy}</p>
+                        <div className="flex items-center gap-1">
+                          <span className="font-semibold text-[#333]">Booked by:</span>
+                          {event.bookedByUser ? (
+                            <div className="flex items-center gap-1 bg-gray-100 rounded-full px-1.5 py-0.5">
+                              {event.bookedByUser.profileImageUrl ? (
+                                <img src={event.bookedByUser.profileImageUrl} alt={event.bookedByUser.fullName} className="w-4 h-4 rounded-full object-cover" />
+                              ) : (
+                                <Icon icon="mdi:account-circle" width={16} height={16} className="text-gray-400" />
+                              )}
+                              <span className="text-[10px] text-[#333]">{event.bookedByUser.fullName}</span>
+                            </div>
+                          ) : (
+                            <span>{event.bookedBy}</span>
+                          )}
+                        </div>
                         <p><span className="font-semibold text-[#333]">Service:</span> {event.bookedService}</p>
-                        <p className="flex items-center gap-1">
+                        <div className="flex items-center gap-1">
                           <span className="font-semibold text-[#333]">Personnel:</span>
-                          <Icon icon="mdi:account" width={12} height={12} className="text-primary" />
-                          {event.bookedPersonnel}
-                        </p>
-                        <p><span className="font-semibold text-[#333]">Staff Involved:</span> {event.staffInvolved}</p>
+                          {event.bookedPersonnelUser ? (
+                            <div className="flex items-center gap-1 bg-gray-100 rounded-full px-1.5 py-0.5">
+                              {event.bookedPersonnelUser.profileImageUrl ? (
+                                <img src={event.bookedPersonnelUser.profileImageUrl} alt={event.bookedPersonnelUser.fullName} className="w-4 h-4 rounded-full object-cover" />
+                              ) : (
+                                <Icon icon="mdi:account-circle" width={16} height={16} className="text-gray-400" />
+                              )}
+                              <span className="text-[10px] text-[#333]">{event.bookedPersonnelUser.fullName}</span>
+                            </div>
+                          ) : (
+                            <>
+                              <Icon icon="mdi:account" width={12} height={12} className="text-primary" />
+                              <span>{event.bookedPersonnel}</span>
+                            </>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <span className="font-semibold text-[#333]">Staff Involved:</span>
+                          {event.staffInvolvedUsers && event.staffInvolvedUsers.length > 0 ? (
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {event.staffInvolvedUsers.map((staff) => (
+                                <div key={staff.id} className="flex items-center gap-1 bg-gray-100 rounded-full px-1.5 py-0.5">
+                                  {staff.profileImageUrl ? (
+                                    <img src={staff.profileImageUrl} alt={staff.fullName} className="w-4 h-4 rounded-full object-cover" />
+                                  ) : (
+                                    <Icon icon="mdi:account-circle" width={16} height={16} className="text-gray-400" />
+                                  )}
+                                  <span className="text-[10px] text-[#333]">{staff.fullName.split(' ')[0]}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span>{event.staffInvolvedNames || event.staffInvolved || 'N/A'}</span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex justify-end gap-1.5 mt-2.5 pt-2 border-t border-gray-100">
                         <button
@@ -862,13 +995,18 @@ export default function DashboardPage() {
                   <label className="block text-xs font-medium text-[#333] mb-1">
                     Booked by:
                   </label>
-                  <input
-                    type="text"
-                    name="bookedBy"
-                    value={bookingForm.bookedBy}
-                    onChange={handleBookingInputChange}
-                    className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
-                  />
+                  <div className="flex items-center gap-2 px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm bg-gray-50">
+                    {currentUser?.profileImageUrl ? (
+                      <img
+                        src={currentUser.profileImageUrl}
+                        alt={currentUser.fullName}
+                        className="w-5 h-5 rounded-full object-cover"
+                      />
+                    ) : (
+                      <Icon icon="mdi:account-circle" width={20} height={20} className="text-primary" />
+                    )}
+                    <span className="text-gray-700">{currentUser?.fullName || 'Loading...'}</span>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-[#333] mb-1">
@@ -896,12 +1034,10 @@ export default function DashboardPage() {
                   <label className="block text-xs font-medium text-[#333] mb-1">
                     Booked Personnel (optional)
                   </label>
-                  <input
-                    type="text"
-                    name="bookedPersonnel"
-                    value={bookingForm.bookedPersonnel}
-                    onChange={handleBookingInputChange}
-                    className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                  <UserMentionInput
+                    selectedUserIds={bookingForm.bookedPersonnelId ? [bookingForm.bookedPersonnelId] : []}
+                    onSelectionChange={(ids) => setBookingForm(prev => ({ ...prev, bookedPersonnelId: ids[0] || '' }))}
+                    placeholder="Type @ to select personnel..."
                   />
                 </div>
                 <div>
@@ -927,13 +1063,10 @@ export default function DashboardPage() {
               <label className="block text-xs font-medium text-[#333] mb-1">
                 Staff Involved (optional)
               </label>
-              <input
-                type="text"
-                name="staffInvolved"
-                value={bookingForm.staffInvolved}
-                onChange={handleBookingInputChange}
-                placeholder="e.g., John, Mary, Peter"
-                className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+              <UserMentionInput
+                selectedUserIds={bookingForm.staffInvolvedIds}
+                onSelectionChange={(ids) => setBookingForm(prev => ({ ...prev, staffInvolvedIds: ids }))}
+                placeholder="Type @ to mention users..."
               />
             </div>
 
@@ -987,7 +1120,20 @@ export default function DashboardPage() {
                 <Icon icon="mdi:account" width={18} height={18} className="text-primary mt-0.5" />
                 <div>
                   <p className="font-semibold text-[#333]">Booked by</p>
-                  <p className="text-[#666]">{selectedEvent.bookedBy}</p>
+                  {selectedEvent.bookedByUser ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-1.5 bg-gray-100 rounded-full px-2 py-1">
+                        {selectedEvent.bookedByUser.profileImageUrl ? (
+                          <img src={selectedEvent.bookedByUser.profileImageUrl} alt={selectedEvent.bookedByUser.fullName} className="w-5 h-5 rounded-full object-cover" />
+                        ) : (
+                          <Icon icon="mdi:account-circle" width={20} height={20} className="text-gray-400" />
+                        )}
+                        <span className="text-xs text-[#333]">{selectedEvent.bookedByUser.fullName}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[#666]">{selectedEvent.bookedBy}</p>
+                  )}
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -1001,14 +1147,42 @@ export default function DashboardPage() {
                 <Icon icon="mdi:account-tie" width={18} height={18} className="text-primary mt-0.5" />
                 <div>
                   <p className="font-semibold text-[#333]">Booked Personnel</p>
-                  <p className="text-[#666]">{selectedEvent.bookedPersonnel}</p>
+                  {selectedEvent.bookedPersonnelUser ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-1.5 bg-gray-100 rounded-full px-2 py-1">
+                        {selectedEvent.bookedPersonnelUser.profileImageUrl ? (
+                          <img src={selectedEvent.bookedPersonnelUser.profileImageUrl} alt={selectedEvent.bookedPersonnelUser.fullName} className="w-5 h-5 rounded-full object-cover" />
+                        ) : (
+                          <Icon icon="mdi:account-circle" width={20} height={20} className="text-gray-400" />
+                        )}
+                        <span className="text-xs text-[#333]">{selectedEvent.bookedPersonnelUser.fullName}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[#666]">{selectedEvent.bookedPersonnel}</p>
+                  )}
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Icon icon="mdi:account-group" width={18} height={18} className="text-primary mt-0.5" />
                 <div>
                   <p className="font-semibold text-[#333]">Staff Involved</p>
-                  <p className="text-[#666]">{selectedEvent.staffInvolved}</p>
+                  {selectedEvent.staffInvolvedUsers && selectedEvent.staffInvolvedUsers.length > 0 ? (
+                    <div className="flex items-center gap-2 flex-wrap mt-1">
+                      {selectedEvent.staffInvolvedUsers.map((staff) => (
+                        <div key={staff.id} className="flex items-center gap-1.5 bg-gray-100 rounded-full px-2 py-1">
+                          {staff.profileImageUrl ? (
+                            <img src={staff.profileImageUrl} alt={staff.fullName} className="w-5 h-5 rounded-full object-cover" />
+                          ) : (
+                            <Icon icon="mdi:account-circle" width={20} height={20} className="text-gray-400" />
+                          )}
+                          <span className="text-xs text-[#333]">{staff.fullName}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[#666]">{selectedEvent.staffInvolvedNames || selectedEvent.staffInvolved}</p>
+                  )}
                 </div>
             </div>
             </div>
@@ -1080,12 +1254,14 @@ export default function DashboardPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-[#333] mb-1">Booked by</label>
-                  <input
-                    type="text"
-                    value={editingEvent.bookedBy}
-                    onChange={(e) => setEditingEvent({ ...editingEvent, bookedBy: e.target.value })}
-                    className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
-                  />
+                  <div className="flex items-center gap-2 px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm bg-gray-50">
+                    {editingEvent.bookedByUser?.profileImageUrl ? (
+                      <img src={editingEvent.bookedByUser.profileImageUrl} alt={editingEvent.bookedByUser.fullName} className="w-5 h-5 rounded-full object-cover" />
+                    ) : (
+                      <Icon icon="mdi:account-circle" width={20} height={20} className="text-primary" />
+                    )}
+                    <span className="text-gray-700">{editingEvent.bookedByUser?.fullName || editingEvent.bookedBy}</span>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-[#333] mb-1">Priority Level</label>
@@ -1107,11 +1283,21 @@ export default function DashboardPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-[#333] mb-1">Booked Personnel</label>
-                  <input
-                    type="text"
-                    value={editingEvent.bookedPersonnel}
-                    onChange={(e) => setEditingEvent({ ...editingEvent, bookedPersonnel: e.target.value })}
-                    className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                  {/* Show old text name if any (backward compatibility) */}
+                  {editingEvent.bookedPersonnel && editingEvent.bookedPersonnel !== 'N/A' && !editingEvent.bookedPersonnelId && (
+                    <p className="text-xs text-gray-500 mb-1">Previously: {editingEvent.bookedPersonnel}</p>
+                  )}
+                  <UserMentionInput
+                    selectedUserIds={editingEvent.bookedPersonnelId ? [editingEvent.bookedPersonnelId] : []}
+                    onSelectionChange={(ids) => {
+                      const selectedUser = allUsers.find(u => u.id === ids[0]);
+                      setEditingEvent({
+                        ...editingEvent,
+                        bookedPersonnelId: ids[0] || null,
+                        bookedPersonnel: selectedUser?.fullName || editingEvent.bookedPersonnel
+                      });
+                    }}
+                    placeholder="Type @ to select personnel..."
                   />
                 </div>
                 <div>
@@ -1130,12 +1316,14 @@ export default function DashboardPage() {
 
               <div>
                 <label className="block text-xs font-medium text-[#333] mb-1">Staff Involved</label>
-                <input
-                  type="text"
-                  value={editingEvent.staffInvolved}
-                  onChange={(e) => setEditingEvent({ ...editingEvent, staffInvolved: e.target.value })}
-                  placeholder="e.g., John, Mary, Peter"
-                  className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                {/* Show old text names if any (backward compatibility) */}
+                {editingEvent.staffInvolved && editingEvent.staffInvolved !== 'N/A' && (
+                  <p className="text-xs text-gray-500 mb-1">Previously: {editingEvent.staffInvolved}</p>
+                )}
+                <UserMentionInput
+                  selectedUserIds={editingEvent.staffInvolvedIds || []}
+                  onSelectionChange={(ids) => setEditingEvent({ ...editingEvent, staffInvolvedIds: ids })}
+                  placeholder="Type @ to mention users..."
                 />
               </div>
 

@@ -24,6 +24,7 @@ model User {
   logs              UserLog[]
   permissions       UserPermission?
   timeRecords       TimeRecord[]
+  notifications     Notification[]
 
   @@map("users")
 }
@@ -179,19 +180,39 @@ model ArchivalRecord {
 }
 
 model CalendarEvent {
-  id              String   @id @default(uuid()) @db.Uuid
-  title           String
-  date            String
-  location        String
-  bookedBy        String?
-  bookedService   String?
-  bookedPersonnel String?
-  priority        String   @default("Normal")
-  staffInvolved   String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                 String   @id @default(uuid()) @db.Uuid
+  title              String
+  date               String
+  location           String
+  bookedBy           String?
+  bookedService      String?
+  bookedPersonnel    String?
+  bookedPersonnelId  String?  @db.Uuid
+  priority           String   @default("Normal")
+  staffInvolved      String?
+  staffInvolvedIds   String[] @default([])
+  bookedById         String?  @db.Uuid
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@map("calendar_events")
+}
+
+model Notification {
+  id                   String   @id @default(uuid()) @db.Uuid
+  userId               String   @db.Uuid
+  type                 String
+  title                String
+  message              String
+  eventId              String?  @db.Uuid
+  read                 Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  bookedByUserId       String?  @db.Uuid
+  bookedByName         String?
+  bookedByProfileUrl   String?
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
 }
 
 model Province {
