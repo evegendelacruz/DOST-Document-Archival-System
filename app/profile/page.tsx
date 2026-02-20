@@ -3,6 +3,24 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { Eye, EyeOff, UserRoundMinus, Check, X } from 'lucide-react';
 
+// Helper to get userId for activity logging
+function getUserId(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem('user');
+    if (!stored) return null;
+    return JSON.parse(stored)?.id || null;
+  } catch {
+    return null;
+  }
+}
+
+// Helper to create headers with userId
+function getAuthHeaders(): Record<string, string> {
+  const userId = getUserId();
+  return userId ? { 'x-user-id': userId } : {};
+}
+
 type PageView = 'account-settings' | 'user-management' | 'user-log';
 
 interface UserData {
@@ -56,7 +74,7 @@ const ProfilePage = () => {
 
       await fetch(`/api/users/${user.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ profileImageUrl: base64 }),
       });
 
@@ -291,7 +309,7 @@ const AccountSettings = ({ user, onSave }: { user: UserData; onSave: () => void 
 
     const res = await fetch(`/api/users/${user.id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify(payload),
     });
 
@@ -517,7 +535,7 @@ const UserManagement = ({ currentUserId }: { currentUserId: string }) => {
   const handleRoleChange = async (userId: string, newRole: string) => {
     const res = await fetch(`/api/users/${userId}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify({ role: newRole }),
     });
     if (res.ok) {
@@ -526,7 +544,7 @@ const UserManagement = ({ currentUserId }: { currentUserId: string }) => {
   };
 
   const handleDelete = async (userId: string) => {
-    const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+    const res = await fetch(`/api/users/${userId}`, { method: 'DELETE', headers: getAuthHeaders() });
     if (res.ok) {
       setUsers(users.filter(u => u.id !== userId));
       setShowDeleteModal(null);
@@ -538,7 +556,7 @@ const UserManagement = ({ currentUserId }: { currentUserId: string }) => {
   const handleApprove = async (userId: string) => {
     const res = await fetch(`/api/users/${userId}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify({ isApproved: true }),
     });
     if (res.ok) {
@@ -552,7 +570,7 @@ const UserManagement = ({ currentUserId }: { currentUserId: string }) => {
   const handleRevoke = async (userId: string) => {
     const res = await fetch(`/api/users/${userId}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify({ isApproved: false }),
     });
     if (res.ok) {
@@ -564,7 +582,7 @@ const UserManagement = ({ currentUserId }: { currentUserId: string }) => {
   };
 
   const handleReject = async (userId: string) => {
-    const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+    const res = await fetch(`/api/users/${userId}`, { method: 'DELETE', headers: getAuthHeaders() });
     if (res.ok) {
       setUsers(users.filter(u => u.id !== userId));
       setShowRejectModal(null);
@@ -605,7 +623,7 @@ const UserManagement = ({ currentUserId }: { currentUserId: string }) => {
 
     const res = await fetch(`/api/user-permissions/${selectedUser.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify(permissions),
     });
 
@@ -1029,11 +1047,12 @@ const UserLog = ({ currentUserId, currentUserRole }: UserLogProps) => {
       const res = await fetch('/api/user-logs');
       if (res.ok) {
         const data = await res.json();
+        const logs = data.logs || [];
         // If staff, filter to only show their own logs
         if (!isAdmin) {
-          setLogs(data.filter((log: UserLogData) => log.userId === currentUserId));
+          setLogs(logs.filter((log: UserLogData) => log.userId === currentUserId));
         } else {
-          setLogs(data);
+          setLogs(logs);
         }
       }
     };

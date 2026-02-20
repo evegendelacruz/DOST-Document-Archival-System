@@ -1,73 +1,43 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from '../components/DashboardLayout';
 
-type ActionType = "upload" | "delete" | "edit" | "view";
+type ActionType = "upload" | "delete" | "edit" | "create" | "login" | "logout" | "download" | "update";
 
-interface Activity {
-  id: number;
-  type: ActionType;
-  description: string;
-  user: string;
-  date: string;
+interface UserInfo {
+  id: string;
+  fullName: string;
+  email: string;
+  role: string;
+  profileImageUrl?: string;
 }
 
-const ACTIVITIES: Activity[] = [
-  {
-    id: 1,
-    type: "upload",
-    description:
-      'Uploaded a Letter of Intent for Project Acquisition of Equipment for the Mass Production of DOST and USTP Developed Technology',
-    user: "Jane Doe",
-    date: "February 10, 2026",
-  },
-  {
-    id: 2,
-    type: "upload",
-    description:
-      'Uploaded a Letter of Intent for Project Acquisition of Equipment for the Mass Production of DOST and USTP Developed Technology',
-    user: "Jane Doe",
-    date: "February 10, 2026",
-  },
-  {
-    id: 3,
-    type: "upload",
-    description:
-      'Uploaded a Letter of Intent for Project Acquisition of Equipment for the Mass Production of DOST and USTP Developed Technology',
-    user: "Jane Doe",
-    date: "February 10, 2026",
-  },
-  {
-    id: 4,
-    type: "delete",
-    description:
-      'Deleted a Letter of Intent for Project Acquisition of Equipment for the Mass Production of DOST and USTP Developed Technology',
-    user: "Jane Doe",
-    date: "February 10, 2026",
-  },
-  {
-    id: 5,
-    type: "upload",
-    description:
-      'Uploaded a Letter of Intent for Project Acquisition of Equipment for the Mass Production of DOST and USTP Developed Technology',
-    user: "Jane Doe",
-    date: "February 9, 2026",
-  },
-  {
-    id: 6,
-    type: "edit",
-    description:
-      'Edited a Project Code "Acquisition of Equipment for the Mass Production of DOST and USTP Developed Technology"',
-    user: "Jane Doe",
-    date: "February 9, 2026",
-  },
-];
+interface Activity {
+  id: string;
+  action: string;
+  resourceType: string;
+  resourceId?: string;
+  resourceTitle?: string;
+  details?: string;
+  timestamp: string;
+  user: UserInfo;
+}
 
-const ACTION_COLORS: Record<ActionType, { bg: string; icon: string }> = {
-  upload: { bg: "#1a6b7a", icon: "↑" },
-  delete: { bg: "#e05a4e", icon: "🗑" },
-  edit: { bg: "#2ecc71", icon: "✎" },
-  view: { bg: "#3498db", icon: "👁" },
+interface Stats {
+  total: number;
+  today: number;
+  thisWeek: number;
+}
+
+const ACTION_COLORS: Record<string, { bg: string }> = {
+  upload: { bg: "#1a6b7a" },
+  create: { bg: "#1a6b7a" },
+  delete: { bg: "#e05a4e" },
+  edit: { bg: "#2ecc71" },
+  update: { bg: "#2ecc71" },
+  login: { bg: "#3498db" },
+  logout: { bg: "#95a5a6" },
+  download: { bg: "#9b59b6" },
 };
 
 const UploadIcon = () => (
@@ -93,10 +63,25 @@ const EditIcon = () => (
   </svg>
 );
 
-const EyeIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-    <circle cx="12" cy="12" r="3"/>
+const LoginIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+    <polyline points="10 17 15 12 10 7"/>
+    <line x1="15" y1="12" x2="3" y2="12"/>
+  </svg>
+);
+
+const DownloadIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 5v14M5 12l7 7 7-7"/>
+    <line x1="5" y1="19" x2="19" y2="19"/>
+  </svg>
+);
+
+const CreateIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19"/>
+    <line x1="5" y1="12" x2="19" y2="12"/>
   </svg>
 );
 
@@ -113,8 +98,17 @@ const ChevronIcon = () => (
   </svg>
 );
 
-function ActionIcon({ type }: { type: ActionType }) {
-  const color = ACTION_COLORS[type];
+const RefreshIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="23 4 23 10 17 10"/>
+    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+  </svg>
+);
+
+function ActionIcon({ action }: { action: string }) {
+  const actionLower = action.toLowerCase();
+  const color = ACTION_COLORS[actionLower] || { bg: "#1a6b7a" };
+
   return (
     <div style={{
       width: 38,
@@ -126,16 +120,19 @@ function ActionIcon({ type }: { type: ActionType }) {
       justifyContent: "center",
       flexShrink: 0,
     }}>
-      {type === "upload" && <UploadIcon />}
-      {type === "delete" && <DeleteIcon />}
-      {type === "edit" && <EditIcon />}
+      {(actionLower === "upload") && <UploadIcon />}
+      {(actionLower === "delete") && <DeleteIcon />}
+      {(actionLower === "edit" || actionLower === "update") && <EditIcon />}
+      {(actionLower === "login" || actionLower === "logout") && <LoginIcon />}
+      {(actionLower === "download") && <DownloadIcon />}
+      {(actionLower === "create") && <CreateIcon />}
     </div>
   );
 }
 
-function UserBadge({ name, type }: { name: string; type: ActionType }) {
-  const badgeColor = type === "delete" ? "#ffe5e3" : "#e0f5f5";
-  const textColor = type === "delete" ? "#c0392b" : "#1a6b7a";
+function UserBadge({ name, action }: { name: string; action: string }) {
+  const badgeColor = action.toLowerCase() === "delete" ? "#ffe5e3" : "#e0f5f5";
+  const textColor = action.toLowerCase() === "delete" ? "#c0392b" : "#1a6b7a";
   return (
     <span style={{
       display: "inline-block",
@@ -152,12 +149,85 @@ function UserBadge({ name, type }: { name: string; type: ActionType }) {
   );
 }
 
+function formatActivityDescription(activity: Activity): string {
+  const action = (activity.action || 'unknown').toLowerCase();
+  const resourceType = (activity.resourceType || 'item').replace(/_/g, ' ').toLowerCase();
+  const title = activity.resourceTitle || 'item';
+
+  switch (action) {
+    case 'login':
+      return 'Logged into the system';
+    case 'logout':
+      return 'Logged out of the system';
+    case 'create':
+      return `Created a new ${resourceType}: "${title}"`;
+    case 'update':
+      return `Updated ${resourceType}: "${title}"`;
+    case 'delete':
+      return `Deleted ${resourceType}: "${title}"`;
+    case 'upload':
+      return `Uploaded a document: "${title}"`;
+    case 'download':
+      return `Downloaded a document: "${title}"`;
+    default:
+      if (resourceType === 'auth' || resourceType === 'item') {
+        return `${action.charAt(0).toUpperCase() + action.slice(1)} action performed`;
+      }
+      return `${action.charAt(0).toUpperCase() + action.slice(1)} ${resourceType}: "${title}"`;
+  }
+}
+
+function formatDate(timestamp: string): string {
+  const date = new Date(timestamp);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+function formatTime(timestamp: string): string {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
 function groupByDate(activities: Activity[]): Record<string, Activity[]> {
   return activities.reduce((acc, act) => {
-    if (!acc[act.date]) acc[act.date] = [];
-    acc[act.date].push(act);
+    const dateKey = formatDate(act.timestamp);
+    if (!acc[dateKey]) acc[dateKey] = [];
+    acc[dateKey].push(act);
     return acc;
   }, {} as Record<string, Activity[]>);
+}
+
+// View Icon
+const ViewIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+);
+
+// Parse details JSON safely
+function parseDetails(details?: string): Record<string, unknown> {
+  if (!details) return {};
+  try {
+    return JSON.parse(details);
+  } catch {
+    return {};
+  }
+}
+
+// Format resource type for display
+function formatResourceType(resourceType: string): string {
+  return resourceType
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, c => c.toUpperCase());
 }
 
 export default function RecentActivity() {
@@ -165,19 +235,75 @@ export default function RecentActivity() {
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("All Actions");
   const [sort, setSort] = useState("Newest First");
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [stats, setStats] = useState<Stats>({ total: 0, today: 0, thisWeek: 0 });
+  const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [viewModal, setViewModal] = useState<Activity | null>(null);
 
-  const filtered = ACTIVITIES.filter((a) => {
-    const matchSearch = a.description.toLowerCase().includes(search.toLowerCase()) || a.user.toLowerCase().includes(search.toLowerCase());
-    const matchAction = actionFilter === "All Actions" || a.type === actionFilter.toLowerCase();
-    return matchSearch && matchAction;
-  });
+  const fetchActivities = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
 
-  const grouped = groupByDate(filtered);
+      // Filter by current user if "My Activities" tab is selected
+      if (activeTab === "my" && currentUserId) {
+        params.append("userId", currentUserId);
+      }
+
+      // Add action filter
+      if (actionFilter !== "All Actions") {
+        params.append("action", actionFilter.toUpperCase());
+      }
+
+      // Add search
+      if (search) {
+        params.append("search", search);
+      }
+
+      console.log('[Recent Activity] Fetching from:', `/api/user-logs?${params.toString()}`);
+      const res = await fetch(`/api/user-logs?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        console.log('[Recent Activity] API Response:', data);
+        let logs = data.logs || [];
+
+        // Sort
+        if (sort === "Oldest First") {
+          logs = logs.reverse();
+        }
+
+        setActivities(logs);
+        setStats(data.stats || { total: 0, today: 0, thisWeek: 0 });
+      } else {
+        console.error('[Recent Activity] API Error:', res.status, res.statusText);
+      }
+    } catch (error) {
+      console.error("Failed to fetch activities:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab, actionFilter, search, sort, currentUserId]);
+
+  useEffect(() => {
+    // Get current user from localStorage
+    const stored = localStorage.getItem("user");
+    if (stored) {
+      try {
+        const user = JSON.parse(stored);
+        setCurrentUserId(user.id);
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchActivities();
+  }, [fetchActivities]);
+
+  const grouped = groupByDate(activities);
   const dates = Object.keys(grouped);
-
-  const totalActivities = 298;
-  const todayCount = 59;
-  const thisWeekCount = 112;
 
   return (
     <DashboardLayout activePath="/recent-activity">
@@ -229,9 +355,9 @@ export default function RecentActivity() {
       {/* Stats Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
         {[
-          { label: "Total Activities", value: totalActivities },
-          { label: "Today", value: todayCount },
-          { label: "This Week", value: thisWeekCount },
+          { label: "Total Activities", value: stats.total },
+          { label: "Today", value: stats.today },
+          { label: "This Week", value: stats.thisWeek },
         ].map(({ label, value }) => (
           <div key={label} style={{
             background: "#fff",
@@ -266,7 +392,7 @@ export default function RecentActivity() {
           <SearchIcon />
           <input
             type="text"
-            placeholder="Search here"
+            placeholder="Search activities..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{
@@ -303,9 +429,12 @@ export default function RecentActivity() {
             }}
           >
             <option>All Actions</option>
-            <option>Upload</option>
+            <option>Login</option>
+            <option>Create</option>
+            <option>Update</option>
             <option>Delete</option>
-            <option>Edit</option>
+            <option>Upload</option>
+            <option>Download</option>
           </select>
           <div style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
             <ChevronIcon />
@@ -313,17 +442,25 @@ export default function RecentActivity() {
         </div>
 
         {/* Refresh */}
-        <button style={{
-          background: "#1a9abf",
-          color: "#fff",
-          border: "none",
-          borderRadius: 8,
-          padding: "10px 22px",
-          fontSize: 13,
-          fontWeight: 600,
-          cursor: "pointer",
-        }}>
-          Refresh
+        <button
+          onClick={fetchActivities}
+          disabled={loading}
+          style={{
+            background: "#1a9abf",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "10px 22px",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: loading ? "not-allowed" : "pointer",
+            opacity: loading ? 0.7 : 1,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}>
+          <RefreshIcon />
+          {loading ? "Loading..." : "Refresh"}
         </button>
 
         {/* Sort */}
@@ -363,7 +500,10 @@ export default function RecentActivity() {
         borderRadius: 8,
         padding: "16px 20px",
       }}>
-        {dates.length === 0 && (
+        {loading && activities.length === 0 && (
+          <div style={{ textAlign: "center", color: "#aaa", padding: "32px 0" }}>Loading activities...</div>
+        )}
+        {!loading && dates.length === 0 && (
           <div style={{ textAlign: "center", color: "#aaa", padding: "32px 0" }}>No activities found.</div>
         )}
         {dates.map((date, di) => (
@@ -388,32 +528,271 @@ export default function RecentActivity() {
                   borderTop: i === 0 ? "none" : "1px solid #f0f4f7",
                 }}
               >
-                <ActionIcon type={activity.type} />
+                <ActionIcon action={activity.action} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, color: "#333", lineHeight: 1.4 }}>{activity.description}</div>
-                  <UserBadge name={activity.user} type={activity.type} />
+                  <div style={{ fontSize: 13, color: "#333", lineHeight: 1.4 }}>
+                    {formatActivityDescription(activity)}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                    <UserBadge name={activity.user.fullName} action={activity.action} />
+                    <span style={{ fontSize: 11, color: "#999" }}>
+                      {formatTime(activity.timestamp)}
+                    </span>
+                  </div>
                 </div>
-                <button style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  background: "#fff",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: 6,
-                  padding: "6px 14px",
-                  fontSize: 13,
-                  color: "#555",
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  flexShrink: 0,
-                }}>
-                  <EyeIcon /> View
+                <button
+                  onClick={() => setViewModal(activity)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "6px 14px",
+                    background: "#f0f4f7",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: 6,
+                    color: "#555",
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#1a6b7a";
+                    e.currentTarget.style.color = "#fff";
+                    e.currentTarget.style.borderColor = "#1a6b7a";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#f0f4f7";
+                    e.currentTarget.style.color = "#555";
+                    e.currentTarget.style.borderColor = "#e2e8f0";
+                  }}
+                >
+                  <ViewIcon />
+                  View
                 </button>
               </div>
             ))}
           </div>
         ))}
       </div>
+
+      {/* Activity Details Modal */}
+      {viewModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1200,
+          }}
+          onClick={() => setViewModal(null)}
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 16,
+              width: "100%",
+              maxWidth: 500,
+              maxHeight: "90vh",
+              overflow: "auto",
+              boxShadow: "0 12px 40px rgba(0,0,0,0.25)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{
+              padding: "20px 24px",
+              borderBottom: "1px solid #e2e8f0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <ActionIcon action={viewModal.action} />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: "#333" }}>
+                    Activity Details
+                  </h3>
+                  <p style={{ margin: "2px 0 0", fontSize: 12, color: "#888" }}>
+                    {formatDate(viewModal.timestamp)} at {formatTime(viewModal.timestamp)}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setViewModal(null)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: 24,
+                  color: "#999",
+                  cursor: "pointer",
+                  padding: 0,
+                  lineHeight: 1,
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: "20px 24px" }}>
+              {/* Action Summary */}
+              <div style={{
+                background: "#f8fafc",
+                borderRadius: 10,
+                padding: 16,
+                marginBottom: 20,
+              }}>
+                <p style={{ margin: 0, fontSize: 14, color: "#333", lineHeight: 1.5 }}>
+                  {formatActivityDescription(viewModal)}
+                </p>
+              </div>
+
+              {/* Details Grid */}
+              <div style={{ display: "grid", gap: 16 }}>
+                {/* Action Type */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 13, color: "#666" }}>Action Type</span>
+                  <span style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    padding: "4px 12px",
+                    borderRadius: 999,
+                    background: ACTION_COLORS[viewModal.action.toLowerCase()]?.bg || "#1a6b7a",
+                    color: "#fff",
+                    textTransform: "capitalize",
+                  }}>
+                    {viewModal.action.toLowerCase()}
+                  </span>
+                </div>
+
+                {/* Resource Type */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 13, color: "#666" }}>Resource Type</span>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: "#333" }}>
+                    {formatResourceType(viewModal.resourceType)}
+                  </span>
+                </div>
+
+                {/* Resource Title */}
+                {viewModal.resourceTitle && (
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <span style={{ fontSize: 13, color: "#666" }}>Resource Name</span>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: "#333", textAlign: "right", maxWidth: "60%" }}>
+                      {viewModal.resourceTitle}
+                    </span>
+                  </div>
+                )}
+
+                {/* Resource ID */}
+                {viewModal.resourceId && (
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 13, color: "#666" }}>Resource ID</span>
+                    <span style={{ fontSize: 11, fontFamily: "monospace", color: "#888", background: "#f0f4f7", padding: "2px 8px", borderRadius: 4 }}>
+                      {viewModal.resourceId.slice(0, 8)}...
+                    </span>
+                  </div>
+                )}
+
+                {/* Performed By */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 13, color: "#666" }}>Performed By</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    {viewModal.user.profileImageUrl ? (
+                      <img
+                        src={viewModal.user.profileImageUrl}
+                        alt={viewModal.user.fullName}
+                        style={{ width: 24, height: 24, borderRadius: "50%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: "50%",
+                        background: "#1a6b7a",
+                        color: "#fff",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}>
+                        {viewModal.user.fullName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <span style={{ fontSize: 13, fontWeight: 500, color: "#333" }}>
+                      {viewModal.user.fullName}
+                    </span>
+                  </div>
+                </div>
+
+                {/* User Role */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 13, color: "#666" }}>User Role</span>
+                  <span style={{ fontSize: 13, color: "#333", textTransform: "capitalize" }}>
+                    {viewModal.user.role.toLowerCase()}
+                  </span>
+                </div>
+
+                {/* User Email */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 13, color: "#666" }}>Email</span>
+                  <span style={{ fontSize: 13, color: "#1a6b7a" }}>
+                    {viewModal.user.email}
+                  </span>
+                </div>
+
+                {/* Additional Details */}
+                {viewModal.details && Object.keys(parseDetails(viewModal.details)).length > 0 && (
+                  <>
+                    <div style={{ borderTop: "1px solid #e2e8f0", margin: "8px 0" }} />
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#333", marginBottom: -8 }}>
+                      Additional Details
+                    </div>
+                    {Object.entries(parseDetails(viewModal.details)).map(([key, value]) => (
+                      <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <span style={{ fontSize: 13, color: "#666", textTransform: "capitalize" }}>
+                          {key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim()}
+                        </span>
+                        <span style={{ fontSize: 13, color: "#333", textAlign: "right", maxWidth: "60%", wordBreak: "break-word" }}>
+                          {Array.isArray(value) ? value.join(', ') : String(value)}
+                        </span>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{
+              padding: "16px 24px",
+              borderTop: "1px solid #e2e8f0",
+              display: "flex",
+              justifyContent: "flex-end",
+            }}>
+              <button
+                onClick={() => setViewModal(null)}
+                style={{
+                  padding: "10px 24px",
+                  background: "#1a6b7a",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </DashboardLayout>
   );

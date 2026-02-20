@@ -17,7 +17,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       mimeType: true,
       createdAt: true,
       updatedAt: true,
-      // exclude fileData from list queries for performance
     },
   });
 
@@ -27,6 +26,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const formData = await req.formData();
+  const userId = formData.get('userId') as string | null;
+
+  console.log('[Documents API] POST - userId:', userId);
 
   const file = formData.get('file') as File | null;
   const phase = formData.get('phase') as string;
@@ -37,6 +39,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
+
+  // Get the project for logging
+  const project = await prisma.setupProject.findUnique({ where: { id } });
 
   const document = await prisma.projectDocument.create({
     data: {
@@ -60,6 +65,33 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       updatedAt: true,
     },
   });
+
+  // Log activity directly
+  console.log('[Documents API] Attempting to log activity, userId:', userId);
+  if (userId) {
+    try {
+      const logEntry = await prisma.userLog.create({
+        data: {
+          userId,
+          action: 'UPLOAD',
+          resourceType: 'DOCUMENT',
+          resourceId: document.id,
+          resourceTitle: file.name,
+          details: JSON.stringify({
+            projectId: id,
+            projectTitle: project?.title,
+            projectCode: project?.code,
+            phase,
+          }),
+        },
+      });
+      console.log('[Documents API] Activity logged successfully! Log ID:', logEntry.id);
+    } catch (error) {
+      console.error('[Documents API] FAILED to log activity:', error);
+    }
+  } else {
+    console.warn('[Documents API] No userId provided in formData, skipping activity log');
+  }
 
   return NextResponse.json(document, { status: 201 });
 }

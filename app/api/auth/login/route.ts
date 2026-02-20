@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
+import { logActivity } from '@/lib/activity-log';
 
 export async function POST(req: NextRequest) {
   const { email, password } = await req.json();
@@ -21,11 +22,11 @@ export async function POST(req: NextRequest) {
   }
 
   // Log the user login
-  await prisma.userLog.create({
-    data: {
-      userId: user.id,
-      action: 'LOGIN',
-    },
+  await logActivity({
+    userId: user.id,
+    action: 'LOGIN',
+    resourceType: 'AUTH',
+    resourceTitle: 'User Login',
   });
 
   return NextResponse.json({

@@ -10,6 +10,24 @@ import DashboardLayout from '../components/DashboardLayout';
 import 'leaflet/dist/leaflet.css';
 import Image from 'next/image';
 
+// Helper to get userId for activity logging
+function getUserId(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem('user');
+    if (!stored) return null;
+    return JSON.parse(stored)?.id || null;
+  } catch {
+    return null;
+  }
+}
+
+// Helper to create headers with userId
+function getAuthHeaders(): HeadersInit {
+  const userId = getUserId();
+  return userId ? { 'x-user-id': userId } : {};
+}
+
 // Cascading address data: Province → Municipality → Barangays
 const addressData: Record<string, Record<string, string[]>> = {
   'Misamis Oriental': {
@@ -155,6 +173,23 @@ export default function SetupPage() {
   const [filterValue, setFilterValue] = useState('');
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Confirmation modal states
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
+    show: boolean;
+    count: number;
+    projectTitles: string[];
+  } | null>(null);
+  const [deleteSuccessModal, setDeleteSuccessModal] = useState<{
+    show: boolean;
+    count: number;
+  } | null>(null);
+  const [saveSuccessModal, setSaveSuccessModal] = useState<{
+    show: boolean;
+    isEdit: boolean;
+    projectTitle: string;
+  } | null>(null);
+
   const sortRef = useRef<HTMLDivElement>(null);
   const filterRef = useRef<HTMLDivElement>(null);
   const tableScrollRef = useRef<HTMLDivElement>(null);
@@ -366,7 +401,7 @@ export default function SetupPage() {
 
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify(payload),
       });
 
@@ -375,12 +410,22 @@ export default function SetupPage() {
         throw new Error(errData?.error || 'Failed to save project');
       }
 
+      const isEdit = !!editingProjectId;
+      const savedTitle = formData.projectTitle;
+
       setShowAddModal(false);
       setEditingProjectId(null);
       setSelectedProjects([]);
       setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', year: '', companyLogo: null });
       setEmails(['']); setContactNumbers(['']);
       await fetchProjects();
+
+      // Show success modal
+      setSaveSuccessModal({
+        show: true,
+        isEdit,
+        projectTitle: savedTitle,
+      });
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Failed to save project');
     } finally {
@@ -420,19 +465,31 @@ export default function SetupPage() {
     setShowAddModal(true);
   };
 
-  const handleDeleteSelected = async () => {
+  const handleDeleteSelected = () => {
     if (selectedProjects.length === 0) return;
-    const confirmMsg = selectedProjects.length === 1
-      ? 'Are you sure you want to delete this project?'
-      : `Are you sure you want to delete ${selectedProjects.length} projects?`;
-    if (!confirm(confirmMsg)) return;
+    const projectTitles = selectedProjects.map(id => {
+      const p = projects.find(proj => proj.id === id);
+      return p?.title || 'Unknown';
+    });
+    setDeleteConfirmModal({
+      show: true,
+      count: selectedProjects.length,
+      projectTitles,
+    });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirmModal) return;
     setDeleting(true);
+    setDeleteConfirmModal(null);
     try {
       await Promise.all(selectedProjects.map(id =>
-        fetch(`/api/setup-projects/${id}`, { method: 'DELETE' })
+        fetch(`/api/setup-projects/${id}`, { method: 'DELETE', headers: getAuthHeaders() })
       ));
+      const count = selectedProjects.length;
       setSelectedProjects([]);
       await fetchProjects();
+      setDeleteSuccessModal({ show: true, count });
     } catch {
       console.error('Failed to delete projects');
     } finally {
@@ -1051,6 +1108,100 @@ export default function SetupPage() {
                 Confirm Location
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmModal?.show && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]" onClick={() => setDeleteConfirmModal(null)}>
+          <div className="bg-white rounded-2xl w-full max-w-[420px] py-8 px-10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] text-center" onClick={(e) => e.stopPropagation()}>
+            <div className="w-14 h-14 rounded-full bg-[#ffebee] flex items-center justify-center mx-auto mb-4">
+              <Icon icon="mdi:delete-alert" width={36} height={36} color="#c62828" />
+            </div>
+            <h3 className="text-lg font-bold text-[#333] m-0 mb-3">Confirm Delete</h3>
+            <p className="text-[14px] text-[#666] m-0 mb-2">
+              {deleteConfirmModal.count === 1
+                ? 'Are you sure you want to delete this project?'
+                : `Are you sure you want to delete ${deleteConfirmModal.count} projects?`
+              }
+            </p>
+            {deleteConfirmModal.count <= 3 && (
+              <div className="text-[13px] text-[#888] mb-4">
+                {deleteConfirmModal.projectTitles.map((title, i) => (
+                  <div key={i} className="truncate">• {title}</div>
+                ))}
+              </div>
+            )}
+            <p className="text-[12px] text-[#999] m-0 mb-6">This action cannot be undone.</p>
+            <div className="flex gap-3 justify-center">
+              <button
+                className="py-2.5 px-8 bg-white text-[#333] border border-[#d0d0d0] rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#f5f5f5]"
+                onClick={() => setDeleteConfirmModal(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className="py-2.5 px-8 bg-[#c62828] text-white border-none rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#b71c1c]"
+                onClick={confirmDelete}
+                disabled={deleting}
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Success Modal */}
+      {deleteSuccessModal?.show && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]" onClick={() => setDeleteSuccessModal(null)}>
+          <div className="bg-white rounded-2xl w-full max-w-[400px] py-8 px-10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] text-center" onClick={(e) => e.stopPropagation()}>
+            <div className="w-14 h-14 rounded-full bg-[#e8f5e9] flex items-center justify-center mx-auto mb-4">
+              <Icon icon="mdi:check-circle" width={36} height={36} color="#2e7d32" />
+            </div>
+            <h3 className="text-lg font-bold text-[#333] m-0 mb-3">Deleted Successfully!</h3>
+            <p className="text-[14px] text-[#666] m-0 mb-6">
+              {deleteSuccessModal.count === 1
+                ? 'The project has been deleted.'
+                : `${deleteSuccessModal.count} projects have been deleted.`
+              }
+            </p>
+            <button
+              className="py-2.5 px-10 bg-[#2e7d32] text-white border-none rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#1b5e20]"
+              onClick={() => setDeleteSuccessModal(null)}
+            >
+              Okay
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Save Success Modal (Add/Edit) */}
+      {saveSuccessModal?.show && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]" onClick={() => setSaveSuccessModal(null)}>
+          <div className="bg-white rounded-2xl w-full max-w-[420px] py-8 px-10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] text-center" onClick={(e) => e.stopPropagation()}>
+            <div className="w-14 h-14 rounded-full bg-[#e8f5e9] flex items-center justify-center mx-auto mb-4">
+              <Icon icon="mdi:check-circle" width={36} height={36} color="#2e7d32" />
+            </div>
+            <h3 className="text-lg font-bold text-[#333] m-0 mb-3">
+              {saveSuccessModal.isEdit ? 'Project Updated!' : 'Project Added!'}
+            </h3>
+            <p className="text-[14px] text-[#666] m-0 mb-2">
+              {saveSuccessModal.isEdit
+                ? 'The project has been successfully updated.'
+                : 'The project has been successfully added.'
+              }
+            </p>
+            <p className="text-[13px] text-primary font-medium m-0 mb-6 truncate" title={saveSuccessModal.projectTitle}>
+              "{saveSuccessModal.projectTitle}"
+            </p>
+            <button
+              className="py-2.5 px-10 bg-[#2e7d32] text-white border-none rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#1b5e20]"
+              onClick={() => setSaveSuccessModal(null)}
+            >
+              Okay
+            </button>
           </div>
         </div>
       )}

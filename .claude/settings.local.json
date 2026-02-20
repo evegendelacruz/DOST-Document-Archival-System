@@ -43,7 +43,11 @@
       "Bash(cmd.exe /c \"ping 0.tcp.ap.ngrok.io\")",
       "Bash(nslookup:*)",
       "Bash(host:*)",
-      "Bash(cmd.exe /c \"nslookup 0.tcp.ap.ngrok.io 8.8.8.8\")"
+      "Bash(cmd.exe /c \"nslookup 0.tcp.ap.ngrok.io 8.8.8.8\")",
+      "Bash(npm run build:*)",
+      "Bash(git checkout:*)",
+      "Bash(npx eslint:*)",
+      "Bash(git diff:*)"
     ]
   }
 }

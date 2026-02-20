@@ -7,6 +7,24 @@ import DashboardLayout from '../components/DashboardLayout';
 import { NavItem } from '../components/Sidebar';
 import { CheckCircle2, AlertCircle } from 'lucide-react'
 
+// Helper to get userId for activity logging
+function getUserId(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem('user');
+    if (!stored) return null;
+    return JSON.parse(stored)?.id || null;
+  } catch {
+    return null;
+  }
+}
+
+// Helper to create headers with userId
+function getAuthHeaders(): Record<string, string> {
+  const userId = getUserId();
+  return userId ? { 'x-user-id': userId } : {};
+}
+
 interface UserPermissions {
   canAccessSetup: boolean;
   canAccessCest: boolean;
@@ -112,8 +130,12 @@ export default function DashboardPage() {
   const [showEventDetailModal, setShowEventDetailModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<CalendarEvent | null>(null);
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+  const [deletedEventTitle, setDeletedEventTitle] = useState('');
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showEditConfirm, setShowEditConfirm] = useState(false);
+  const [showEditSuccess, setShowEditSuccess] = useState(false);
 
   // Fetch user permissions with real-time polling
   useEffect(() => {
@@ -265,7 +287,7 @@ export default function DashboardPage() {
   try {
     const res = await fetch('/api/calendar-events', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify({
         title: bookingForm.eventTitle,
         date: bookingForm.eventDate,
@@ -384,23 +406,35 @@ export default function DashboardPage() {
 
   const confirmDeleteEvent = async () => {
     if (eventToDelete) {
+      const titleToDelete = eventToDelete.title;
       try {
-        await fetch(`/api/calendar-events/${eventToDelete.id}`, { method: 'DELETE' });
+        await fetch(`/api/calendar-events/${eventToDelete.id}`, { method: 'DELETE', headers: getAuthHeaders() });
       } catch {
         // silently fail
       }
       setEvents(prev => prev.filter(e => e.id !== eventToDelete.id));
       setShowDeleteConfirm(false);
       setEventToDelete(null);
+      // Show delete success modal
+      setDeletedEventTitle(titleToDelete);
+      setShowDeleteSuccess(true);
     }
   };
 
-  const handleSaveEdit = async () => {
+  // Show edit confirmation modal before saving
+  const handleSaveEdit = () => {
+    if (editingEvent) {
+      setShowEditConfirm(true);
+    }
+  };
+
+  // Confirm and save the edit
+  const confirmSaveEdit = async () => {
     if (editingEvent) {
       try {
         const res = await fetch(`/api/calendar-events/${editingEvent.id}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
           body: JSON.stringify({
             title: editingEvent.title,
             date: editingEvent.date,
@@ -415,11 +449,15 @@ export default function DashboardPage() {
         if (!res.ok) throw new Error('Failed to update event');
         const updated = await res.json();
         setEvents(prev => prev.map(e => e.id === updated.id ? updated : e));
+        // Show success modal
+        setShowEditConfirm(false);
+        setShowEditModal(false);
+        setEditingEvent(null);
+        setShowEditSuccess(true);
       } catch {
         // silently fail — keep local state as-is
+        setShowEditConfirm(false);
       }
-      setShowEditModal(false);
-      setEditingEvent(null);
     }
   };
 
@@ -1166,14 +1204,93 @@ export default function DashboardPage() {
               {bookingStatus === 'success' ? 'Booking Successful!' : 'Booking Failed'}
             </h3>
             <p className="text-[12px] text-center text-[#666] mb-6" style={{color: '#7B777C'}}>
-              {bookingStatus === 'success' 
-                ? 'Your appointment has been successfully booked and added to the calendar.' 
+              {bookingStatus === 'success'
+                ? 'Your appointment has been successfully booked and added to the calendar.'
                 : 'There was an error processing your booking. Please try again.'}
             </p>
             <div className="flex justify-center">
               <button
                 onClick={() => setShowBookingConfirm(false)}
                 className={`px-6 py-2 text-sm font-medium text-white rounded-lg transition-colors ${bookingStatus === 'success' ? 'bg-[#00AEEF] hover:bg-[#00AEEF]' : 'bg-red-500 hover:bg-red-600'}`}
+              >
+                Okay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Confirmation Modal */}
+      {showEditConfirm && editingEvent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[300]">
+          <div className="bg-white rounded-[10px] w-full max-w-[350px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-blue-100 rounded-full">
+              <Icon icon="mdi:pencil" width={24} height={24} className="text-primary" />
+            </div>
+            <h3 className="text-lg font-bold text-center text-[#333] mb-2">Save Changes?</h3>
+            <p className="text-sm text-center text-[#666] mb-4">
+              Are you sure you want to save changes to <span className="font-semibold text-primary">{editingEvent.title}</span>?
+            </p>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => setShowEditConfirm(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmSaveEdit}
+                className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Success Modal */}
+      {showEditSuccess && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[300]">
+          <div className="bg-white rounded-[10px] w-full max-w-[350px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+            <div className="flex items-center justify-center mx-auto mb-4 mt-3">
+              <Icon icon="bi:check-circle-fill" width={45} height={45} color="#14AE5C" />
+            </div>
+            <h3 className="text-[24px] font-bold text-center mb-2" style={{ color: '#146184' }}>
+              Event Updated!
+            </h3>
+            <p className="text-[12px] text-center text-[#666] mb-6" style={{color: '#7B777C'}}>
+              The event has been successfully updated.
+            </p>
+            <div className="flex justify-center">
+              <button
+                onClick={() => setShowEditSuccess(false)}
+                className="px-6 py-2 text-sm font-medium text-white rounded-lg transition-colors bg-[#00AEEF] hover:bg-[#00AEEF]/90"
+              >
+                Okay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Success Modal */}
+      {showDeleteSuccess && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[300]">
+          <div className="bg-white rounded-[10px] w-full max-w-[350px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.15)]">
+            <div className="flex items-center justify-center mx-auto mb-4 mt-3">
+              <Icon icon="bi:check-circle-fill" width={45} height={45} color="#14AE5C" />
+            </div>
+            <h3 className="text-[24px] font-bold text-center mb-2" style={{ color: '#146184' }}>
+              Event Deleted!
+            </h3>
+            <p className="text-[12px] text-center text-[#666] mb-6" style={{color: '#7B777C'}}>
+              <span className="font-semibold">{deletedEventTitle}</span> has been successfully deleted.
+            </p>
+            <div className="flex justify-center">
+              <button
+                onClick={() => setShowDeleteSuccess(false)}
+                className="px-6 py-2 text-sm font-medium text-white rounded-lg transition-colors bg-[#00AEEF] hover:bg-[#00AEEF]/90"
               >
                 Okay
               </button>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { logActivity, getUserIdFromRequest } from '@/lib/activity-log';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -26,6 +27,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const data = await req.json();
+  const userId = getUserIdFromRequest(req);
 
   // Auto-generate project code based on highest existing code
   const last = await prisma.setupProject.findFirst({ orderBy: { code: 'desc' } });
@@ -35,6 +37,18 @@ export async function POST(req: NextRequest) {
   const project = await prisma.setupProject.create({
     data: { ...data, code },
   });
+
+  // Log activity
+  if (userId) {
+    await logActivity({
+      userId,
+      action: 'CREATE',
+      resourceType: 'SETUP_PROJECT',
+      resourceId: project.id,
+      resourceTitle: project.title,
+      details: { code: project.code, firm: project.firm },
+    });
+  }
 
   return NextResponse.json(project, { status: 201 });
 }
