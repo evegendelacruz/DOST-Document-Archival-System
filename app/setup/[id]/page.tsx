@@ -567,7 +567,7 @@ function DocumentTable({
                             <div className="flex items-center gap-3">
                               <select
                                 value={dropdownSelections[doc.id] || ''}
-                                onChange={(e) => handleDropdownSelection(doc.id, e.target.value)}
+                                onChange={(e) => setDropdownSelections(p => ({...p, [doc.id]: e.target.value}))}
                                 className="border border-[#ddd] rounded px-3 py-2 text-xs flex-1"
                               >
                                 <option value="">Select business type...</option>
@@ -576,7 +576,7 @@ function DocumentTable({
                                 ))}
                               </select>
                               <button
-                                onClick={() => handleSaveDropdownSelection(doc.id)}
+                                onClick={() => saveDropdownData({businessType: dropdownSelections})}
                                 disabled={!dropdownSelections[doc.id] || savingDropdown}
                                 className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] disabled:bg-[#ccc] disabled:cursor-not-allowed transition-colors"
                               >
