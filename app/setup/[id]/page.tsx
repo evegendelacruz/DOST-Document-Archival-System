@@ -412,6 +412,1207 @@ function DocumentTable({
                 );
               }
 
+              if (doc.type === 'dropdown') {
+                const key = `dropdown-${idx}`;
+                const isExpanded = expandedDropdowns[key];
+                
+                // Special handling for List of Intervention
+                if (doc.label === 'List of Intervention') {
+                  return (
+                    <React.Fragment key={key}>
+                      <tr>
+                        <td colSpan={5} className="p-0 border-b border-[#eee]">
+                          <button 
+                            className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
+                            onClick={() => toggleDropdown(key)}
+                          >
+                            <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                            <span>{doc.label}</span>
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-3">
+                                {abstractQuotationType && (
+                                  <button
+                                    onClick={addInterventionItem}
+                                    className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] transition-colors"
+                                  >
+                                    Add {abstractQuotationType} Item
+                                  </button>
+                                )}
+                                
+                                {interventionInputs.length > 0 && (
+                                  <button
+                                    onClick={() => saveDropdownData(
+                                      { interventionItems: interventionInputs },
+                                      `${interventionInputs.length} intervention item(s) saved successfully!`
+                                    )}
+                                    disabled={savingData}
+                                    className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors ml-auto disabled:bg-[#ccc] disabled:cursor-not-allowed"
+                                  >
+                                    {savingData ? 'Saving...' : 'Save All Items'}
+                                  </button>
+                                )}
+                              </div>
+                              
+                              {interventionInputs.map((item, index) => (
+                                <div key={index} className="border border-[#ddd] rounded p-3 bg-white">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <strong className="text-xs text-[#2e7d32]">
+                                      {item.type === 'equipment' ? 'Equipment' : 'Non-Equipment'} #{index + 1}
+                                    </strong>
+                                    <button
+                                      onClick={() => removeInterventionItem(index)}
+                                      className="text-red-600 hover:text-red-800"
+                                    >
+                                      <Icon icon="mdi:close" width={16} height={16} />
+                                    </button>
+                                  </div>
+                                  
+                                  {item.type === 'equipment' ? (
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div>
+                                        <label className="block text-xs text-[#555] mb-1">Name of Equipment</label>
+                                        <input
+                                          type="text"
+                                          value={item.name || ''}
+                                          onChange={(e) => updateInterventionItem(index, 'name', e.target.value)}
+                                          className="w-full border border-[#ddd] rounded px-2 py-1 text-xs"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs text-[#555] mb-1">Cost</label>
+                                        <input
+                                          type="text"
+                                          value={item.cost || ''}
+                                          onChange={(e) => updateInterventionItem(index, 'cost', e.target.value)}
+                                          className="w-full border border-[#ddd] rounded px-2 py-1 text-xs"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs text-[#555] mb-1">Status</label>
+                                        <select
+                                          value={item.status || ''}
+                                          onChange={(e) => updateInterventionItem(index, 'status', e.target.value)}
+                                          className="w-full border border-[#ddd] rounded px-2 py-1 text-xs"
+                                        >
+                                          <option value="">Select...</option>
+                                          <option value="Procured">Procured</option>
+                                          <option value="Pulled Out">Pulled Out</option>
+                                        </select>
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs text-[#555] mb-1">Equipment Property Code</label>
+                                        <input
+                                          type="text"
+                                          value={item.propertyCode || ''}
+                                          onChange={(e) => updateInterventionItem(index, 'propertyCode', e.target.value)}
+                                          className="w-full border border-[#ddd] rounded px-2 py-1 text-xs"
+                                        />
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div>
+                                      <label className="block text-xs text-[#555] mb-1">Service Type</label>
+                                      <select
+                                        value={item.serviceType || ''}
+                                        onChange={(e) => updateInterventionItem(index, 'serviceType', e.target.value)}
+                                        className="w-full border border-[#ddd] rounded px-2 py-1 text-xs"
+                                      >
+                                        <option value="">Select...</option>
+                                        <option value="Laboratory Testing">Laboratory Testing</option>
+                                        <option value="Packaging">Packaging</option>
+                                        <option value="Labelling">Labelling</option>
+                                        <option value="Trainings">Trainings</option>
+                                      </select>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                              
+                              {!abstractQuotationType && (
+                                <p className="text-xs text-[#999] italic">
+                                  Please select a type in &quot;Abstract of Quotation&quot; first
+                                </p>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                }
+                
+                // Type of Business dropdown
+                if (doc.label === 'Type of Business' && doc.options) {
+                  return (
+                    <React.Fragment key={key}>
+                      <tr>
+                        <td colSpan={5} className="p-0 border-b border-[#eee]">
+                          <button 
+                            className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
+                            onClick={() => toggleDropdown(key)}
+                          >
+                            <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                            <span>{doc.label}</span>
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                            <div className="flex items-center gap-3">
+                              <select
+                                value={dropdownSelections[doc.id] || ''}
+                                onChange={(e) => handleDropdownSelection(doc.id, e.target.value)}
+                                className="border border-[#ddd] rounded px-3 py-2 text-xs flex-1"
+                              >
+                                <option value="">Select business type...</option>
+                                {doc.options.map(opt => (
+                                  <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                              </select>
+                              <button
+                                onClick={() => handleSaveDropdownSelection(doc.id)}
+                                disabled={!dropdownSelections[doc.id] || savingData}
+                                className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] disabled:bg-[#ccc] disabled:cursor-not-allowed transition-colors"
+                              >
+                                {savingData ? 'Saving...' : 'Save'}
+                              </button>
+                            </div>
+                            
+                            {/* Show sub-items based on selection */}
+                            {dropdownSelections[doc.id] && doc.subItems && (
+                              <div className="mt-4 space-y-2">
+                                {dropdownSelections[doc.id] === 'Sole Proprietorship' ? (
+                                  // Show only DTI Registration for Sole Proprietorship
+                                  doc.subItems.filter(subItem => subItem.id === 301).map((subItem) => {
+                                    const templateItemId = `${phase}-${subItem.id}`;
+                                    const uploadedDoc = getDocForItem(templateItemId);
+                                    const isUploading = uploadingItemId === templateItemId;
+                                    const hasFile = !!uploadedDoc;
+                                    
+                                    return (
+                                      <div key={subItem.id} className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                        <span className="flex-1 text-xs text-[#333]">{subItem.label}</span>
+                                        <div className="flex gap-1.5">
+                                          <button
+                                            className="w-7 h-7 border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 text-white bg-[#f5a623] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title="Upload"
+                                            onClick={() => handleUploadClick(templateItemId)}
+                                            disabled={isUploading}
+                                          >
+                                            {isUploading ? (
+                                              <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                            ) : (
+                                              <Icon icon="mdi:upload" width={14} height={14} />
+                                            )}
+                                          </button>
+                                          <button
+                                            className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                              hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                            }`}
+                                            title="View"
+                                            onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
+                                            disabled={!hasFile}
+                                          >
+                                            <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                          </button>
+                                          <button
+                                            className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                              hasFile ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                            }`}
+                                            title="Delete"
+                                            onClick={() => hasFile && handleDeleteAll(templateItemId)}
+                                            disabled={!hasFile}
+                                          >
+                                            <Icon icon="mdi:delete-outline" width={14} height={14} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                ) : (
+                                  // Show other documents for other business types
+                                  doc.subItems.filter(subItem => subItem.id !== 301).map((subItem) => {
+                                    const templateItemId = `${phase}-${subItem.id}`;
+                                    const uploadedDoc = getDocForItem(templateItemId);
+                                    const isUploading = uploadingItemId === templateItemId;
+                                    const hasFile = !!uploadedDoc;
+                                    
+                                    return (
+                                      <div key={subItem.id} className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                        <span className="flex-1 text-xs text-[#333]">{subItem.label}</span>
+                                        <div className="flex gap-1.5">
+                                          <button
+                                            className="w-7 h-7 border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 text-white bg-[#f5a623] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title="Upload"
+                                            onClick={() => handleUploadClick(templateItemId)}
+                                            disabled={isUploading}
+                                          >
+                                            {isUploading ? (
+                                              <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                            ) : (
+                                              <Icon icon="mdi:upload" width={14} height={14} />
+                                            )}
+                                          </button>
+                                          <button
+                                            className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                              hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                            }`}
+                                            title="View"
+                                            onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
+                                            disabled={!hasFile}
+                                          >
+                                            <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                          </button>
+                                          <button
+                                            className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                              hasFile ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                            }`}
+                                            title="Delete"
+                                            onClick={() => hasFile && handleDeleteAll(templateItemId)}
+                                            disabled={!hasFile}
+                                          >
+                                            <Icon icon="mdi:delete-outline" width={14} height={14} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                }
+                
+                // Abstract of Quotation dropdown
+                if (doc.label === 'Abstract of Quotation' && doc.options) {
+                  return (
+                    <React.Fragment key={key}>
+                      <tr>
+                        <td colSpan={5} className="p-0 border-b border-[#eee]">
+                          <button 
+                            className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
+                            onClick={() => toggleDropdown(key)}
+                          >
+                            <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                            <span>{doc.label}</span>
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                            <div className="flex items-center gap-3">
+                              <select
+                                value={abstractQuotationType}
+                                onChange={(e) => setAbstractQuotationType(e.target.value)}
+                                className="border border-[#ddd] rounded px-3 py-2 text-xs flex-1"
+                              >
+                                <option value="">Select type...</option>
+                                {doc.options.map(opt => (
+                                  <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                              </select>
+                              <button
+                                onClick={() => saveDropdownData(
+                                  { abstractQuotationType },
+                                  `Abstract type "${abstractQuotationType}" saved successfully!`
+                                )}
+                                disabled={!abstractQuotationType || savingData}
+                                className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] disabled:bg-[#ccc] disabled:cursor-not-allowed transition-colors"
+                              >
+                                {savingData ? 'Saving...' : 'Save'}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                }
+                // Memorandum of Agreement dropdown handler
+                if (doc.label === 'Memorandum of Agreement' && doc.options) {
+                  return (
+                    <React.Fragment key={key}>
+                      <tr>
+                        <td colSpan={5} className="p-0 border-b border-[#eee]">
+                          <button 
+                            className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
+                            onClick={() => toggleDropdown(key)}
+                          >
+                            <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                            <span>{doc.label}</span>
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                            <div className="space-y-3">
+                              {/* Default MOA */}
+                              <div>
+                                <div className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                  <span className="flex-1 text-xs text-[#333] font-semibold">Memorandum of Agreement</span>
+                                  <div className="flex gap-1.5">
+                                    {(() => {
+                                      const templateItemId = `${phase}-${doc.id}-default`;
+                                      const uploadedDoc = getDocForItem(templateItemId);
+                                      const isUploading = uploadingItemId === templateItemId;
+                                      const hasFile = !!uploadedDoc;
+                                      
+                                      return (
+                                        <>
+                                          <button
+                                            className="w-7 h-7 border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 text-white bg-[#f5a623] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title="Upload"
+                                            onClick={() => handleUploadClick(templateItemId)}
+                                            disabled={isUploading}
+                                          >
+                                            {isUploading ? (
+                                              <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                            ) : (
+                                              <Icon icon="mdi:upload" width={14} height={14} />
+                                            )}
+                                          </button>
+                                          <button
+                                            className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                              hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                            }`}
+                                            title="View"
+                                            onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
+                                            disabled={!hasFile}
+                                          >
+                                            <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                          </button>
+                                          <button
+                                            className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                              hasFile ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                            }`}
+                                            title="Delete"
+                                            onClick={() => hasFile && handleDeleteAll(templateItemId)}
+                                            disabled={!hasFile}
+                                          >
+                                            <Icon icon="mdi:delete-outline" width={14} height={14} />
+                                          </button>
+                                        </>
+                                      );
+                                    })()}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Supplemental MOAs */}
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs font-semibold text-[#555]">Supplemental MOAs</span>
+                                  <button
+                                    onClick={() => {
+                                      setMoaSupplementalCount(prev => prev + 1);
+                                    }}
+                                    className="bg-[#2e7d32] text-white px-3 py-1.5 rounded text-xs font-semibold hover:bg-[#1b5e20] transition-colors"
+                                  >
+                                    + Add Supplemental MOA
+                                  </button>
+                                </div>
+                                
+                                {moaSupplementalCount > 0 && (
+                                  <div className="space-y-2">
+                                    {Array.from({ length: moaSupplementalCount }, (_, idx) => {
+                                      const templateItemId = `${phase}-${doc.id}-supplemental-${idx}`;
+                                      const uploadedDoc = getDocForItem(templateItemId);
+                                      const isUploading = uploadingItemId === templateItemId;
+                                      const hasFile = !!uploadedDoc;
+                                      
+                                      return (
+                                        <div key={idx} className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                          <span className="flex-1 text-xs text-[#333]">Supplemental MOA #{idx + 1}</span>
+                                          <div className="flex gap-1.5">
+                                            <button
+                                              className="w-7 h-7 border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 text-white bg-[#f5a623] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                                              title="Upload"
+                                              onClick={() => handleUploadClick(templateItemId)}
+                                              disabled={isUploading}
+                                            >
+                                              {isUploading ? (
+                                                <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                              ) : (
+                                                <Icon icon="mdi:upload" width={14} height={14} />
+                                              )}
+                                            </button>
+                                            <button
+                                              className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                                hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                              }`}
+                                              title="View"
+                                              onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
+                                              disabled={!hasFile}
+                                            >
+                                              <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                            </button>
+                                            <button
+                                              className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                                hasFile ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                              }`}
+                                              title="Delete"
+                                              onClick={() => hasFile && handleDeleteAll(templateItemId)}
+                                              disabled={!hasFile}
+                                            >
+                                              <Icon icon="mdi:delete-outline" width={14} height={14} />
+                                            </button>
+                                            <button
+                                              className="w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white bg-[#757575] hover:opacity-80"
+                                              title="Remove Slot"
+                                              onClick={() => {
+                                                if (confirm(`Remove Supplemental MOA #${idx + 1} slot?`)) {
+                                                  setMoaSupplementalCount(prev => Math.max(0, prev - 1));
+                                                }
+                                              }}
+                                            >
+                                              <Icon icon="mdi:minus" width={14} height={14} />
+                                            </button>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                }
+
+              // Fund Release Date dropdown handler
+              if (doc.label === 'Fund Release Date' && doc.options) {
+                return (
+                  <React.Fragment key={key}>
+                    <tr>
+                      <td colSpan={5} className="p-0 border-b border-[#eee]">
+                        <button 
+                          className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
+                          onClick={() => toggleDropdown(key)}
+                        >
+                          <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                          <span>{doc.label}</span>
+                        </button>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                              <label className="text-xs text-[#555] font-semibold min-w-[100px]">Release Date:</label>
+                              <input
+                                type="date"
+                                className="border border-[#ddd] rounded px-3 py-2 text-xs flex-1"
+                                placeholder="Select date"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              {doc.options.map((type, idx) => {
+                                const templateItemId = `${phase}-${doc.id}-${idx}`;
+                                const uploadedDoc = getDocForItem(templateItemId);
+                                const isUploading = uploadingItemId === templateItemId;
+                                const hasFile = !!uploadedDoc;
+                                
+                                return (
+                                  <div key={idx} className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                    <span className="flex-1 text-xs text-[#333] font-semibold">{type}</span>
+                                    <div className="flex gap-1.5">
+                                      <button
+                                        className="w-7 h-7 border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 text-white bg-[#f5a623] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Upload"
+                                        onClick={() => handleUploadClick(templateItemId)}
+                                        disabled={isUploading}
+                                      >
+                                        {isUploading ? (
+                                          <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                        ) : (
+                                          <Icon icon="mdi:upload" width={14} height={14} />
+                                        )}
+                                      </button>
+                                      <button
+                                        className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                          hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                        }`}
+                                        title="View"
+                                        onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
+                                        disabled={!hasFile}
+                                      >
+                                        <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                      </button>
+                                      <button
+                                        className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                          hasFile ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                        }`}
+                                        title="Delete"
+                                        onClick={() => hasFile && handleDeleteAll(templateItemId)}
+                                        disabled={!hasFile}
+                                      >
+                                        <Icon icon="mdi:delete-outline" width={14} height={14} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              }
+              // Authority to Tag dropdown handler
+              if (doc.label === 'Authority to Tag' && doc.options) {
+                return (
+                  <React.Fragment key={key}>
+                    <tr>
+                      <td colSpan={5} className="p-0 border-b border-[#eee]">
+                        <button 
+                          className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
+                          onClick={() => toggleDropdown(key)}
+                        >
+                          <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                          <span>{doc.label}</span>
+                        </button>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                          <div className="space-y-2">
+                            {doc.options.map((type, idx) => {
+                              const templateItemId = `${phase}-${doc.id}-${idx}`;
+                              const uploadedDoc = getDocForItem(templateItemId);
+                              const isUploading = uploadingItemId === templateItemId;
+                              const hasFile = !!uploadedDoc;
+                              
+                              return (
+                                <div key={idx} className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                  <span className="flex-1 text-xs text-[#333]">{type}</span>
+                                  <div className="flex gap-1.5">
+                                    <button
+                                      className="w-7 h-7 border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 text-white bg-[#f5a623] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                                      title="Upload"
+                                      onClick={() => handleUploadClick(templateItemId)}
+                                      disabled={isUploading}
+                                    >
+                                      {isUploading ? (
+                                        <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                      ) : (
+                                        <Icon icon="mdi:upload" width={14} height={14} />
+                                      )}
+                                    </button>
+                                    <button
+                                      className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                        hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                      }`}
+                                      title="View"
+                                      onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
+                                      disabled={!hasFile}
+                                    >
+                                      <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                    </button>
+                                    <button
+                                      className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                        hasFile ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                      }`}
+                                      title="Delete"
+                                      onClick={() => hasFile && handleDeleteAll(templateItemId)}
+                                      disabled={!hasFile}
+                                    >
+                                      <Icon icon="mdi:delete-outline" width={14} height={14} />
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              }
+
+              // Clearance to Untag dropdown handler
+              if (doc.label === 'Clearance to Untag' && doc.type === 'dropdown') {
+                return (
+                  <React.Fragment key={key}>
+                    <tr>
+                      <td colSpan={5} className="p-0 border-b border-[#eee]">
+                        <button 
+                          className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
+                          onClick={() => toggleDropdown(key)}
+                        >
+                          <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                          <span>{doc.label}</span>
+                        </button>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                          <div className="space-y-3">
+                            <div className="bg-white border border-[#ddd] rounded p-3">
+                              <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 mb-2 text-xs font-semibold text-[#555]">
+                                <div>Amount</div>
+                                <div>Equipment</div>
+                                <div>Supplier</div>
+                                <div className="w-7"></div>
+                              </div>
+                              
+                              {clearanceUntagRows.map((row, idx) => (
+                                <div key={idx} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 mb-2">
+                                  <input
+                                    type="text"
+                                    value={row.amount}
+                                    onChange={(e) => {
+                                      const updated = [...clearanceUntagRows];
+                                      updated[idx].amount = e.target.value;
+                                      setClearanceUntagRows(updated);
+                                    }}
+                                    placeholder="Enter amount"
+                                    className="border border-[#ddd] rounded px-2 py-1.5 text-xs"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={row.equipment}
+                                    onChange={(e) => {
+                                      const updated = [...clearanceUntagRows];
+                                      updated[idx].equipment = e.target.value;
+                                      setClearanceUntagRows(updated);
+                                    }}
+                                    placeholder="Enter equipment"
+                                    className="border border-[#ddd] rounded px-2 py-1.5 text-xs"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={row.supplier}
+                                    onChange={(e) => {
+                                      const updated = [...clearanceUntagRows];
+                                      updated[idx].supplier = e.target.value;
+                                      setClearanceUntagRows(updated);
+                                    }}
+                                    placeholder="Enter supplier"
+                                    className="border border-[#ddd] rounded px-2 py-1.5 text-xs"
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      if (clearanceUntagRows.length > 1) {
+                                        setClearanceUntagRows(clearanceUntagRows.filter((_, i) => i !== idx));
+                                      }
+                                    }}
+                                    disabled={clearanceUntagRows.length === 1}
+                                    className="w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white bg-[#c62828] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Remove row"
+                                  >
+                                    <Icon icon="mdi:close" width={14} height={14} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={() => {
+                                  setClearanceUntagRows([...clearanceUntagRows, { amount: '', equipment: '', supplier: '' }]);
+                                }}
+                                className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] transition-colors"
+                              >
+                                + Add More Row
+                              </button>
+                              <button
+                                onClick={() => saveDropdownData(
+                                  { clearanceUntagRows },
+                                  `${clearanceUntagRows.length} row(s) saved successfully!`
+                                )}
+                                disabled={savingData}
+                                className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors ml-auto disabled:bg-[#ccc] disabled:cursor-not-allowed"
+                              >
+                                {savingData ? 'Saving...' : 'Save All'}
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              }
+
+              // Completion Report dropdown handler
+              if (doc.label === 'Completion Report' && doc.options) {
+                return (
+                  <React.Fragment key={key}>
+                    <tr>
+                      <td colSpan={5} className="p-0 border-b border-[#eee]">
+                        <button 
+                          className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
+                          onClick={() => toggleDropdown(key)}
+                        >
+                          <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                          <span>{doc.label}</span>
+                        </button>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                          <div className="space-y-3">
+                            {doc.options.map((option, optIdx) => (
+                              <div key={optIdx} className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-semibold text-[#555]">{option}</span>
+                                  <button
+                                    onClick={() => {
+                                      setCompletionReportRows([...completionReportRows, { type: option }]);
+                                    }}
+                                    className="bg-[#2e7d32] text-white px-3 py-1.5 rounded text-xs font-semibold hover:bg-[#1b5e20] transition-colors"
+                                  >
+                                    + Add {option}
+                                  </button>
+                                </div>
+                                
+                                {completionReportRows
+                                  .map((row, rowIdx) => ({ row, rowIdx }))
+                                  .filter(({ row }) => row.type === option)
+                                  .map(({ row, rowIdx }) => {
+                                    const templateItemId = `${phase}-${doc.id}-${option}-${rowIdx}`;
+                                    const uploadedDoc = getDocForItem(templateItemId);
+                                    const isUploading = uploadingItemId === templateItemId;
+                                    const hasFile = !!uploadedDoc;
+                                    
+                                    return (
+                                      <div key={rowIdx} className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                        <span className="flex-1 text-xs text-[#333]">
+                                          {option} #{completionReportRows.filter(r => r.type === option).indexOf(row) + 1}
+                                        </span>
+                                        <div className="flex gap-1.5">
+                                          <button
+                                            className="w-7 h-7 border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 text-white bg-[#f5a623] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title="Upload"
+                                            onClick={() => handleUploadClick(templateItemId)}
+                                            disabled={isUploading}
+                                          >
+                                            {isUploading ? (
+                                              <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                            ) : (
+                                              <Icon icon="mdi:upload" width={14} height={14} />
+                                            )}
+                                          </button>
+                                          <button
+                                            className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                              hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                            }`}
+                                            title="View"
+                                            onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
+                                            disabled={!hasFile}
+                                          >
+                                            <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                          </button>
+                                          <button
+                                            className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                              hasFile ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                            }`}
+                                            title="Delete"
+                                            onClick={() => hasFile && handleDeleteAll(templateItemId)}
+                                            disabled={!hasFile}
+                                          >
+                                            <Icon icon="mdi:delete-outline" width={14} height={14} />
+                                          </button>
+                                          <button
+                                            className="w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white bg-[#757575] hover:opacity-80"
+                                            title="Remove Row"
+                                            onClick={() => {
+                                              if (confirm(`Remove this ${option}?`)) {
+                                                setCompletionReportRows(completionReportRows.filter((_, i) => i !== rowIdx));
+                                              }
+                                            }}
+                                          >
+                                            <Icon icon="mdi:close" width={14} height={14} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                              </div>
+                            ))}
+                            
+                            {completionReportRows.length > 0 && (
+                              <div className="flex justify-end pt-2">
+                                <button
+                                  onClick={() => saveDropdownData(
+                                    { completionReportRows },
+                                    `${completionReportRows.length} completion report(s) saved successfully!`
+                                  )}
+                                  disabled={savingData}
+                                  className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
+                                >
+                                  {savingData ? 'Saving...' : 'Save All'}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              }
+
+              if (doc.label === 'Annual PIS' && doc.options) {
+              return (
+                <React.Fragment key={key}>
+                  <tr>
+                    <td colSpan={5} className="p-0 border-b border-[#eee]">
+                      <button 
+                        className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
+                        onClick={() => toggleDropdown(key)}
+                      >
+                        <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                        <span>{doc.label}</span>
+                      </button>
+                    </td>
+                  </tr>
+                  {isExpanded && (
+                    <tr>
+                      <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-[#555]">Annual PIS Reports</span>
+                            <button
+                              onClick={() => {
+                                setAnnualPISRows([...annualPISRows, { year: '' }]);
+                              }}
+                              className="bg-[#2e7d32] text-white px-3 py-1.5 rounded text-xs font-semibold hover:bg-[#1b5e20] transition-colors"
+                            >
+                              + Add Annual PIS
+                            </button>
+                          </div>
+                          
+                          {annualPISRows.map((row, rowIdx) => {
+                            const templateItemId = `${phase}-${doc.id}-${rowIdx}`;
+                            const uploadedDoc = getDocForItem(templateItemId);
+                            const isUploading = uploadingItemId === templateItemId;
+                            const hasFile = !!uploadedDoc;
+                            
+                            return (
+                              <div key={rowIdx} className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                <select
+                                  value={row.year}
+                                  onChange={(e) => {
+                                    const updated = [...annualPISRows];
+                                    updated[rowIdx].year = e.target.value;
+                                    setAnnualPISRows(updated);
+                                  }}
+                                  className="border border-[#ddd] rounded px-2 py-1.5 text-xs w-32"
+                                >
+                                  <option value="">Select year...</option>
+                                  {Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                                    <option key={year} value={year}>{year}</option>
+                                  ))}
+                                </select>
+                                <span className="flex-1 text-xs text-[#333]">
+                                  Annual PIS {row.year ? `(${row.year})` : `#${rowIdx + 1}`}
+                                </span>
+                                <div className="flex gap-1.5">
+                                  <button
+                                    className="w-7 h-7 border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 text-white bg-[#f5a623] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Upload"
+                                    onClick={() => handleUploadClick(templateItemId)}
+                                    disabled={isUploading}
+                                  >
+                                    {isUploading ? (
+                                      <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                    ) : (
+                                      <Icon icon="mdi:upload" width={14} height={14} />
+                                    )}
+                                  </button>
+                                  <button
+                                    className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                      hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                    }`}
+                                    title="View"
+                                    onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
+                                    disabled={!hasFile}
+                                  >
+                                    <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                  </button>
+                                  <button
+                                    className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                      hasFile ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                    }`}
+                                    title="Delete"
+                                    onClick={() => hasFile && handleDeleteAll(templateItemId)}
+                                    disabled={!hasFile}
+                                  >
+                                    <Icon icon="mdi:delete-outline" width={14} height={14} />
+                                  </button>
+                                  <button
+                                    className="w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white bg-[#757575] hover:opacity-80"
+                                    title="Remove Row"
+                                    onClick={() => {
+                                      if (confirm(`Remove this Annual PIS?`)) {
+                                        setAnnualPISRows(annualPISRows.filter((_, i) => i !== rowIdx));
+                                      }
+                                    }}
+                                  >
+                                    <Icon icon="mdi:close" width={14} height={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          
+                          {annualPISRows.length > 0 && (
+                            <div className="flex justify-end pt-2">
+                              <button
+                                onClick={() => saveDropdownData(
+                                  { annualPISRows },
+                                  `${annualPISRows.length} Annual PIS report(s) saved successfully!`
+                                )}
+                                disabled={savingData}
+                                className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
+                              >
+                                {savingData ? 'Saving...' : 'Save All'}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            }
+
+            // QPR dropdown handler
+            if (doc.label === 'QPR' && doc.options) {
+              return (
+                <React.Fragment key={key}>
+                  <tr>
+                    <td colSpan={5} className="p-0 border-b border-[#eee]">
+                      <button 
+                        className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
+                        onClick={() => toggleDropdown(key)}
+                      >
+                        <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                        <span>{doc.label}</span>
+                      </button>
+                    </td>
+                  </tr>
+                  {isExpanded && (
+                    <tr>
+                      <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                        <div className="space-y-3">
+                          {doc.options.map((quarter, qIdx) => {
+                            const templateItemId = `${phase}-${doc.id}-${quarter}`;
+                            const uploadedDoc = getDocForItem(templateItemId);
+                            const isUploading = uploadingItemId === templateItemId;
+                            const hasFile = !!uploadedDoc;
+                            
+                            return (
+                              <div key={qIdx} className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                <span className="flex-1 text-xs text-[#333] font-semibold">
+                                  Quarter {quarter.replace('Q', '')} Report
+                                </span>
+                                <div className="flex gap-1.5">
+                                  <button
+                                    className="w-7 h-7 border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 text-white bg-[#f5a623] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Upload"
+                                    onClick={() => handleUploadClick(templateItemId)}
+                                    disabled={isUploading}
+                                  >
+                                    {isUploading ? (
+                                      <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                    ) : (
+                                      <Icon icon="mdi:upload" width={14} height={14} />
+                                    )}
+                                  </button>
+                                  <button
+                                    className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                      hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                    }`}
+                                    title="View"
+                                    onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
+                                    disabled={!hasFile}
+                                  >
+                                    <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                  </button>
+                                  <button
+                                    className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                      hasFile ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                    }`}
+                                    title="Delete"
+                                    onClick={() => hasFile && handleDeleteAll(templateItemId)}
+                                    disabled={!hasFile}
+                                  >
+                                    <Icon icon="mdi:delete-outline" width={14} height={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            }
+
+            // Graduation Report dropdown handler
+            if (doc.label === 'Graduation Report' && doc.options) {
+              return (
+                <React.Fragment key={key}>
+                  <tr>
+                    <td colSpan={5} className="p-0 border-b border-[#eee]">
+                      <button 
+                        className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
+                        onClick={() => toggleDropdown(key)}
+                      >
+                        <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                        <span>{doc.label}</span>
+                      </button>
+                    </td>
+                  </tr>
+                  {isExpanded && (
+                    <tr>
+                      <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                        <div className="space-y-3">
+                          {doc.options.map((option, optIdx) => (
+                            <div key={optIdx} className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-[#555]">{option}</span>
+                                <button
+                                  onClick={() => {
+                                    setCompletionReportRows([...completionReportRows, { type: option }]);
+                                  }}
+                                  className="bg-[#2e7d32] text-white px-3 py-1.5 rounded text-xs font-semibold hover:bg-[#1b5e20] transition-colors"
+                                >
+                                  + Add {option}
+                                </button>
+                              </div>
+                              
+                              {completionReportRows
+                                .map((row, rowIdx) => ({ row, rowIdx }))
+                                .filter(({ row }) => row.type === option)
+                                .map(({ row, rowIdx }) => {
+                                  const templateItemId = `${phase}-${doc.id}-${option}-${rowIdx}`;
+                                  const uploadedDoc = getDocForItem(templateItemId);
+                                  const isUploading = uploadingItemId === templateItemId;
+                                  const hasFile = !!uploadedDoc;
+                                  
+                                  return (
+                                    <div key={rowIdx} className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                      <span className="flex-1 text-xs text-[#333]">
+                                        {option} #{completionReportRows.filter(r => r.type === option).indexOf(row) + 1}
+                                      </span>
+                                      <div className="flex gap-1.5">
+                                        <button
+                                          className="w-7 h-7 border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 text-white bg-[#f5a623] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                                          title="Upload"
+                                          onClick={() => handleUploadClick(templateItemId)}
+                                          disabled={isUploading}
+                                        >
+                                          {isUploading ? (
+                                            <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                          ) : (
+                                            <Icon icon="mdi:upload" width={14} height={14} />
+                                          )}
+                                        </button>
+                                        <button
+                                          className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                            hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                          }`}
+                                          title="View"
+                                          onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
+                                          disabled={!hasFile}
+                                        >
+                                          <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                        </button>
+                                        <button
+                                          className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                            hasFile ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                          }`}
+                                          title="Delete"
+                                          onClick={() => hasFile && handleDeleteAll(templateItemId)}
+                                          disabled={!hasFile}
+                                        >
+                                          <Icon icon="mdi:delete-outline" width={14} height={14} />
+                                        </button>
+                                        <button
+                                          className="w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white bg-[#757575] hover:opacity-80"
+                                          title="Remove Row"
+                                          onClick={() => {
+                                            if (confirm(`Remove this ${option}?`)) {
+                                              setCompletionReportRows(completionReportRows.filter((_, i) => i !== rowIdx));
+                                            }
+                                          }}
+                                        >
+                                          <Icon icon="mdi:close" width={14} height={14} />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          ))}
+                          
+                          {completionReportRows.length > 0 && (
+                            <div className="flex justify-end pt-2">
+                              <button
+                                onClick={() => saveDropdownData(
+                                  { graduationReportRows: completionReportRows },
+                                  `${completionReportRows.length} report(s) saved successfully!`
+                                )}
+                                disabled={savingData}
+                                className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
+                              >
+                                {savingData ? 'Saving...' : 'Save All'}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            }
+                              
+                // Default dropdown (no options)
+                return (
+                  <tr key={key}>
+                    <td colSpan={5} className="p-0 border-b border-[#eee]">
+                      <button 
+                        className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
+                        onClick={() => toggleDropdown(key)}
+                      >
+                        <Icon icon={expandedDropdowns[key] ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                        <span>{doc.label}</span>
+                      </button>
+                    </td>
+                  </tr>
+                );
+              }
+
               // ── Dropdown rows ──
               if (doc.type === 'dropdown') {
                 const key = `dropdown-${idx}`;
