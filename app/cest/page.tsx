@@ -367,15 +367,9 @@ export default function CestPage() {
       <main className="flex-1 py-5 px-[30px] bg-[#f5f5f5] overflow-x-auto">
         {/* CEST Header */}
         <div className="flex justify-between items-center bg-white py-[15px] px-[25px] rounded-[15px] mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.05)] gap-[30px]">
-          <div className="flex items-center gap-[15px]">
-            <div className="w-[50px] h-[50px] flex items-center justify-center">
-              <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="25" cy="25" r="23" stroke="#2e7d32" strokeWidth="2" fill="none"/>
-                <path d="M25 10 L25 25 L35 35" stroke="#4caf50" strokeWidth="3" fill="none"/>
-                <circle cx="25" cy="25" r="5" fill="#8bc34a"/>
-                <path d="M15 20 Q25 5 35 20" stroke="#2e7d32" strokeWidth="2" fill="none"/>
-                <path d="M20 35 Q25 45 30 35" stroke="#4caf50" strokeWidth="2" fill="none"/>
-              </svg>
+          <div className="flex items-center gap-0">
+            <div className="w-[100px] h-[100px] flex items-center justify-center -mr-2">
+              <img src="/cest-logo.png" alt="CEST Logo" className="w-[100px] h-[100px] object-contain" />
             </div>
             <div className="flex flex-col">
               <h1 className="text-[28px] font-bold text-[#2e7d32] m-0 leading-none">CEST</h1>
@@ -408,7 +402,6 @@ export default function CestPage() {
         <div className="bg-white rounded-[15px] p-5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
           <div className="flex justify-between items-center mb-5 pb-[15px] border-b border-[#e0e0e0]">
             <h2 className="text-lg font-bold text-primary m-0 flex items-center gap-2.5">
-              <Icon icon="mdi:check-circle" width={24} height={24} color="#2e7d32" />
               APPROVED
             </h2>
             <div className="flex gap-2.5">
@@ -436,25 +429,25 @@ export default function CestPage() {
 
           {/* ── Table with bottom scrollbar ── */}
           <div className="overflow-x-auto scrollbar-hide" ref={tableScrollRef} onScroll={handleTableScroll}>
-            <table className="w-full border-collapse text-xs [&_th]:py-3 [&_th]:px-2.5 [&_th]:text-left [&_th]:border-b [&_th]:border-[#e0e0e0] [&_th]:bg-[#f9f9f9] [&_th]:font-semibold [&_th]:text-[#333] [&_th]:whitespace-normal [&_th]:min-w-[80px] [&_th]:align-middle [&_th]:text-center [&_td]:py-3 [&_td]:px-2.5 [&_td]:text-left [&_td]:border-b [&_td]:border-[#e0e0e0] [&_tbody_tr:hover]:bg-[#f9f9f9]">
+            <table className="w-full border-collapse text-xs">
               <thead>
                 <tr>
-                  <th className="w-9 !min-w-[36px]">
+                  <th className="w-5 min-w-[10px] text-left py-3 px-2.5 border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal align-middle">
                     <input type="checkbox" className="w-4 h-4 accent-accent cursor-pointer" checked={selectedProjects.length === filteredProjects.length && filteredProjects.length > 0} onChange={(e) => setSelectedProjects(e.target.checked ? filteredProjects.map(p => p.id) : [])} />
                   </th>
-                  <th>Code</th>
-                  <th>Logo</th>
-                  <th>Project Title</th>
-                  <th>Location</th>
-                  <th>Beneficiaries</th>
-                  <th>Program/<br/>Funding</th>
-                  <th>Status</th>
-                  <th>Approved<br/>Amount</th>
-                  <th>Released Amount</th>
-                  <th>Project Duration</th>
-                  <th>Staff<br/>Assigned</th>
-                  <th>Year</th>
-                  <th>Date of Approval (Ref.<br/>Approval Letter)</th>
+                  <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[10px] align-middle">Code</th>
+                  <th className="py-3 px-1.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[50px] align-middle">Logo</th>
+                  <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[250px] align-middle">Project Title</th>
+                  <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[150px] align-middle">Location</th>
+                  <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[120px] align-middle">Beneficiaries</th>
+                  <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[100px] align-middle">Program/<br/>Funding</th>
+                  <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Status</th>
+                  <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[100px] align-middle">Approved<br/>Amount</th>
+                  <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[100px] align-middle">Released Amount</th>
+                  <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[120px] align-middle">Project Duration</th>
+                  <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[100px] align-middle">Staff<br/>Assigned</th>
+                  <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[50px] align-middle">Year</th>
+                  <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[120px] align-middle">Date of Approval (Ref.<br/>Approval Letter)</th>
                 </tr>
               </thead>
               <tbody>
@@ -464,41 +457,41 @@ export default function CestPage() {
                   <tr><td colSpan={14} className="text-center py-8 text-[#999]">No projects found</td></tr>
                 ) : filteredProjects.map((project) => (
                   <tr key={project.id}>
-                    <td className="!text-center">
+                    <td className="py-3 px-2 text-center border-b border-[#e0e0e0]">
                       <input type="checkbox" className="w-4 h-4 accent-accent cursor-pointer" checked={selectedProjects.includes(project.id)} onChange={(e) => setSelectedProjects(prev => e.target.checked ? [...prev, project.id] : prev.filter(id => id !== project.id))} />
                     </td>
-                    <td className="text-primary font-semibold whitespace-nowrap">#{project.code.replace(/^0+/, '').padStart(3, '0')}</td>
+                    <td className="text-primary font-semibold whitespace-nowrap py-3 px-2 text-left border-b border-[#e0e0e0]">#{project.code.replace(/^0+/, '').padStart(3, '0')}</td>
 
-                    {/* Company Logo — same pattern as SETUP */}
-                    <td className="!text-center">
+                    {/* Company Logo */}
+                    <td className="py-3 px-1.5 text-center border-b border-[#e0e0e0]">
                       {project.companyLogoUrl ? (
                         <img src={project.companyLogoUrl} alt="Logo" className="w-8 h-8 rounded-full object-cover inline-block border border-[#d0d0d0]" />
                       ) : (
-                        <div className="w-8 h-8 rounded-full bg-[#e8f5e9] flex items-center justify-center inline-flex">
-                          <Icon icon="mdi:leaf" width={18} height={18} color="#2e7d32" />
+                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center inline-flex border border-[#d0d0d0]">
+                          <Icon icon="mdi:domain" width={18} height={18} color="#999" />
                         </div>
                       )}
                     </td>
 
-                    <td className="max-w-[250px] text-[#333] font-medium whitespace-normal break-words"><Link href={`/cest/${project.id}`} className="text-primary no-underline font-medium hover:text-accent hover:underline">{project.projectTitle}</Link></td>
-                    <td>{project.location ?? '—'}</td>
-                    <td>{project.beneficiaries ?? '—'}</td>
-                    <td>
+                    <td className="max-w-[300px] text-[#333] font-medium whitespace-normal break-words py-3 px-2 text-left border-b border-[#e0e0e0]"><Link href={`/cest/${project.id}`} className="text-primary no-underline font-medium hover:text-accent hover:underline">{project.projectTitle}</Link></td>
+                    <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0] whitespace-normal break-words">{project.location ?? '—'}</td>
+                    <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0] whitespace-normal break-words">{project.beneficiaries ?? '—'}</td>
+                    <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">
                       <span className="inline-block py-1 px-2.5 bg-[#e3f2fd] text-[#1565c0] rounded-[15px] text-[11px] font-medium">
                         {project.programFunding ?? '—'}
                       </span>
                     </td>
-                    <td>
+                    <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">
                       <span className="inline-block py-1 px-3 rounded-[15px] text-[11px] font-medium bg-[#e8f5e9] text-[#2e7d32]">
                         {project.status ?? '—'}
                       </span>
                     </td>
-                    <td>{formatCurrency(project.approvedAmount)}</td>
-                    <td>{formatCurrency(project.releasedAmount)}</td>
-                    <td>{project.projectDuration ?? '—'}</td>
-                    <td>{project.staffAssigned ?? '—'}</td>
-                    <td>{project.year ?? '—'}</td>
-                    <td>{project.dateOfApproval ?? '—'}</td>
+                    <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{formatCurrency(project.approvedAmount)}</td>
+                    <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{formatCurrency(project.releasedAmount)}</td>
+                    <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0] whitespace-normal break-words">{project.projectDuration ?? '—'}</td>
+                    <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0] whitespace-normal break-words">{project.staffAssigned ?? '—'}</td>
+                    <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.year ?? '—'}</td>
+                    <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.dateOfApproval ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>
