@@ -255,6 +255,21 @@ export default function DashboardPage() {
     return () => window.removeEventListener('openEventModal', handleOpenEventModal);
   }, [events]);
 
+  // Check for pending eventId from notification navigation (when coming from another page)
+  useEffect(() => {
+    if (events.length > 0) {
+      const pendingEventId = sessionStorage.getItem('pendingEventId');
+      if (pendingEventId) {
+        sessionStorage.removeItem('pendingEventId');
+        const eventToShow = events.find(ev => ev.id === pendingEventId);
+        if (eventToShow) {
+          setSelectedEvent(eventToShow);
+          setShowEventDetailModal(true);
+        }
+      }
+    }
+  }, [events]);
+
   // Build suggestions from real project titles, codes, and firms
   const filteredSuggestions = searchQuery.trim()
     ? allProjects

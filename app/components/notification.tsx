@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { Cake, FileEdit, Clock, Tag, X, CalendarPlus } from 'lucide-react';
 
@@ -169,6 +170,8 @@ export default function NotificationDropdown() {
   const isInitialLoad = useRef(true);
   const previousNotificationIdsRef = useRef<Set<string>>(new Set());
   const shownToastIdsRef = useRef<Set<string>>(new Set());
+  const router = useRouter();
+  const pathname = usePathname();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -364,19 +367,53 @@ export default function NotificationDropdown() {
     setNotifications(notifications.map((n) => ({ ...n, read: true })));
   };
 
-  // Handle notification click - dispatch custom event for event-mention
-  const handleNotificationClick = (notification: Notification) => {
-    markAsRead(notification.id);
+  // Handle notification click - navigate to event for event-mention
+  const handleNotificationClick = useCallback((notification: Notification) => {
+    // Mark as read
+    markAsReadApi(notification.id);
+    setNotifications((prev) => prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n)));
 
     if (notification.type === 'event-mention' && notification.eventId) {
-      // Dispatch custom event to open event modal
-      const event = new CustomEvent('openEventModal', {
-        detail: { eventId: notification.eventId }
-      });
-      window.dispatchEvent(event);
       setIsOpen(false);
+
+      // If not on dashboard, navigate there first with the eventId as query param
+      if (pathname !== '/dashboard') {
+        // Store eventId in sessionStorage so dashboard can open it after navigation
+        sessionStorage.setItem('pendingEventId', notification.eventId);
+        router.push('/dashboard');
+      } else {
+        // Already on dashboard, dispatch custom event to open event modal
+        const event = new CustomEvent('openEventModal', {
+          detail: { eventId: notification.eventId }
+        });
+        window.dispatchEvent(event);
+      }
     }
-  };
+  }, [pathname, router]);
+
+  // Handle toast notification click
+  const handleToastClick = useCallback((notification: ToastNotification) => {
+    // Mark as read
+    markAsReadApi(notification.id);
+    setNotifications((prev) => prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n)));
+
+    // Close the toast
+    closeToast(notification.id);
+
+    if (notification.type === 'event-mention' && notification.eventId) {
+      // If not on dashboard, navigate there first
+      if (pathname !== '/dashboard') {
+        sessionStorage.setItem('pendingEventId', notification.eventId);
+        router.push('/dashboard');
+      } else {
+        // Already on dashboard, dispatch custom event to open event modal
+        const event = new CustomEvent('openEventModal', {
+          detail: { eventId: notification.eventId }
+        });
+        window.dispatchEvent(event);
+      }
+    }
+  }, [pathname, router, closeToast]);
 
   // Render notification icon - profile picture for event-mention, otherwise standard icon
   const renderNotificationIcon = (notification: Notification, size: 'sm' | 'md' = 'sm') => {
@@ -494,15 +531,7 @@ export default function NotificationDropdown() {
             key={toast.id}
             notification={toast}
             onClose={closeToast}
-            onClick={(n) => {
-              if (n.type === 'event-mention' && n.eventId) {
-                const event = new CustomEvent('openEventModal', {
-                  detail: { eventId: n.eventId }
-                });
-                window.dispatchEvent(event);
-                closeToast(n.id);
-              }
-            }}
+            onClick={handleToastClick}
           />
         ))}
       </div>
