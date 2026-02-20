@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Icon } from '@iconify/react';
 import Link from 'next/link';
+import 'leaflet/dist/leaflet.css';
 import DashboardLayout from '../components/DashboardLayout';
 
 // Helper to get userId for activity logging
@@ -28,6 +29,7 @@ interface CestProject {
   code: string;
   projectTitle: string;
   location: string | null;
+  coordinates: string | null;
   beneficiaries: string | null;
   programFunding: string | null;
   status: string | null;
@@ -101,6 +103,7 @@ export default function CestPage() {
   const [projects, setProjects] = useState<CestProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -120,6 +123,7 @@ export default function CestPage() {
     province: '',
     municipality: '',
     barangay: '',
+    coordinates: '',
     beneficiaries: '',
     typeOfBeneficiary: '',
     partnerLGU: '',
@@ -144,7 +148,7 @@ export default function CestPage() {
 
   const resetForm = () => {
     setFormData({
-      projectTitle: '', projectDate: '', province: '', municipality: '', barangay: '',
+      projectTitle: '', projectDate: '', province: '', municipality: '', barangay: '', coordinates: '',
       beneficiaries: '', typeOfBeneficiary: '', partnerLGU: '', cooperatorName: '',
       contactNumber: '', emailAddress: '', programFunding: '', status: '',
       approvedAmount: '', releasedAmount: '', projectDuration: '', dateOfRelease: '',
@@ -279,6 +283,7 @@ export default function CestPage() {
       projectTitle: project.projectTitle,
       projectDate: project.dateOfApproval ? project.dateOfApproval.slice(0, 10) : '',
       province, municipality, barangay,
+      coordinates: project.coordinates ?? '',
       beneficiaries: project.beneficiaries ?? '',
       typeOfBeneficiary: '',
       partnerLGU: '',
@@ -323,6 +328,7 @@ export default function CestPage() {
       const payload: Record<string, unknown> = {
         projectTitle: formData.projectTitle,
         location,
+        coordinates: formData.coordinates || null,
         beneficiaries: formData.beneficiaries || null,
         programFunding: formData.programFunding || null,
         status: formData.status || null,
@@ -560,6 +566,16 @@ export default function CestPage() {
                 </div>
               </div>
 
+              <div className="flex flex-col gap-1 w-full">
+                <label className="text-[13px] font-semibold text-[#333]">Coordinates</label>
+                <div className="relative flex items-center">
+                  <input type="text" placeholder="e.g. 8.465281,124.623238" value={formData.coordinates} readOnly className={`${modalInputCls} pr-9!`} />
+                  <button type="button" className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-none border-none p-0 m-0 text-[#999] flex items-center justify-center cursor-pointer transition-colors duration-200 hover:text-accent" onClick={() => setShowMapPicker(true)} title="Pick on Map">
+                    <Icon icon="mdi:map-marker-plus-outline" width={20} height={20} />
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-3 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-[13px] font-semibold text-[#333]">Beneficiaries</label>
@@ -671,6 +687,88 @@ export default function CestPage() {
           </div>
         </div>
       )}
+      {/* Map Picker Modal */}
+      {showMapPicker && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1100]" onClick={() => setShowMapPicker(false)}>
+          <div className="bg-white rounded-2xl w-[700px] max-w-[95vw] max-h-[90vh] overflow-hidden flex flex-col shadow-[0_12px_40px_rgba(0,0,0,0.25)]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between py-4 px-6 border-b border-[#eee]">
+              <h3 className="m-0 text-base text-primary font-bold">Pick Location on Map</h3>
+              <button className="bg-transparent border-none cursor-pointer text-[#999] p-[5px] flex items-center justify-center rounded-full transition-all duration-200 hover:bg-[#f0f0f0] hover:text-[#333]" onClick={() => setShowMapPicker(false)}>
+                <Icon icon="mdi:close" width={20} height={20} />
+              </button>
+            </div>
+            <p className="m-0 py-2 px-6 text-xs text-[#888]">Click on the map to place a pin and auto-generate coordinates</p>
+            <div className="flex gap-6 px-6 pb-3 text-[13px] text-[#555]">
+              <span>Coordinates: <strong className="text-primary">{formData.coordinates || '—'}</strong></span>
+            </div>
+            <div className="w-full h-[400px] relative">
+              <MapPickerInner
+                lat={formData.coordinates ? parseFloat(formData.coordinates.split(',')[0]) : null}
+                lng={formData.coordinates ? parseFloat(formData.coordinates.split(',')[1]) : null}
+                onPick={(lat, lng) => { setFormData(prev => ({ ...prev, coordinates: `${lat.toFixed(6)},${lng.toFixed(6)}` })); }}
+              />
+            </div>
+            <div className="flex justify-center py-4 px-6 border-t border-[#eee]">
+              <button className="bg-accent text-white border-none rounded-[20px] py-2.5 px-10 text-sm font-semibold cursor-pointer transition-colors duration-200 hover:bg-accent-hover" onClick={() => setShowMapPicker(false)}>
+                Confirm Location
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
+  );
+}
+
+// ── Map Picker Component ──
+function MapPickerInner({ lat, lng, onPick }: { lat: number | null; lng: number | null; onPick: (lat: number, lng: number) => void }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [comps, setComps] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [L, setL] = useState<any>(null);
+
+  useEffect(() => {
+    Promise.all([
+      import('react-leaflet'),
+      import('leaflet'),
+    ]).then(([rl, leaflet]) => {
+      setComps(rl);
+      setL(leaflet.default || leaflet);
+    });
+  }, []);
+
+  if (!comps || !L) {
+    return <div className="w-full h-full flex items-center justify-center text-base text-[#666] bg-[#f5f5f5]">Loading map...</div>;
+  }
+
+  const { MapContainer, TileLayer, Marker, useMapEvents } = comps;
+
+  const markerIcon = L.divIcon({
+    html: `<div style="position:relative;width:30px;height:40px;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="40" viewBox="0 0 30 40">
+        <path d="M15 0C7 0 0 7 0 15c0 11 15 25 15 25s15-14 15-25C30 7 23 0 15 0z" fill="#2e7d32" stroke="#1b5e20" stroke-width="1"/>
+        <circle cx="15" cy="13" r="5" fill="white"/>
+      </svg>
+    </div>`,
+    iconSize: [30, 40],
+    iconAnchor: [15, 40],
+    className: '',
+  });
+
+  function ClickHandler() {
+    useMapEvents({
+      click(e: { latlng: { lat: number; lng: number } }) {
+        onPick(e.latlng.lat, e.latlng.lng);
+      },
+    });
+    return null;
+  }
+
+  return (
+    <MapContainer center={[lat || 8.477, lng || 124.646]} zoom={12} style={{ width: '100%', height: '100%' }} zoomControl={true}>
+      <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      <ClickHandler />
+      {lat !== null && lng !== null && (<Marker position={[lat, lng]} icon={markerIcon} />)}
+    </MapContainer>
   );
 }

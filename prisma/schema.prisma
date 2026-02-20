@@ -103,6 +103,7 @@ model CestProject {
   code            String                @unique
   projectTitle    String
   location        String?
+  coordinates     String?
   beneficiaries   String?
   programFunding  String?
   status          String?
