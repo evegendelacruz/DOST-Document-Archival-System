@@ -118,12 +118,12 @@ export default function Header() {
   return (
     <header className="flex justify-between items-center py-2 px-6 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.1)] z-[100] max-md:py-1.5 max-md:px-3.5">
       <div className="flex items-center gap-2.5">
-        <div className="w-9 h-9 flex items-center justify-center">
+        <div className="w-9 h-9 flex-shrink-0 flex items-center justify-center">
           <Image src="/Logo1.png" alt="DOST Logo" width={36} height={36} className="w-9 h-9 object-contain" />
         </div>
-        <div className="flex flex-col">
-          <div className="text-[11px] text-[#666] font-bold tracking-[0.3px] max-md:text-[9px]">Provincial Science and Technology Office in Misamis Oriental</div>
-          <div className="text-lg text-primary font-bold tracking-[0.2px] max-md:text-[13px]">Department of Science and Technology</div>
+        <div className="flex flex-col sm:flex hidden">
+          <div className="text-[11px] text-[#666] font-bold tracking-[0.3px]">Provincial Science and Technology Office in Misamis Oriental</div>
+          <div className="text-lg text-primary font-bold tracking-[0.2px]">Department of Science and Technology</div>
         </div>
       </div>
       <div className="flex items-center gap-2.5">
