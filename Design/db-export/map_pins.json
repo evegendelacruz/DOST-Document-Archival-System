@@ -1,0 +1,652 @@
+[
+  {
+    "id": "28e5cbdc-dc14-4da3-af3b-29e4471bd113",
+    "lat": 8.4756,
+    "lng": 124.6422,
+    "label": "Cagayan de Oro City",
+    "district": 0,
+    "program": "SETUP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "93af0e2f-f99a-4cbb-8562-31c84c13b1e0",
+    "lat": 8.447,
+    "lng": 124.5363,
+    "label": "Opol",
+    "district": 2,
+    "program": "SETUP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "a84b4134-1574-4983-b17b-b6ceb1b3e882",
+    "lat": 8.5597,
+    "lng": 124.5271,
+    "label": "El Salvador",
+    "district": 2,
+    "program": "SETUP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "41e5e7e1-1377-4808-ae35-2e14f7445514",
+    "lat": 8.5705,
+    "lng": 124.4712,
+    "label": "Alubijid",
+    "district": 2,
+    "program": "SETUP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "ac31e9ea-39f9-4ea5-ab35-4f12b374796e",
+    "lat": 8.5747,
+    "lng": 124.4409,
+    "label": "Laguindingan",
+    "district": 2,
+    "program": "SETUP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "5137621b-b4c6-4854-b7e7-9e9c7cc54a35",
+    "lat": 8.5944,
+    "lng": 124.4058,
+    "label": "Gitagum",
+    "district": 2,
+    "program": "SETUP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "4b8c2818-3a4b-4625-9c40-e97edf54bccc",
+    "lat": 8.5627,
+    "lng": 124.3523,
+    "label": "Libertad",
+    "district": 2,
+    "program": "SETUP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "8f3e1c01-9f68-4548-a204-68883b9b9d48",
+    "lat": 8.4975,
+    "lng": 124.3056,
+    "label": "Initao",
+    "district": 2,
+    "program": "SETUP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "7b419893-d652-4567-8e0c-74c3807076fe",
+    "lat": 8.4033,
+    "lng": 124.2888,
+    "label": "Manticao",
+    "district": 2,
+    "program": "SETUP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "bd1399f8-33c6-4697-8265-ef3242c76c4c",
+    "lat": 8.3432,
+    "lng": 124.2598,
+    "label": "Lugait",
+    "district": 2,
+    "program": "SETUP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "eb21149a-c7e8-483e-86f3-ba0e7ff6ee1c",
+    "lat": 8.5387,
+    "lng": 124.7544,
+    "label": "Tagoloan",
+    "district": 2,
+    "program": "SETUP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "99ea6369-71c7-4141-b5f6-23ee549e233f",
+    "lat": 8.5837,
+    "lng": 124.7699,
+    "label": "Villanueva",
+    "district": 2,
+    "program": "SETUP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "7d57676d-ff07-4344-a1c9-17ed9a11e57a",
+    "lat": 8.6504,
+    "lng": 124.7547,
+    "label": "Jasaan",
+    "district": 2,
+    "program": "SETUP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "77a97cb0-b1dc-46b7-bfd1-676adbda3e70",
+    "lat": 8.7429,
+    "lng": 124.7756,
+    "label": "Balingasag",
+    "district": 1,
+    "program": "SETUP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "0eb18ff9-2f1e-4c0f-bcdc-ae5e1ba84059",
+    "lat": 8.8059,
+    "lng": 124.7877,
+    "label": "Lagonglong",
+    "district": 1,
+    "program": "SETUP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "60cb6aeb-62d7-4a30-ad83-f6dabe7ed85f",
+    "lat": 8.8589,
+    "lng": 124.7868,
+    "label": "Salay",
+    "district": 1,
+    "program": "SETUP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "0bb06c3a-32ce-497c-875f-09091b80b7c1",
+    "lat": 8.9211,
+    "lng": 124.785,
+    "label": "Binuangan",
+    "district": 1,
+    "program": "SETUP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "6053b722-af8f-457a-ae01-0734a936a33b",
+    "lat": 8.9563,
+    "lng": 124.7881,
+    "label": "Sugbongcogon",
+    "district": 1,
+    "program": "SETUP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "f0bcf6ae-3a75-45d9-b8f3-8bda7372a264",
+    "lat": 8.984,
+    "lng": 124.7911,
+    "label": "Kinoguitan",
+    "district": 1,
+    "program": "SETUP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "95c1fea7-a774-4ca8-b128-b9ae1c225721",
+    "lat": 8.6119,
+    "lng": 124.8934,
+    "label": "Claveria",
+    "district": 2,
+    "program": "SETUP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "807a636b-f89b-49ee-b568-4663c121abc2",
+    "lat": 8.4655,
+    "lng": 124.6441,
+    "label": "CDO - Macasandig",
+    "district": 0,
+    "program": "CEST",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "187b313c-7a8e-486a-9707-a83d73173434",
+    "lat": 8.5039,
+    "lng": 124.6162,
+    "label": "CDO - Bulua",
+    "district": 0,
+    "program": "CEST",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "f63cfc3e-0bec-4efb-a646-1f40acc3cbe1",
+    "lat": 8.5214,
+    "lng": 124.5731,
+    "label": "Opol - Poblacion",
+    "district": 2,
+    "program": "CEST",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "24a92eab-afee-4e93-839a-7ebea6b7189a",
+    "lat": 8.5597,
+    "lng": 124.5271,
+    "label": "El Salvador - Centro",
+    "district": 2,
+    "program": "CEST",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "fa33bb67-dea0-4477-b683-a8004c9cce22",
+    "lat": 8.5705,
+    "lng": 124.4712,
+    "label": "Alubijid - Poblacion",
+    "district": 2,
+    "program": "CEST",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "8046e020-c4b0-4416-865f-9f59311a05bd",
+    "lat": 8.562,
+    "lng": 124.353,
+    "label": "Libertad - Poblacion",
+    "district": 2,
+    "program": "CEST",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "ba500838-fdf5-4c4a-aaf5-97a18753c2ce",
+    "lat": 8.4971,
+    "lng": 124.3045,
+    "label": "Initao - Poblacion",
+    "district": 2,
+    "program": "CEST",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "09338bde-ce30-435a-a89a-a4512f2e6eb7",
+    "lat": 8.4336,
+    "lng": 124.291,
+    "label": "Naawan",
+    "district": 2,
+    "program": "CEST",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "9b29f397-ca04-4626-a752-fc4b04a374ad",
+    "lat": 8.5391,
+    "lng": 124.7534,
+    "label": "Tagoloan - Poblacion",
+    "district": 2,
+    "program": "CEST",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "1df61fcd-2ee2-4faf-9ac1-f3776e9d5995",
+    "lat": 8.5837,
+    "lng": 124.7699,
+    "label": "Villanueva - Centro",
+    "district": 2,
+    "program": "CEST",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "542da22d-2653-4db8-a380-2329325688b1",
+    "lat": 8.6504,
+    "lng": 124.7547,
+    "label": "Jasaan - Poblacion",
+    "district": 2,
+    "program": "CEST",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "ffa5e5af-941a-445b-a9c8-c53f1c22f5b0",
+    "lat": 8.7438,
+    "lng": 124.7757,
+    "label": "Balingasag - Poblacion",
+    "district": 1,
+    "program": "CEST",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "8663319e-1533-417f-853b-6210896aa777",
+    "lat": 8.8058,
+    "lng": 124.7894,
+    "label": "Lagonglong - Poblacion",
+    "district": 1,
+    "program": "CEST",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "868132da-61d4-432b-ab15-0a22a4d1cce0",
+    "lat": 8.8591,
+    "lng": 124.7881,
+    "label": "Salay - Poblacion",
+    "district": 1,
+    "program": "CEST",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "d7398eb2-2b13-449c-9213-03b562877666",
+    "lat": 8.6118,
+    "lng": 124.8923,
+    "label": "Claveria - Poblacion",
+    "district": 2,
+    "program": "CEST",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "58bcf625-7086-4149-b877-f239a03d4e66",
+    "lat": 8.4693,
+    "lng": 124.647,
+    "label": "CDO - Nazareth",
+    "district": 0,
+    "program": "SSCP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "cf89cf18-99ab-4d00-afd6-58788a1616cc",
+    "lat": 8.4992,
+    "lng": 124.6391,
+    "label": "CDO - Kauswagan",
+    "district": 0,
+    "program": "SSCP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "abf72ac9-b940-494d-a0ca-517d8766a7ed",
+    "lat": 8.4748,
+    "lng": 124.6851,
+    "label": "CDO - Gusa",
+    "district": 0,
+    "program": "SSCP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "31fb068d-1e8f-4bb4-b2f3-5c106794efe9",
+    "lat": 8.5214,
+    "lng": 124.5731,
+    "label": "Opol - Poblacion",
+    "district": 2,
+    "program": "SSCP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "ded494ec-9aa1-4715-a2b3-e33ff0a68934",
+    "lat": 8.5749,
+    "lng": 124.4439,
+    "label": "Laguindingan - Poblacion",
+    "district": 2,
+    "program": "SSCP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "6813a72d-338f-4a18-a188-ff1d67d2c512",
+    "lat": 8.595,
+    "lng": 124.4078,
+    "label": "Gitagum - Poblacion",
+    "district": 2,
+    "program": "SSCP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "506d2525-fba8-40c6-8424-5757e12f0055",
+    "lat": 8.4971,
+    "lng": 124.3045,
+    "label": "Initao - Poblacion",
+    "district": 2,
+    "program": "SSCP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "8534b5b8-d19b-4b4e-a7b1-7820a6282dda",
+    "lat": 8.3432,
+    "lng": 124.2598,
+    "label": "Lugait - Poblacion",
+    "district": 2,
+    "program": "SSCP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "a5ab12a4-f386-40a9-87c7-f3d73b5401d3",
+    "lat": 8.5391,
+    "lng": 124.7534,
+    "label": "Tagoloan - Poblacion",
+    "district": 2,
+    "program": "SSCP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "a7afec27-8a35-4483-abe6-b0d50511ba5f",
+    "lat": 8.6504,
+    "lng": 124.7547,
+    "label": "Jasaan - Poblacion",
+    "district": 2,
+    "program": "SSCP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "e83444b9-4b90-419d-86aa-793548577c64",
+    "lat": 8.7438,
+    "lng": 124.7757,
+    "label": "Balingasag - Poblacion",
+    "district": 1,
+    "program": "SSCP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "ce117021-7260-45c4-ba96-afb4946268a7",
+    "lat": 8.8591,
+    "lng": 124.7881,
+    "label": "Salay - Poblacion",
+    "district": 1,
+    "program": "SSCP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "f05928b4-72ae-4473-baff-a28aa6ddd964",
+    "lat": 8.9194,
+    "lng": 124.7846,
+    "label": "Binuangan - Poblacion",
+    "district": 1,
+    "program": "SSCP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "f6d185f1-f709-4cde-8cd0-d9d5cbfb535b",
+    "lat": 8.9561,
+    "lng": 124.7879,
+    "label": "Sugbongcogon - Poblacion",
+    "district": 1,
+    "program": "SSCP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "b8eb75e1-9924-4429-848d-3d68f93a33c1",
+    "lat": 8.9831,
+    "lng": 124.7928,
+    "label": "Kinoguitan - Poblacion",
+    "district": 1,
+    "program": "SSCP",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "ba0871a4-c72f-4283-9357-aa0e728b8f04",
+    "lat": 8.481,
+    "lng": 124.637,
+    "label": "CDO - Carmen",
+    "district": 0,
+    "program": "LGIA",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "bd741f50-99f4-47d3-9a25-611478ea16e6",
+    "lat": 8.4901,
+    "lng": 124.6463,
+    "label": "CDO - Consolacion",
+    "district": 0,
+    "program": "LGIA",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "d0919575-a37e-4457-a6f4-afb86336389b",
+    "lat": 8.4964,
+    "lng": 124.6051,
+    "label": "CDO - Iponan",
+    "district": 0,
+    "program": "LGIA",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "9e55ceee-e296-4e91-a999-0ea3117c3d1d",
+    "lat": 8.5597,
+    "lng": 124.5271,
+    "label": "El Salvador - Poblacion",
+    "district": 2,
+    "program": "LGIA",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "09e9c327-8e0b-47ea-a040-3bc71761ab42",
+    "lat": 8.5705,
+    "lng": 124.4712,
+    "label": "Alubijid - Poblacion",
+    "district": 2,
+    "program": "LGIA",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "01e1f691-e54d-437a-bf9b-9c5b9ae46390",
+    "lat": 8.562,
+    "lng": 124.353,
+    "label": "Libertad - Poblacion",
+    "district": 2,
+    "program": "LGIA",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "0864a399-ca50-4466-9eeb-1e14f49659c5",
+    "lat": 8.4033,
+    "lng": 124.2888,
+    "label": "Manticao - Poblacion",
+    "district": 2,
+    "program": "LGIA",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "a2ab4ba2-ff8f-4ac8-b6ff-fb43db94b70a",
+    "lat": 8.5391,
+    "lng": 124.7534,
+    "label": "Tagoloan - Poblacion",
+    "district": 2,
+    "program": "LGIA",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "3774a897-07d5-4231-b848-3a9c873d431a",
+    "lat": 8.5837,
+    "lng": 124.7699,
+    "label": "Villanueva - Poblacion",
+    "district": 2,
+    "program": "LGIA",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "b3d36250-b54a-460a-ae98-d4fca79b3037",
+    "lat": 8.6504,
+    "lng": 124.7547,
+    "label": "Jasaan - Poblacion",
+    "district": 2,
+    "program": "LGIA",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "146cb8b7-4583-4f03-8400-4afd3d49ac7d",
+    "lat": 8.7438,
+    "lng": 124.7757,
+    "label": "Balingasag - Poblacion",
+    "district": 1,
+    "program": "LGIA",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "f113532e-19e2-482f-aead-c34afc9535c5",
+    "lat": 8.8058,
+    "lng": 124.7894,
+    "label": "Lagonglong - Poblacion",
+    "district": 1,
+    "program": "LGIA",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "d8ca8332-9332-4591-8412-9512a8924efd",
+    "lat": 8.8591,
+    "lng": 124.7881,
+    "label": "Salay - Poblacion",
+    "district": 1,
+    "program": "LGIA",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "20b95de7-4aad-4d71-a479-fa612680208b",
+    "lat": 8.6118,
+    "lng": 124.8923,
+    "label": "Claveria - Poblacion",
+    "district": 2,
+    "program": "LGIA",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  },
+  {
+    "id": "e0c58946-73c8-4fbf-bcf8-79a91b9fd699",
+    "lat": 8.9831,
+    "lng": 124.7928,
+    "label": "Kinoguitan - Poblacion",
+    "district": 1,
+    "program": "LGIA",
+    "createdAt": "2026-02-09T22:01:52.344Z",
+    "updatedAt": "2026-02-09T22:01:52.344Z"
+  }
+]

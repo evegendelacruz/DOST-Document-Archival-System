@@ -28,6 +28,14 @@ type SetupProjectPin = {
   companyLogoUrl: string | null;
 };
 
+type CestProjectPin = {
+  id: string;
+  projectTitle: string;
+  location: string | null;
+  coordinates: string | null;
+  companyLogoUrl: string | null;
+};
+
 type NominatimResult = {
   place_id: number;
   display_name: string;
@@ -35,27 +43,6 @@ type NominatimResult = {
   lon: string;
 };
 
-const cestPins: Pin[] = [
-  { lat: 8.5039, lng: 124.6162, label: 'CDO - Bulua', district: 3 },
-  { lat: 8.4810, lng: 124.6370, label: 'CDO - Carmen', district: 3 },
-  { lat: 8.4693, lng: 124.6470, label: 'CDO - Nazareth', district: 3 },
-  { lat: 8.4655, lng: 124.6441, label: 'CDO - Macasandig', district: 4 },
-  { lat: 8.4748, lng: 124.6851, label: 'CDO - Gusa', district: 4 },
-  { lat: 8.4580, lng: 124.6780, label: 'CDO - Cugman', district: 4 },
-  { lat: 8.5214, lng: 124.5731, label: 'Opol - Poblacion', district: 2 },
-  { lat: 8.5597, lng: 124.5271, label: 'El Salvador - Centro', district: 2 },
-  { lat: 8.5705, lng: 124.4712, label: 'Alubijid - Poblacion', district: 2 },
-  { lat: 8.5620, lng: 124.3530, label: 'Libertad - Poblacion', district: 2 },
-  { lat: 8.4971, lng: 124.3045, label: 'Initao - Poblacion', district: 2 },
-  { lat: 8.4336, lng: 124.2910, label: 'Naawan', district: 2 },
-  { lat: 8.5391, lng: 124.7534, label: 'Tagoloan - Poblacion', district: 2 },
-  { lat: 8.5837, lng: 124.7699, label: 'Villanueva - Centro', district: 2 },
-  { lat: 8.6504, lng: 124.7547, label: 'Jasaan - Poblacion', district: 2 },
-  { lat: 8.7438, lng: 124.7757, label: 'Balingasag - Poblacion', district: 1 },
-  { lat: 8.8058, lng: 124.7894, label: 'Lagonglong - Poblacion', district: 1 },
-  { lat: 8.8591, lng: 124.7881, label: 'Salay - Poblacion', district: 1 },
-  { lat: 8.6118, lng: 124.8923, label: 'Claveria - Poblacion', district: 2 },
-];
 
 const sscpPins: Pin[] = [
   { lat: 8.4693, lng: 124.6470, label: 'CDO - Nazareth', district: 3 },
@@ -136,6 +123,15 @@ const filterSetupByDistrict = (projects: SetupProjectPin[], district: string) =>
   const allowed = districtMap[district] || [];
   return projects.filter(p => {
     const pd = getDistrictFromAddress(p.address);
+    return allowed.includes(pd);
+  });
+};
+
+const filterCestByDistrict = (projects: CestProjectPin[], district: string) => {
+  if (district === 'all') return projects;
+  const allowed = districtMap[district] || [];
+  return projects.filter(p => {
+    const pd = getDistrictFromAddress(p.location);
     return allowed.includes(pd);
   });
 };
@@ -240,10 +236,11 @@ function AddressSearchBar({ onSelect }: { onSelect: (lat: number, lng: number) =
 
 // ── Map Component ───────────────────────────────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function MapComponent({ activePrograms, activeDistrict, setupProjects, flyToCoords }: {
+function MapComponent({ activePrograms, activeDistrict, setupProjects, cestProjects, flyToCoords }: {
   activePrograms: string[];
   activeDistrict: string;
   setupProjects: SetupProjectPin[];
+  cestProjects: CestProjectPin[];
   flyToCoords: { lat: number; lng: number; key: number } | null;
 }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -395,11 +392,20 @@ function MapComponent({ activePrograms, activeDistrict, setupProjects, flyToCoor
           </Marker>
         );
       })}
-      {showCest && filterByDistrict(cestPins, activeDistrict).map((pin, idx) => (
-        <Marker key={`cest-${idx}`} position={[pin.lat, pin.lng]} icon={cestIcon}>
-          <Popup><a href={`/setup/${(idx % 8) + 1}`} style={{ color: '#2e7d32', fontWeight: 600, textDecoration: 'none' }}>{pin.label}</a></Popup>
-        </Marker>
-      ))}
+      {showCest && filterCestByDistrict(cestProjects, activeDistrict).map((project) => {
+        const [lat, lng] = project.coordinates!.split(',').map(s => parseFloat(s.trim()));
+        if (isNaN(lat) || isNaN(lng)) return null;
+        return (
+          <Marker key={`cest-${project.id}`} position={[lat, lng]} icon={cestIcon}>
+            <Popup>
+              <div>
+                <a href={`/cest/${project.id}`} style={{ color: '#2e7d32', fontWeight: 600, textDecoration: 'none', fontSize: '13px' }}>{project.projectTitle}</a>
+                {project.location && <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#888' }}>{project.location}</p>}
+              </div>
+            </Popup>
+          </Marker>
+        );
+      })}
       {showSscp && filterByDistrict(sscpPins, activeDistrict).map((pin, idx) => (
         <Marker key={`sscp-${idx}`} position={[pin.lat, pin.lng]} icon={sscpIcon}>
           <Popup><a href={`/setup/${(idx % 8) + 1}`} style={{ color: '#707070', fontWeight: 600, textDecoration: 'none' }}>{pin.label}</a></Popup>
@@ -548,6 +554,7 @@ export default function MapsPage() {
   const [activeDistrict, setActiveDistrict] = useState('all');
   const [activePrograms, setActivePrograms] = useState<string[]>([]);
   const [setupProjects, setSetupProjects] = useState<SetupProjectPin[]>([]);
+  const [cestProjects, setCestProjects] = useState<CestProjectPin[]>([]);
   const [flyToCoords, setFlyToCoords] = useState<{ lat: number; lng: number; key: number } | null>(null);
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
 
@@ -555,6 +562,10 @@ export default function MapsPage() {
     fetch('/api/setup-projects')
       .then(res => res.json())
       .then((data: SetupProjectPin[]) => setSetupProjects(data.filter(p => p.coordinates)))
+      .catch(() => {});
+    fetch('/api/cest-projects')
+      .then(res => res.json())
+      .then((data: CestProjectPin[]) => setCestProjects(data.filter(p => p.coordinates)))
       .catch(() => {});
   }, []);
 
@@ -588,6 +599,7 @@ export default function MapsPage() {
             activePrograms={activePrograms}
             activeDistrict={activeDistrict}
             setupProjects={setupProjects}
+            cestProjects={cestProjects}
             flyToCoords={flyToCoords}
           />
         </div>
