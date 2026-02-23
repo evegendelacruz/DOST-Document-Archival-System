@@ -6,6 +6,24 @@ import Link from 'next/link';
 import { Icon } from '@iconify/react';
 import DashboardLayout from '../../components/DashboardLayout';
 
+// Helper to get userId for activity logging
+function getUserId(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem('user');
+    if (!stored) return null;
+    return JSON.parse(stored)?.id || null;
+  } catch {
+    return null;
+  }
+}
+
+// Helper to create headers with userId
+function getAuthHeaders(): HeadersInit {
+  const userId = getUserId();
+  return userId ? { 'x-user-id': userId } : {};
+}
+
 interface Project {
   id: string;
   code: string;
@@ -330,12 +348,13 @@ function DocumentTable({
     }
   }, [documents, annualPISRows, completionReportRows, moaSupplementalCount, dropdownSelections, fundReleaseDateRows, qprRows]);
 
-  const calculateProgress = () => {
-    let totalItems = 0;
-    let uploadedItems = 0;
+  const getDocsForItem = (templateItemId: string): ProjectDocument[] => {
+    return documents.filter(d => d.templateItemId === templateItemId);
+  };
 
-  const getDocsForItem = (tid: string) => documents.filter(d => d.templateItemId === tid);
-  const getDocForItem = (tid: string) => documents.find(d => d.templateItemId === tid);
+  const getDocForItem = (templateItemId: string): ProjectDocument | undefined => {
+    return documents.find(d => d.templateItemId === templateItemId);
+  };
 
   const calculateProgress = () => {
     let totalItems = 0, uploadedItems = 0;
@@ -384,14 +403,6 @@ function DocumentTable({
   useEffect(() => { fetchDocuments(); }, [fetchDocuments]);
 
   const toggleDropdown = (key: string) => setExpandedDropdowns(prev => ({ ...prev, [key]: !prev[key] }));
-
-  const getDocsForItem = (templateItemId: string): ProjectDocument[] => {
-    return documents.filter(d => d.templateItemId === templateItemId);
-  };
-
-  const getDocForItem = (templateItemId: string): ProjectDocument | undefined => {
-    return documents.find(d => d.templateItemId === templateItemId);
-  };
 
   const handleUploadClick = (templateItemId: string) => {
     if (!isEditMode) return;
@@ -446,6 +457,16 @@ function DocumentTable({
     catch { alert('Failed to delete files.'); }
   };
 
+  const handleDeleteSingle = async (docId: string, fileName: string) => {
+    if (!confirm(`Delete "${fileName}"?`)) return;
+    try {
+      await fetch(`/api/setup-projects/${projectId}/documents/${docId}`, { method: 'DELETE' });
+      await fetchDocuments();
+    } catch {
+      alert('Failed to delete file.');
+    }
+  };
+
   // Save dropdown data to API (merges with existing data)
   const saveDropdownData = async (data: Record<string, unknown>, successMessage: string) => {
     setSavingData(true);
@@ -486,6 +507,55 @@ function DocumentTable({
   };
 
   // ── KEY HELPER: renders a sub-item row properly aligned to the 5 table columns ──
+  const renderFileChips = (tid: string) => {
+    const allDocs = getDocsForItem(tid);
+    if (allDocs.length === 0) return null;
+    const visibleDocs = allDocs.slice(0, 3);
+    const hasMore = allDocs.length > 3;
+    return (
+      <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', gap: '4px', alignItems: 'center', justifyContent: 'flex-end' }}>
+        {visibleDocs.map((d) => {
+          const ext = d.fileName.split('.').pop()?.toUpperCase() || 'FILE';
+          const extColor = ext === 'PDF' ? '#e53935' : ext === 'DOCX' || ext === 'DOC' ? '#1565c0' : ext === 'XLSX' || ext === 'XLS' ? '#2e7d32' : ext === 'PNG' || ext === 'JPG' || ext === 'JPEG' ? '#f57c00' : '#607d8b';
+          return (
+            <div key={d.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#f5f7fa', border: '1px solid #e0e0e0', borderRadius: '5px', padding: '2px 4px 2px 6px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              <button
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                onClick={() => { setZoomLevel(100); setImgPan({ x: 0, y: 0 }); setPreviewDoc(d); }}
+                title={`View ${d.fileName}`}
+              >
+                <span style={{ flexShrink: 0, fontSize: '7px', fontWeight: 700, color: '#fff', padding: '1px 3px', borderRadius: '2px', backgroundColor: extColor }}>{ext}</span>
+                <span style={{ fontSize: '10px', color: '#333', maxWidth: '60px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.fileName}</span>
+              </button>
+              {isEditMode && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDeleteSingle(d.id, d.fileName); }}
+                  title={`Delete ${d.fileName}`}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '14px', height: '14px', borderRadius: '50%', background: '#e0e0e0', border: 'none', cursor: 'pointer', padding: 0, marginLeft: '2px', transition: 'background 0.15s' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#c62828')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = '#e0e0e0')}
+                >
+                  <Icon icon="mdi:close" width={10} height={10} style={{ color: '#666' }} />
+                </button>
+              )}
+            </div>
+          );
+        })}
+        {hasMore && (
+          <button
+            onClick={() => setFileListModal(tid)}
+            title={`Show all ${allDocs.length} files`}
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#e0e0e0', border: 'none', borderRadius: '5px', padding: '2px 8px', cursor: 'pointer', fontSize: '10px', fontWeight: 700, color: '#555', flexShrink: 0, whiteSpace: 'nowrap' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = '#ccc')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = '#e0e0e0')}
+          >
+            +{allDocs.length - 3}
+          </button>
+        )}
+      </div>
+    );
+  };
+
   const renderAlignedRow = (label: string, tid: string, extraAction?: React.ReactNode) => {
     const allDocs = getDocsForItem(tid);
     const latest = allDocs[0];
@@ -669,12 +739,13 @@ function DocumentTable({
                                 {interventionInputs.length > 0 && (
                                   <button
                                     onClick={() => saveDropdownData(
-                                      { interventionItems: interventionInputs }
+                                      { interventionItems: interventionInputs },
+                                      `${interventionInputs.length} intervention item(s) saved successfully!`
                                     )}
                                     disabled={savingData || !isEditMode}
                                     className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors ml-auto disabled:bg-[#ccc] disabled:cursor-not-allowed"
                                   >
-                                    {savingDropdown ? 'Saving...' : 'Save All Items'}
+                                    {savingData ? 'Saving...' : 'Save All Items'}
                                   </button>
                                 )}
                               </div>
@@ -794,7 +865,9 @@ function DocumentTable({
                             <div className="flex items-center gap-3">
                               <select
                                 value={dropdownSelections[doc.id] || ''}
-                                onChange={(e) => handleDropdownSelection(doc.id, e.target.value)}
+                                onChange={(e) => {
+                                  setDropdownSelections(prev => ({ ...prev, [doc.id]: e.target.value }));
+                                }}
                                 className={`border border-[#ddd] rounded px-3 py-2 text-xs flex-1 ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                 disabled={!isEditMode}
                               >
@@ -808,7 +881,7 @@ function DocumentTable({
                                 disabled={!dropdownSelections[doc.id] || savingData || !isEditMode}
                                 className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] disabled:bg-[#ccc] disabled:cursor-not-allowed transition-colors"
                               >
-                                {savingDropdown ? 'Saving...' : 'Save'}
+                                {savingData ? 'Saving...' : 'Save'}
                               </button>
                             </div>
                             
@@ -953,12 +1026,13 @@ function DocumentTable({
                               </select>
                               <button
                                 onClick={() => saveDropdownData(
-                                  { abstractQuotationType }
+                                  { abstractQuotationType },
+                                  `Abstract of Quotation type "${abstractQuotationType}" saved successfully!`
                                 )}
                                 disabled={!abstractQuotationType || savingData || !isEditMode}
                                 className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] disabled:bg-[#ccc] disabled:cursor-not-allowed transition-colors"
                               >
-                                {savingDropdown ? 'Saving...' : 'Save'}
+                                {savingData ? 'Saving...' : 'Save'}
                               </button>
                             </div>
                           </td>
@@ -1570,12 +1644,13 @@ function DocumentTable({
                               </button>
                               <button
                                 onClick={() => saveDropdownData(
-                                  { clearanceUntagRows }
+                                  { clearanceUntagRows },
+                                  `${clearanceUntagRows.length} clearance to untag row(s) saved successfully!`
                                 )}
                                 disabled={savingData || !isEditMode}
                                 className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors ml-auto disabled:bg-[#ccc] disabled:cursor-not-allowed"
                               >
-                                {savingDropdown ? 'Saving...' : 'Save All'}
+                                {savingData ? 'Saving...' : 'Save All'}
                               </button>
                             </div>
                           </div>
@@ -1692,12 +1767,13 @@ function DocumentTable({
                               <div className="flex justify-end pt-2">
                                 <button
                                   onClick={() => saveDropdownData(
-                                    { completionReportRows }
+                                    { completionReportRows },
+                                    `${completionReportRows.length} completion report(s) saved successfully!`
                                   )}
                                   disabled={savingData || !isEditMode}
                                   className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
                                 >
-                                  {savingDropdown ? 'Saving...' : 'Save All'}
+                                  {savingData ? 'Saving...' : 'Save All'}
                                 </button>
                               </div>
                             )}
@@ -1822,12 +1898,13 @@ function DocumentTable({
                             <div className="flex justify-end pt-2">
                               <button
                                 onClick={() => saveDropdownData(
-                                  { annualPISRows }
+                                  { annualPISRows },
+                                  `${annualPISRows.length} Annual PIS report(s) saved successfully!`
                                 )}
                                 disabled={savingData || !isEditMode}
                                 className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
                               >
-                                {savingDropdown ? 'Saving...' : 'Save All'}
+                                {savingData ? 'Saving...' : 'Save All'}
                               </button>
                             </div>
                           )}
@@ -1863,7 +1940,7 @@ function DocumentTable({
                             <button
                               onClick={() => {
                                 if (!isEditMode) return;
-                                setQprRows([...qprRows, { quarter: '', date: '' }]);
+                                setQprRows([...qprRows, { quarter: '', year: '' }]);
                               }}
                               disabled={!isEditMode}
                               className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${isEditMode ? 'bg-[#2e7d32] text-white hover:bg-[#1b5e20]' : 'bg-[#ccc] text-white cursor-not-allowed'}`}
@@ -1919,7 +1996,7 @@ function DocumentTable({
                                       className={`w-full border border-[#ddd] rounded px-3 py-2 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                     >
                                       <option value="">Select quarter...</option>
-                                      {doc.options.map(q => (
+                                      {(doc.options ?? []).map(q => (
                                         <option key={q} value={q}>{q} - Quarter {q.replace('Q', '')}</option>
                                       ))}
                                     </select>
@@ -2121,12 +2198,13 @@ function DocumentTable({
                             <div className="flex justify-end pt-2">
                               <button
                                 onClick={() => saveDropdownData(
-                                  { graduationReportRows: completionReportRows }
+                                  { graduationReportRows: completionReportRows },
+                                  `${completionReportRows.length} graduation report(s) saved successfully!`
                                 )}
                                 disabled={savingData || !isEditMode}
                                 className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
                               >
-                                {savingDropdown ? 'Saving...' : 'Save All'}
+                                {savingData ? 'Saving...' : 'Save All'}
                               </button>
                             </div>
                           )}
@@ -2169,8 +2247,8 @@ function DocumentTable({
                   <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#333]">{doc.label}</td>
                   <td className="py-2.5 px-3 border-b border-[#eee] align-middle">
                     {hasFile ? (() => {
-                      const visibleDocs = allDocsForItem.slice(0, 3);
-                      const hasMore = allDocsForItem.length > 3;
+                      const visibleDocs = allDocs.slice(0, 3);
+                      const hasMore = allDocs.length > 3;
                       return (
                         <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', gap: '4px', alignItems: 'center', justifyContent: 'flex-end' }}>
                           {visibleDocs.map((d) => {
@@ -2205,13 +2283,13 @@ function DocumentTable({
                           })}
                           {hasMore && (
                             <button
-                              onClick={() => setFileListModal(templateItemId)}
-                              title={`Show all ${allDocsForItem.length} files`}
+                              onClick={() => setFileListModal(tid)}
+                              title={`Show all ${allDocs.length} files`}
                               style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#e0e0e0', border: 'none', borderRadius: '5px', padding: '2px 8px', cursor: 'pointer', fontSize: '10px', fontWeight: 700, color: '#555', flexShrink: 0, whiteSpace: 'nowrap' }}
                               onMouseEnter={(e) => (e.currentTarget.style.background = '#ccc')}
                               onMouseLeave={(e) => (e.currentTarget.style.background = '#e0e0e0')}
                             >
-                              +{allDocsForItem.length - 3}
+                              +{allDocs.length - 3}
                             </button>
                           )}
                         </div>
@@ -2230,7 +2308,7 @@ function DocumentTable({
                           isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
                         } disabled:opacity-50 disabled:cursor-not-allowed`}
                         title={isEditMode ? "Upload" : "View mode - editing disabled"}
-                        onClick={() => handleUploadClick(templateItemId)}
+                        onClick={() => handleUploadClick(tid)}
                         disabled={isUploading || !isEditMode}
                       >
                         {isUploading ? (
@@ -2244,7 +2322,7 @@ function DocumentTable({
                           hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
                         }`}
                         title={isEditMode ? "Delete" : "View mode - editing disabled"}
-                        onClick={() => hasFile && isEditMode && handleDeleteAll(templateItemId)}
+                        onClick={() => hasFile && isEditMode && handleDeleteAll(tid)}
                         disabled={!hasFile || !isEditMode}
                       >
                         <Icon icon="mdi:delete-outline" width={14} height={14} />
@@ -2315,6 +2393,25 @@ function DocumentTable({
             ))}
           </div>
           <button className="py-2.5 px-10 bg-[#2e7d32] text-white border-none rounded-lg text-[14px] font-semibold cursor-pointer hover:bg-[#1b5e20]" onClick={()=>setUploadSuccess(null)}>Okay</button>
+        </div>
+      </div>
+    )}
+
+    {/* Save Success Modal */}
+    {saveSuccessModal?.show && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]" onClick={() => setSaveSuccessModal(null)}>
+        <div className="bg-white rounded-2xl w-full max-w-[400px] py-8 px-10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] text-center" onClick={e => e.stopPropagation()}>
+          <div className="w-14 h-14 rounded-full bg-[#e8f5e9] flex items-center justify-center mx-auto mb-4">
+            <Icon icon="mdi:check-circle" width={36} height={36} color="#2e7d32" />
+          </div>
+          <h3 className="text-lg font-bold text-[#333] m-0 mb-3">Saved Successfully!</h3>
+          <p className="text-[14px] text-[#666] m-0 mb-6">{saveSuccessModal.message}</p>
+          <button
+            className="py-2.5 px-10 bg-[#2e7d32] text-white border-none rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#1b5e20]"
+            onClick={() => setSaveSuccessModal(null)}
+          >
+            Okay
+          </button>
         </div>
       </div>
     )}
