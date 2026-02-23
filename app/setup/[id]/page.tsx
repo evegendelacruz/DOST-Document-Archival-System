@@ -497,6 +497,55 @@ function DocumentTable({
   };
 
   // ── KEY HELPER: renders a sub-item row properly aligned to the 5 table columns ──
+  const renderFileChips = (tid: string) => {
+    const allDocs = getDocsForItem(tid);
+    if (allDocs.length === 0) return null;
+    const visibleDocs = allDocs.slice(0, 3);
+    const hasMore = allDocs.length > 3;
+    return (
+      <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', gap: '4px', alignItems: 'center', justifyContent: 'flex-end' }}>
+        {visibleDocs.map((d) => {
+          const ext = d.fileName.split('.').pop()?.toUpperCase() || 'FILE';
+          const extColor = ext === 'PDF' ? '#e53935' : ext === 'DOCX' || ext === 'DOC' ? '#1565c0' : ext === 'XLSX' || ext === 'XLS' ? '#2e7d32' : ext === 'PNG' || ext === 'JPG' || ext === 'JPEG' ? '#f57c00' : '#607d8b';
+          return (
+            <div key={d.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#f5f7fa', border: '1px solid #e0e0e0', borderRadius: '5px', padding: '2px 4px 2px 6px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              <button
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                onClick={() => { setZoomLevel(100); setImgPan({ x: 0, y: 0 }); setPreviewDoc(d); }}
+                title={`View ${d.fileName}`}
+              >
+                <span style={{ flexShrink: 0, fontSize: '7px', fontWeight: 700, color: '#fff', padding: '1px 3px', borderRadius: '2px', backgroundColor: extColor }}>{ext}</span>
+                <span style={{ fontSize: '10px', color: '#333', maxWidth: '60px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.fileName}</span>
+              </button>
+              {isEditMode && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDeleteSingle(d.id, d.fileName); }}
+                  title={`Delete ${d.fileName}`}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '14px', height: '14px', borderRadius: '50%', background: '#e0e0e0', border: 'none', cursor: 'pointer', padding: 0, marginLeft: '2px', transition: 'background 0.15s' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#c62828')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = '#e0e0e0')}
+                >
+                  <Icon icon="mdi:close" width={10} height={10} style={{ color: '#666' }} />
+                </button>
+              )}
+            </div>
+          );
+        })}
+        {hasMore && (
+          <button
+            onClick={() => setFileListModal(tid)}
+            title={`Show all ${allDocs.length} files`}
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#e0e0e0', border: 'none', borderRadius: '5px', padding: '2px 8px', cursor: 'pointer', fontSize: '10px', fontWeight: 700, color: '#555', flexShrink: 0, whiteSpace: 'nowrap' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = '#ccc')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = '#e0e0e0')}
+          >
+            +{allDocs.length - 3}
+          </button>
+        )}
+      </div>
+    );
+  };
+
   const renderAlignedRow = (label: string, tid: string, extraAction?: React.ReactNode) => {
     const allDocs = getDocsForItem(tid);
     const latest = allDocs[0];
