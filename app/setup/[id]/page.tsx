@@ -6,6 +6,24 @@ import Link from 'next/link';
 import { Icon } from '@iconify/react';
 import DashboardLayout from '../../components/DashboardLayout';
 
+// Helper to get userId for activity logging
+function getUserId(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem('user');
+    if (!stored) return null;
+    return JSON.parse(stored)?.id || null;
+  } catch {
+    return null;
+  }
+}
+
+// Helper to create headers with userId
+function getAuthHeaders(): HeadersInit {
+  const userId = getUserId();
+  return userId ? { 'x-user-id': userId } : {};
+}
+
 interface Project {
   id: string;
   code: string;
