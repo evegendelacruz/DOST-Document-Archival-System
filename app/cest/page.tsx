@@ -110,6 +110,9 @@ export default function CestPage() {
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [showAddFunding, setShowAddFunding] = useState(false);
+  const [newFundingName, setNewFundingName] = useState('');
+  const [extraFundingOptions, setExtraFundingOptions] = useState<string[]>([]);
 
   // ── Dual scrollbar refs (same pattern as SETUP) ──
   const tableScrollRef = useRef<HTMLDivElement>(null);
@@ -219,17 +222,18 @@ export default function CestPage() {
 
   const totalApproved = projects.reduce((sum, p) => sum + (p.approvedAmount ?? 0), 0);
   const totalReleased = projects.reduce((sum, p) => sum + (p.releasedAmount ?? 0), 0);
+  const standardPrograms = ['CEST', 'LGIA', 'SSCP'];
+  const customPrograms = [...new Set(
+    projects.map(p => p.programFunding).filter((f): f is string => !!f && !standardPrograms.includes(f))
+  )];
+
   const cestCount = projects.filter(p => p.programFunding === 'CEST').length;
-  const liraCount = projects.filter(p => p.programFunding === 'LIRA').length;
-  const swepCount = projects.filter(p => p.programFunding === 'SWEP').length;
-  const otherCount = projects.filter(p => p.programFunding && !['CEST', 'LIRA', 'SWEP'].includes(p.programFunding)).length;
+  const otherCount = projects.filter(p => p.programFunding && !standardPrograms.includes(p.programFunding)).length;
 
   const filterCards = [
     { id: 'approved-amount', label: 'Total Approved Amount', value: formatCurrency(totalApproved), isAmount: true },
     { id: 'released-amount', label: 'Total Released Amount', value: formatCurrency(totalReleased), isAmount: true },
     { id: 'cest-program', label: 'Total CEST Program', value: String(cestCount), isAmount: false },
-    { id: 'lira-program', label: 'Total LIRA Program', value: String(liraCount), isAmount: false },
-    { id: 'swep-program', label: 'Total SWEP Program', value: String(swepCount), isAmount: false },
     { id: 'other-funding', label: 'Total Other Funding Source', value: String(otherCount), isAmount: false },
   ];
 
@@ -617,12 +621,25 @@ export default function CestPage() {
               <div className="grid grid-cols-3 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-[13px] font-semibold text-[#333]">Program/Funding<span className="text-[#dc3545] ml-0.5">*</span></label>
-                  <select value={formData.programFunding} onChange={(e) => handleFormChange('programFunding', e.target.value)} className={`${modalSelectCls} ${formErrors.programFunding ? errCls : ''}`}>
+                  <select
+                    value={formData.programFunding}
+                    onChange={(e) => {
+                      if (e.target.value === '__add_new__') {
+                        setShowAddFunding(true);
+                      } else {
+                        handleFormChange('programFunding', e.target.value);
+                      }
+                    }}
+                    className={`${modalSelectCls} ${formErrors.programFunding ? errCls : ''}`}
+                  >
                     <option value="">Select Program</option>
                     <option value="CEST">CEST</option>
-                    <option value="LIRA">LIRA</option>
-                    <option value="SWEP">SWEP</option>
-                    <option value="Other">Other</option>
+                    <option value="LGIA">LGIA</option>
+                    <option value="SSCP">SSCP</option>
+                    {[...customPrograms, ...extraFundingOptions].map(prog => (
+                      <option key={prog} value={prog}>{prog}</option>
+                    ))}
+                    <option value="__add_new__" style={{ color: '#146184', fontWeight: 'bold' }}>+ Add Other Funding</option>
                   </select>
                   {formErrors.programFunding && <span className="text-[#dc3545] text-[11px]">{formErrors.programFunding}</span>}
                 </div>
@@ -687,6 +704,41 @@ export default function CestPage() {
           </div>
         </div>
       )}
+      {/* Add Funding Modal */}
+      {showAddFunding && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1200]">
+          <div className="bg-white rounded-lg w-full max-w-[300px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+            <h3 className="text-base font-bold text-primary mb-3">Add Funding Source</h3>
+            <input
+              type="text"
+              value={newFundingName}
+              onChange={(e) => setNewFundingName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { if (newFundingName.trim()) { setExtraFundingOptions(prev => prev.includes(newFundingName.trim()) ? prev : [...prev, newFundingName.trim()]); handleFormChange('programFunding', newFundingName.trim()); } setShowAddFunding(false); setNewFundingName(''); } }}
+              placeholder="Enter funding source name"
+              className="w-full px-3 py-2 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary mb-4"
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => { setShowAddFunding(false); setNewFundingName(''); }} className="px-4 py-2 bg-gray-200 text-gray-600 rounded text-sm font-medium hover:bg-gray-300">Cancel</button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (newFundingName.trim()) {
+                    setExtraFundingOptions(prev => prev.includes(newFundingName.trim()) ? prev : [...prev, newFundingName.trim()]);
+                    handleFormChange('programFunding', newFundingName.trim());
+                  }
+                  setShowAddFunding(false);
+                  setNewFundingName('');
+                }}
+                className="px-4 py-2 bg-primary text-white rounded text-sm font-medium hover:bg-accent"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Map Picker Modal */}
       {showMapPicker && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1100]" onClick={() => setShowMapPicker(false)}>

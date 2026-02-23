@@ -9,15 +9,13 @@ import DashboardLayout from '../components/DashboardLayout';
 
 const programFilters = [
   { id: 'setup', label: 'SETUP', color: '#00838f', icon: 'mdi:cog-outline', logo: '/setup-logo.png' },
-  { id: 'cest', label: 'CEST', color: '#2e7d32', icon: 'mdi:leaf', logo: '/cest-logo.png' },
+  { id: 'cest', label: 'CEST', color: '#2e7d32', icon: 'mdi:leaf', logo: '/cest-sidebar-logo.png' },
   { id: 'sscp', label: 'SSCP', color: '#979797', icon: 'mdi:star-four-points-outline', logo: null },
   { id: 'lgia', label: 'LGIA', color: '#F1B82C', icon: 'mdi:flower-outline', logo: null },
 ];
 
 const misamisOrientalBoundary = boundaryData[0] as [number, number][];
 const cdoBoundary = cdoBoundaryData[0] as [number, number][];
-
-type Pin = { lat: number; lng: number; label: string; district: 1 | 2 | 3 | 4 };
 
 type SetupProjectPin = {
   id: string;
@@ -34,6 +32,7 @@ type CestProjectPin = {
   location: string | null;
   coordinates: string | null;
   companyLogoUrl: string | null;
+  programFunding: string | null;
 };
 
 type NominatimResult = {
@@ -44,47 +43,6 @@ type NominatimResult = {
 };
 
 
-const sscpPins: Pin[] = [
-  { lat: 8.4693, lng: 124.6470, label: 'CDO - Nazareth', district: 3 },
-  { lat: 8.4992, lng: 124.6391, label: 'CDO - Kauswagan', district: 3 },
-  { lat: 8.4901, lng: 124.6463, label: 'CDO - Consolacion', district: 3 },
-  { lat: 8.4748, lng: 124.6851, label: 'CDO - Gusa', district: 4 },
-  { lat: 8.4655, lng: 124.6441, label: 'CDO - Macasandig', district: 4 },
-  { lat: 8.4530, lng: 124.6590, label: 'CDO - Balulang', district: 4 },
-  { lat: 8.5214, lng: 124.5731, label: 'Opol - Poblacion', district: 2 },
-  { lat: 8.5749, lng: 124.4439, label: 'Laguindingan - Poblacion', district: 2 },
-  { lat: 8.5950, lng: 124.4078, label: 'Gitagum - Poblacion', district: 2 },
-  { lat: 8.4971, lng: 124.3045, label: 'Initao - Poblacion', district: 2 },
-  { lat: 8.3432, lng: 124.2598, label: 'Lugait - Poblacion', district: 2 },
-  { lat: 8.5391, lng: 124.7534, label: 'Tagoloan - Poblacion', district: 2 },
-  { lat: 8.6504, lng: 124.7547, label: 'Jasaan - Poblacion', district: 2 },
-  { lat: 8.7438, lng: 124.7757, label: 'Balingasag - Poblacion', district: 1 },
-  { lat: 8.8591, lng: 124.7881, label: 'Salay - Poblacion', district: 1 },
-  { lat: 8.9194, lng: 124.7846, label: 'Binuangan - Poblacion', district: 1 },
-  { lat: 8.9561, lng: 124.7879, label: 'Sugbongcogon - Poblacion', district: 1 },
-  { lat: 8.9831, lng: 124.7928, label: 'Kinoguitan - Poblacion', district: 1 },
-];
-
-const lgiaPins: Pin[] = [
-  { lat: 8.4810, lng: 124.6370, label: 'CDO - Carmen', district: 3 },
-  { lat: 8.4901, lng: 124.6463, label: 'CDO - Consolacion', district: 3 },
-  { lat: 8.4964, lng: 124.6051, label: 'CDO - Iponan', district: 3 },
-  { lat: 8.4748, lng: 124.6851, label: 'CDO - Gusa', district: 4 },
-  { lat: 8.5120, lng: 124.6830, label: 'CDO - Bugo', district: 4 },
-  { lat: 8.4870, lng: 124.6700, label: 'CDO - Pagatpat', district: 4 },
-  { lat: 8.5597, lng: 124.5271, label: 'El Salvador - Poblacion', district: 2 },
-  { lat: 8.5705, lng: 124.4712, label: 'Alubijid - Poblacion', district: 2 },
-  { lat: 8.5620, lng: 124.3530, label: 'Libertad - Poblacion', district: 2 },
-  { lat: 8.4033, lng: 124.2888, label: 'Manticao - Poblacion', district: 2 },
-  { lat: 8.5391, lng: 124.7534, label: 'Tagoloan - Poblacion', district: 2 },
-  { lat: 8.5837, lng: 124.7699, label: 'Villanueva - Poblacion', district: 2 },
-  { lat: 8.6504, lng: 124.7547, label: 'Jasaan - Poblacion', district: 2 },
-  { lat: 8.7438, lng: 124.7757, label: 'Balingasag - Poblacion', district: 1 },
-  { lat: 8.8058, lng: 124.7894, label: 'Lagonglong - Poblacion', district: 1 },
-  { lat: 8.8591, lng: 124.7881, label: 'Salay - Poblacion', district: 1 },
-  { lat: 8.6118, lng: 124.8923, label: 'Claveria - Poblacion', district: 2 },
-  { lat: 8.9831, lng: 124.7928, label: 'Kinoguitan - Poblacion', district: 1 },
-];
 
 const mor1Municipalities = ['balingasag', 'balingoan', 'binuangan', 'kinoguitan', 'lagonglong', 'magsaysay', 'medina', 'salay', 'sugbongcogon', 'talisayan'];
 const mor2Municipalities = ['claveria', 'jasaan', 'villanueva', 'tagoloan', 'opol', 'el salvador', 'laguindingan', 'gitagum', 'libertad', 'alubijid', 'initao', 'naawan', 'manticao', 'lugait'];
@@ -110,12 +68,6 @@ const districtMap: Record<string, number[]> = {
   cdo1: [3],
   cdo2: [4],
   all: [1, 2, 3, 4, 0],
-};
-
-const filterByDistrict = (pins: Pin[], district: string) => {
-  if (district === 'all') return pins;
-  const allowed = districtMap[district] || [];
-  return pins.filter(p => allowed.includes(p.district));
 };
 
 const filterSetupByDistrict = (projects: SetupProjectPin[], district: string) => {
@@ -314,7 +266,7 @@ function MapComponent({ activePrograms, activeDistrict, setupProjects, cestProje
         </defs>
         <path d="M20 0C9 0 0 9 0 20c0 15 20 30 20 30s20-15 20-30C40 9 31 0 20 0z" fill="#2e7d32" stroke="#1b5e20" stroke-width="1.2" filter="url(#ds2)"/>
         <circle cx="20" cy="17" r="12" fill="#2e7d32"/>
-        <image href="/cest-logo.png" x="8" y="5" width="24" height="24" clip-path="url(#cest-clip)" preserveAspectRatio="xMidYMid meet"/>
+        <image href="/cest-sidebar-logo.png" x="8" y="5" width="24" height="24" clip-path="url(#cest-clip)" preserveAspectRatio="xMidYMid meet"/>
       </svg>
     </div>`,
     iconSize: [48, 58],
@@ -366,6 +318,11 @@ function MapComponent({ activePrograms, activeDistrict, setupProjects, cestProje
   const showSscp  = activePrograms.includes('sscp');
   const showLgia  = activePrograms.includes('lgia');
 
+  // Split CEST projects by programFunding so SSCP/LGIA-funded ones appear under their own buttons
+  const cestOnlyProjects = cestProjects.filter(p => p.programFunding !== 'SSCP' && p.programFunding !== 'LGIA');
+  const cestAsSscp       = cestProjects.filter(p => p.programFunding === 'SSCP');
+  const cestAsLgia       = cestProjects.filter(p => p.programFunding === 'LGIA');
+
   return (
     <MapContainer center={[8.477, 124.646]} zoom={10} style={{ width: '100%', height: '100%' }} zoomControl={false}>
       <ResizeHandler />
@@ -392,7 +349,9 @@ function MapComponent({ activePrograms, activeDistrict, setupProjects, cestProje
           </Marker>
         );
       })}
-      {showCest && filterCestByDistrict(cestProjects, activeDistrict).map((project) => {
+
+      {/* CEST-funded projects */}
+      {showCest && filterCestByDistrict(cestOnlyProjects, activeDistrict).map((project) => {
         const [lat, lng] = project.coordinates!.split(',').map(s => parseFloat(s.trim()));
         if (isNaN(lat) || isNaN(lng)) return null;
         return (
@@ -406,143 +365,231 @@ function MapComponent({ activePrograms, activeDistrict, setupProjects, cestProje
           </Marker>
         );
       })}
-      {showSscp && filterByDistrict(sscpPins, activeDistrict).map((pin, idx) => (
-        <Marker key={`sscp-${idx}`} position={[pin.lat, pin.lng]} icon={sscpIcon}>
-          <Popup><a href={`/setup/${(idx % 8) + 1}`} style={{ color: '#707070', fontWeight: 600, textDecoration: 'none' }}>{pin.label}</a></Popup>
-        </Marker>
-      ))}
-      {showLgia && filterByDistrict(lgiaPins, activeDistrict).map((pin, idx) => (
-        <Marker key={`lgia-${idx}`} position={[pin.lat, pin.lng]} icon={lgiaIcon}>
-          <Popup><a href={`/setup/${(idx % 8) + 1}`} style={{ color: '#D4A017', fontWeight: 600, textDecoration: 'none' }}>{pin.label}</a></Popup>
-        </Marker>
-      ))}
+
+      {/* SSCP: only DB-registered CEST projects with programFunding = SSCP */}
+      {showSscp && filterCestByDistrict(cestAsSscp, activeDistrict).map((project) => {
+        const [lat, lng] = project.coordinates!.split(',').map(s => parseFloat(s.trim()));
+        if (isNaN(lat) || isNaN(lng)) return null;
+        return (
+          <Marker key={`sscp-${project.id}`} position={[lat, lng]} icon={sscpIcon}>
+            <Popup>
+              <div>
+                <a href={`/cest/${project.id}`} style={{ color: '#707070', fontWeight: 600, textDecoration: 'none', fontSize: '13px' }}>{project.projectTitle}</a>
+                {project.location && <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#888' }}>{project.location}</p>}
+              </div>
+            </Popup>
+          </Marker>
+        );
+      })}
+
+      {/* LGIA: only DB-registered CEST projects with programFunding = LGIA */}
+      {showLgia && filterCestByDistrict(cestAsLgia, activeDistrict).map((project) => {
+        const [lat, lng] = project.coordinates!.split(',').map(s => parseFloat(s.trim()));
+        if (isNaN(lat) || isNaN(lng)) return null;
+        return (
+          <Marker key={`lgia-${project.id}`} position={[lat, lng]} icon={lgiaIcon}>
+            <Popup>
+              <div>
+                <a href={`/cest/${project.id}`} style={{ color: '#D4A017', fontWeight: 600, textDecoration: 'none', fontSize: '13px' }}>{project.projectTitle}</a>
+                {project.location && <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#888' }}>{project.location}</p>}
+              </div>
+            </Popup>
+          </Marker>
+        );
+      })}
     </MapContainer>
   );
 }
 
-// ── SETUP Side Panel (Google Maps style) ────────────────────────────────────
-function SetupSidePanel({
-  projects,
-  activeDistrict,
+// ── Unified Side Panel ───────────────────────────────────────────────────────
+const PANEL_CONFIG: Record<string, { color: string; label: string; icon: string; logo?: string; footerText: string; hoverBg: string; accentColor: string }> = {
+  setup: { color: '#00838f', label: 'SETUP Projects', icon: 'mdi:store-outline', logo: '/setup-logo.png', footerText: 'DOST Region X · SETUP Program', hoverBg: '#f0fafb', accentColor: '#00838f' },
+  cest:  { color: '#2e7d32', label: 'CEST Projects',  icon: 'mdi:leaf',          logo: '/cest-sidebar-logo.png', footerText: 'DOST Region X · CEST Program', hoverBg: '#f0fff0', accentColor: '#2e7d32' },
+  sscp:  { color: '#979797', label: 'SSCP Projects',  icon: 'mdi:star-four-points-outline', footerText: 'DOST Region X · SSCP Program', hoverBg: '#f5f5f5', accentColor: '#707070' },
+  lgia:  { color: '#F1B82C', label: 'LGIA Projects',  icon: 'mdi:flower-outline', footerText: 'DOST Region X · LGIA Program', hoverBg: '#fffdf0', accentColor: '#D4A017' },
+};
+
+function UnifiedSidePanel({
+  activePrograms,
+  activePanel,
+  onPanelSwitch,
   open,
   onToggle,
+  setupProjects,
+  cestProjects,
+  sscpProjects,
+  lgiaProjects,
+  activeDistrict,
 }: {
-  projects: SetupProjectPin[];
-  activeDistrict: string;
+  activePrograms: string[];
+  activePanel: string;
+  onPanelSwitch: (id: string) => void;
   open: boolean;
   onToggle: () => void;
+  setupProjects: SetupProjectPin[];
+  cestProjects: CestProjectPin[];
+  sscpProjects: CestProjectPin[];
+  lgiaProjects: CestProjectPin[];
+  activeDistrict: string;
 }) {
-  const filtered = filterSetupByDistrict(projects, activeDistrict);
-
   const districtLabel: Record<string, string> = {
-    all: 'All Districts',
-    mor1: 'MOR – District 1',
-    mor2: 'MOR – District 2',
-    cdo1: 'CDO – District 1',
-    cdo2: 'CDO – District 2',
+    all: 'All Districts', mor1: 'MOR – District 1', mor2: 'MOR – District 2',
+    cdo1: 'CDO – District 1', cdo2: 'CDO – District 2',
   };
+
+  const panelPrograms = ['setup', 'cest', 'sscp', 'lgia'].filter(p => activePrograms.includes(p));
+  const cfg = PANEL_CONFIG[activePanel] ?? PANEL_CONFIG['setup'];
+
+  const filteredSetup = filterSetupByDistrict(setupProjects, activeDistrict);
+  const filteredCest  = filterCestByDistrict(cestProjects.filter(p => p.programFunding !== 'SSCP' && p.programFunding !== 'LGIA'), activeDistrict);
+  const filteredSscp  = filterCestByDistrict(sscpProjects, activeDistrict);
+  const filteredLgia  = filterCestByDistrict(lgiaProjects, activeDistrict);
+
+  const projectCount = activePanel === 'setup' ? filteredSetup.length : activePanel === 'cest' ? filteredCest.length : activePanel === 'sscp' ? filteredSscp.length : filteredLgia.length;
 
   return (
     <div
       className="absolute top-0 right-0 h-full z-[1000] pointer-events-auto flex"
-      style={{
-        transform: open ? 'translateX(0)' : 'translateX(100%)',
-        transition: 'transform 0.35s cubic-bezier(0.4,0,0.2,1)',
-        willChange: 'transform',
-      }}
+      style={{ transform: open ? 'translateX(0)' : 'translateX(100%)', transition: 'transform 0.35s cubic-bezier(0.4,0,0.2,1)', willChange: 'transform' }}
     >
-      {/* Collapse/expand tab sticking out to the left */}
+      {/* Collapse/expand tab */}
       <button
         onClick={onToggle}
         className="absolute -left-[28px] top-1/2 -translate-y-1/2 w-[28px] h-[64px] bg-white border border-[#e0e0e0] rounded-l-[10px] shadow-[-3px_0_8px_rgba(0,0,0,0.1)] flex items-center justify-center cursor-pointer hover:bg-[#f5f5f5] transition-colors"
         style={{ borderRight: 'none' }}
-        title={open ? 'Collapse panel' : 'Expand panel'}
       >
-        <Icon
-          icon={open ? 'mdi:chevron-right' : 'mdi:chevron-left'}
-          width={18}
-          height={18}
-          className="text-[#666]"
-        />
+        <Icon icon={open ? 'mdi:chevron-right' : 'mdi:chevron-left'} width={18} height={18} className="text-[#666]" />
       </button>
 
-      {/* Panel body */}
       <div className="w-[320px] h-full bg-white shadow-[-4px_0_20px_rgba(0,0,0,0.12)] flex flex-col overflow-hidden">
+
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 bg-[#00838f] flex-shrink-0">
-          <img src="/setup-logo.png" alt="SETUP" className="w-7 h-7 object-contain rounded-full bg-white/20 p-0.5" />
+        <div className="flex items-center gap-3 px-5 py-4 flex-shrink-0" style={{ background: cfg.color }}>
+          {cfg.logo
+            ? <img src={cfg.logo} alt={activePanel} className="w-7 h-7 object-contain rounded-full bg-white/20 p-0.5 flex-shrink-0" />
+            : <Icon icon={cfg.icon} width={28} height={28} className="text-white flex-shrink-0" />
+          }
           <div className="flex-1 min-w-0">
-            <p className="text-white font-bold text-[14px] font-sans leading-tight">SETUP Projects</p>
+            <p className="text-white font-bold text-[14px] font-sans leading-tight">{cfg.label}</p>
             <p className="text-white/75 text-[11px] font-sans mt-0.5 flex items-center gap-1">
               <Icon icon="mdi:map-marker-radius-outline" width={11} height={11} />
               {districtLabel[activeDistrict] ?? 'All Districts'}
             </p>
           </div>
-          <span className="bg-white/20 text-white text-[12px] font-bold px-2.5 py-1 rounded-full font-sans flex-shrink-0">
-            {filtered.length}
-          </span>
+          <span className="bg-white/20 text-white text-[12px] font-bold px-2.5 py-1 rounded-full font-sans flex-shrink-0">{projectCount}</span>
         </div>
 
-        {/* Subtitle bar */}
-        <div className="px-4 py-2.5 bg-[#f8fffe] border-b border-[#e8f5f5] flex-shrink-0">
+        {/* Program switcher — shown only when 2+ programs are active */}
+        {panelPrograms.length > 1 && (
+          <div className="flex items-center gap-1.5 px-3 py-2 bg-[#f5f5f5] border-b border-[#e0e0e0] flex-shrink-0 flex-wrap">
+            {panelPrograms.map(p => {
+              const c = PANEL_CONFIG[p];
+              const isActive = p === activePanel;
+              return (
+                <button
+                  key={p}
+                  onClick={() => onPanelSwitch(p)}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold font-sans border transition-all duration-150 cursor-pointer"
+                  style={{
+                    background: isActive ? c.color : 'white',
+                    color: isActive ? 'white' : c.color,
+                    borderColor: c.color,
+                  }}
+                >
+                  {PANEL_CONFIG[p].logo
+                    ? <img src={PANEL_CONFIG[p].logo} alt={p} className="w-3.5 h-3.5 object-contain rounded-full" />
+                    : <Icon icon={c.icon} width={12} height={12} />
+                  }
+                  {p.toUpperCase()}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Subtitle */}
+        <div className="px-4 py-2.5 border-b border-[#ebebeb] flex-shrink-0" style={{ background: cfg.hoverBg }}>
           <p className="text-[11px] text-[#777] font-sans">
-            Showing <span className="font-semibold text-[#00838f]">{filtered.length}</span> project{filtered.length !== 1 ? 's' : ''} on map
+            Showing <span className="font-semibold" style={{ color: cfg.accentColor }}>{projectCount}</span> project{projectCount !== 1 ? 's' : ''} on map
           </p>
         </div>
 
         {/* Project list */}
         <div className="overflow-y-auto flex-1">
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full py-12 px-6 text-center">
-              <Icon icon="mdi:map-marker-off-outline" width={40} height={40} className="text-[#ccc] mb-3" />
-              <p className="text-[13px] text-[#999] font-sans">No SETUP projects in this district.</p>
-            </div>
-          ) : (
-            filtered.map((project) => (
-              <a
-                key={project.id}
-                href={`/setup/${project.id}`}
-                className="flex items-start gap-3 px-4 py-3.5 border-b border-[#f0f0f0] hover:bg-[#f0fafb] transition-colors group"
-                style={{ textDecoration: 'none' }}
-              >
-                {/* Company logo or fallback icon */}
-                <div className="flex-shrink-0 w-9 h-9 rounded-full border border-[#e0e0e0] overflow-hidden bg-[#f0fafb] flex items-center justify-center mt-0.5 shadow-sm">
-                  {project.companyLogoUrl ? (
-                    <img
-                      src={project.companyLogoUrl}
-                      alt={project.firm || project.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <Icon icon="mdi:store-outline" width={20} height={20} className="text-[#00838f]" />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-semibold text-[#1a1a1a] group-hover:text-[#00838f] leading-snug font-sans line-clamp-2 transition-colors">
-                    {project.title}
-                  </p>
-                  {project.firm && (
-                    <p className="text-[11.5px] text-[#555] mt-1 font-sans truncate flex items-center gap-1">
-                      <Icon icon="mdi:office-building-outline" width={11} height={11} className="flex-shrink-0 text-[#999]" />
-                      {project.firm}
-                    </p>
-                  )}
-                  {project.address && (
-                    <p className="text-[11px] text-[#888] mt-0.5 font-sans flex items-start gap-1 leading-snug">
-                      <Icon icon="mdi:map-marker-outline" width={11} height={11} className="flex-shrink-0 mt-0.5 text-[#00838f]" />
-                      <span className="line-clamp-2">{project.address}</span>
-                    </p>
-                  )}
-                </div>
-                <Icon icon="mdi:chevron-right" width={16} height={16} className="text-[#ccc] group-hover:text-[#00838f] flex-shrink-0 mt-1 transition-colors" />
-              </a>
-            ))
+          {/* SETUP */}
+          {activePanel === 'setup' && (
+            filteredSetup.length === 0
+              ? <div className="flex flex-col items-center justify-center h-full py-12 px-6 text-center"><Icon icon="mdi:map-marker-off-outline" width={40} height={40} className="text-[#ccc] mb-3" /><p className="text-[13px] text-[#999] font-sans">No SETUP projects in this district.</p></div>
+              : filteredSetup.map(project => (
+                <a key={project.id} href={`/setup/${project.id}`} className="flex items-start gap-3 px-4 py-3.5 border-b border-[#f0f0f0] hover:bg-[#f0fafb] transition-colors group" style={{ textDecoration: 'none' }}>
+                  <div className="flex-shrink-0 w-9 h-9 rounded-full border border-[#e0e0e0] overflow-hidden bg-[#f0fafb] flex items-center justify-center mt-0.5 shadow-sm">
+                    {project.companyLogoUrl ? <img src={project.companyLogoUrl} alt={project.firm || project.title} className="w-full h-full object-cover" /> : <Icon icon="mdi:store-outline" width={20} height={20} className="text-[#00838f]" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-semibold text-[#1a1a1a] group-hover:text-[#00838f] leading-snug font-sans line-clamp-2 transition-colors">{project.title}</p>
+                    {project.firm && <p className="text-[11.5px] text-[#555] mt-1 font-sans truncate flex items-center gap-1"><Icon icon="mdi:office-building-outline" width={11} height={11} className="flex-shrink-0 text-[#999]" />{project.firm}</p>}
+                    {project.address && <p className="text-[11px] text-[#888] mt-0.5 font-sans flex items-start gap-1 leading-snug"><Icon icon="mdi:map-marker-outline" width={11} height={11} className="flex-shrink-0 mt-0.5 text-[#00838f]" /><span className="line-clamp-2">{project.address}</span></p>}
+                  </div>
+                  <Icon icon="mdi:chevron-right" width={16} height={16} className="text-[#ccc] group-hover:text-[#00838f] flex-shrink-0 mt-1 transition-colors" />
+                </a>
+              ))
+          )}
+          {/* CEST */}
+          {activePanel === 'cest' && (
+            filteredCest.length === 0
+              ? <div className="flex flex-col items-center justify-center h-full py-12 px-6 text-center"><Icon icon="mdi:map-marker-off-outline" width={40} height={40} className="text-[#ccc] mb-3" /><p className="text-[13px] text-[#999] font-sans">No CEST projects in this district.</p></div>
+              : filteredCest.map(project => (
+                <a key={project.id} href={`/cest/${project.id}`} className="flex items-start gap-3 px-4 py-3.5 border-b border-[#f0f0f0] transition-colors group" style={{ textDecoration: 'none' }} onMouseEnter={e => (e.currentTarget.style.background = '#f0fff0')} onMouseLeave={e => (e.currentTarget.style.background = '')}>
+                  <div className="flex-shrink-0 w-9 h-9 rounded-full border border-[#e0e0e0] overflow-hidden bg-[#f0fff0] flex items-center justify-center mt-0.5 shadow-sm">
+                    {project.companyLogoUrl ? <img src={project.companyLogoUrl} alt={project.projectTitle} className="w-full h-full object-cover" /> : <Icon icon="mdi:leaf" width={20} height={20} style={{ color: '#2e7d32' }} />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-semibold text-[#1a1a1a] leading-snug font-sans line-clamp-2 transition-colors group-hover:text-[#2e7d32]">{project.projectTitle}</p>
+                    {project.location && <p className="text-[11px] text-[#888] mt-0.5 font-sans flex items-start gap-1 leading-snug"><Icon icon="mdi:map-marker-outline" width={11} height={11} className="flex-shrink-0 mt-0.5" style={{ color: '#2e7d32' }} /><span className="line-clamp-2">{project.location}</span></p>}
+                  </div>
+                  <Icon icon="mdi:chevron-right" width={16} height={16} className="text-[#ccc] flex-shrink-0 mt-1 transition-colors group-hover:text-[#2e7d32]" />
+                </a>
+              ))
+          )}
+          {/* SSCP */}
+          {activePanel === 'sscp' && (
+            filteredSscp.length === 0
+              ? <div className="flex flex-col items-center justify-center h-full py-12 px-6 text-center"><Icon icon="mdi:map-marker-off-outline" width={40} height={40} className="text-[#ccc] mb-3" /><p className="text-[13px] text-[#999] font-sans">No SSCP projects in this district.</p></div>
+              : filteredSscp.map(project => (
+                <a key={project.id} href={`/cest/${project.id}`} className="flex items-start gap-3 px-4 py-3.5 border-b border-[#f0f0f0] transition-colors group" style={{ textDecoration: 'none' }} onMouseEnter={e => (e.currentTarget.style.background = '#f5f5f5')} onMouseLeave={e => (e.currentTarget.style.background = '')}>
+                  <div className="flex-shrink-0 w-9 h-9 rounded-full border border-[#e0e0e0] overflow-hidden bg-[#f5f5f5] flex items-center justify-center mt-0.5 shadow-sm">
+                    {project.companyLogoUrl ? <img src={project.companyLogoUrl} alt={project.projectTitle} className="w-full h-full object-cover" /> : <Icon icon="mdi:star-four-points-outline" width={20} height={20} className="text-[#979797]" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-semibold text-[#1a1a1a] leading-snug font-sans line-clamp-2 transition-colors group-hover:text-[#707070]">{project.projectTitle}</p>
+                    {project.location && <p className="text-[11px] text-[#888] mt-0.5 font-sans flex items-start gap-1 leading-snug"><Icon icon="mdi:map-marker-outline" width={11} height={11} className="flex-shrink-0 mt-0.5 text-[#979797]" /><span className="line-clamp-2">{project.location}</span></p>}
+                  </div>
+                  <Icon icon="mdi:chevron-right" width={16} height={16} className="text-[#ccc] flex-shrink-0 mt-1 transition-colors group-hover:text-[#979797]" />
+                </a>
+              ))
+          )}
+          {/* LGIA */}
+          {activePanel === 'lgia' && (
+            filteredLgia.length === 0
+              ? <div className="flex flex-col items-center justify-center h-full py-12 px-6 text-center"><Icon icon="mdi:map-marker-off-outline" width={40} height={40} className="text-[#ccc] mb-3" /><p className="text-[13px] text-[#999] font-sans">No LGIA projects in this district.</p></div>
+              : filteredLgia.map(project => (
+                <a key={project.id} href={`/cest/${project.id}`} className="flex items-start gap-3 px-4 py-3.5 border-b border-[#f0f0f0] transition-colors group" style={{ textDecoration: 'none' }} onMouseEnter={e => (e.currentTarget.style.background = '#fffdf0')} onMouseLeave={e => (e.currentTarget.style.background = '')}>
+                  <div className="flex-shrink-0 w-9 h-9 rounded-full border border-[#e0e0e0] overflow-hidden bg-[#fffdf0] flex items-center justify-center mt-0.5 shadow-sm">
+                    {project.companyLogoUrl ? <img src={project.companyLogoUrl} alt={project.projectTitle} className="w-full h-full object-cover" /> : <Icon icon="mdi:flower-outline" width={20} height={20} className="text-[#F1B82C]" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-semibold text-[#1a1a1a] leading-snug font-sans line-clamp-2 transition-colors group-hover:text-[#D4A017]">{project.projectTitle}</p>
+                    {project.location && <p className="text-[11px] text-[#888] mt-0.5 font-sans flex items-start gap-1 leading-snug"><Icon icon="mdi:map-marker-outline" width={11} height={11} className="flex-shrink-0 mt-0.5 text-[#F1B82C]" /><span className="line-clamp-2">{project.location}</span></p>}
+                  </div>
+                  <Icon icon="mdi:chevron-right" width={16} height={16} className="text-[#ccc] flex-shrink-0 mt-1 transition-colors group-hover:text-[#D4A017]" />
+                </a>
+              ))
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-3 bg-[#f8fffe] border-t border-[#e8f5f5] flex-shrink-0">
-          <p className="text-[10.5px] text-[#aaa] font-sans text-center">DOST Region X · SETUP Program</p>
+        <div className="px-4 py-3 border-t border-[#ebebeb] flex-shrink-0" style={{ background: cfg.hoverBg }}>
+          <p className="text-[10.5px] text-[#aaa] font-sans text-center">{cfg.footerText}</p>
         </div>
       </div>
     </div>
@@ -557,6 +604,7 @@ export default function MapsPage() {
   const [cestProjects, setCestProjects] = useState<CestProjectPin[]>([]);
   const [flyToCoords, setFlyToCoords] = useState<{ lat: number; lng: number; key: number } | null>(null);
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
+  const [activePanel, setActivePanel] = useState<string>('setup');
 
   useEffect(() => {
     fetch('/api/setup-projects')
@@ -569,11 +617,24 @@ export default function MapsPage() {
       .catch(() => {});
   }, []);
 
+  const panelIds = ['setup', 'cest', 'sscp', 'lgia'];
+
   const toggleProgram = (id: string) => {
     setActivePrograms(prev => {
       const isActive = prev.includes(id);
       const next = isActive ? prev.filter(p => p !== id) : [...prev, id];
-      if (id === 'setup') setSidePanelOpen(!isActive);
+      if (panelIds.includes(id)) {
+        if (!isActive) {
+          // Activating: open panel and switch to this program
+          setSidePanelOpen(true);
+          setActivePanel(id);
+        } else {
+          // Deactivating: switch to another still-active panel, or close
+          const remaining = next.filter(p => panelIds.includes(p));
+          if (remaining.length > 0) setActivePanel(remaining[remaining.length - 1]);
+          else setSidePanelOpen(false);
+        }
+      }
       return next;
     });
   };
@@ -583,6 +644,12 @@ export default function MapsPage() {
   };
 
   const showSetup = activePrograms.includes('setup');
+  const showCest  = activePrograms.includes('cest');
+  const showSscp  = activePrograms.includes('sscp');
+  const showLgia  = activePrograms.includes('lgia');
+
+  const sscpProjects = cestProjects.filter(p => p.programFunding === 'SSCP');
+  const lgiaProjects = cestProjects.filter(p => p.programFunding === 'LGIA');
 
   return (
     <DashboardLayout activePath="/maps">
@@ -645,13 +712,19 @@ export default function MapsPage() {
           ))}
         </div>
 
-        {/* SETUP Side Panel - Google Maps style */}
-        {showSetup && (
-          <SetupSidePanel
-            projects={setupProjects}
-            activeDistrict={activeDistrict}
+        {/* Unified Side Panel */}
+        {(showSetup || showCest || showSscp || showLgia) && (
+          <UnifiedSidePanel
+            activePrograms={activePrograms}
+            activePanel={activePanel}
+            onPanelSwitch={setActivePanel}
             open={sidePanelOpen}
             onToggle={() => setSidePanelOpen(prev => !prev)}
+            setupProjects={setupProjects}
+            cestProjects={cestProjects}
+            sscpProjects={sscpProjects}
+            lgiaProjects={lgiaProjects}
+            activeDistrict={activeDistrict}
           />
         )}
       </main>
