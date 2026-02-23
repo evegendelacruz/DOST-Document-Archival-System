@@ -592,7 +592,7 @@ export default function DashboardPage() {
       onClick: () => { setActiveNav('archival'); setShowResults(false); },
     }] : []),
     { type: 'link', href: '/setup', icon: 'mdi:office-building', logo: '/setup-logo.png', label: 'SETUP 4.0', permissionKey: 'canAccessSetup' },
-    { type: 'link', href: '/cest', icon: 'mdi:leaf', logo: '/cest-logo.png', label: 'CEST', permissionKey: 'canAccessCest' },
+    { type: 'link', href: '/cest', icon: 'mdi:leaf', logo: '/cest-sidebar-logo.png', label: 'CEST', permissionKey: 'canAccessCest' },
     { type: 'button', icon: 'mdi:clock-outline', label: 'Recent Activity' },
   ];
 

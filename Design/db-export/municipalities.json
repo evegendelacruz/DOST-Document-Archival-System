@@ -1,0 +1,254 @@
+[
+  {
+    "id": "61367a60-1bfe-43ca-b56f-d5feb8c99299",
+    "name": "Cagayan de Oro City",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.367Z",
+    "updatedAt": "2026-02-09T22:01:52.367Z"
+  },
+  {
+    "id": "9a43416f-b357-43de-9dbb-88c290b100aa",
+    "name": "Opol",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.377Z",
+    "updatedAt": "2026-02-09T22:01:52.377Z"
+  },
+  {
+    "id": "45c56c55-62fb-46a7-a852-0b9218fa95f3",
+    "name": "El Salvador",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.383Z",
+    "updatedAt": "2026-02-09T22:01:52.383Z"
+  },
+  {
+    "id": "ae3a59ad-3a99-4bf6-b98a-054cdcd592e7",
+    "name": "Alubijid",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.388Z",
+    "updatedAt": "2026-02-09T22:01:52.388Z"
+  },
+  {
+    "id": "ee13b03a-2532-49ea-b93e-bd67a26f4e57",
+    "name": "Laguindingan",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.393Z",
+    "updatedAt": "2026-02-09T22:01:52.393Z"
+  },
+  {
+    "id": "b559dfad-625f-4466-abd8-61b4c741d0b2",
+    "name": "Gitagum",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.402Z",
+    "updatedAt": "2026-02-09T22:01:52.402Z"
+  },
+  {
+    "id": "93b977fa-397f-444d-b43b-cd42224b17de",
+    "name": "Libertad",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.406Z",
+    "updatedAt": "2026-02-09T22:01:52.406Z"
+  },
+  {
+    "id": "8f64829c-3e96-4cb5-b2e8-1b942612f183",
+    "name": "Initao",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.410Z",
+    "updatedAt": "2026-02-09T22:01:52.410Z"
+  },
+  {
+    "id": "d7e0873f-497c-4a4e-8dba-2ee4b2c40b15",
+    "name": "Naawan",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.414Z",
+    "updatedAt": "2026-02-09T22:01:52.414Z"
+  },
+  {
+    "id": "f3ae7c53-a479-40c5-bd10-bdd0ebe41424",
+    "name": "Manticao",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.417Z",
+    "updatedAt": "2026-02-09T22:01:52.417Z"
+  },
+  {
+    "id": "63058c7c-5df4-40d5-ae36-3c90a12653a3",
+    "name": "Lugait",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.420Z",
+    "updatedAt": "2026-02-09T22:01:52.420Z"
+  },
+  {
+    "id": "dff88902-711b-4ec0-9476-b323ef1046b3",
+    "name": "Tagoloan",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.423Z",
+    "updatedAt": "2026-02-09T22:01:52.423Z"
+  },
+  {
+    "id": "5ba400ae-df24-4103-8554-db567b274180",
+    "name": "Villanueva",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.427Z",
+    "updatedAt": "2026-02-09T22:01:52.427Z"
+  },
+  {
+    "id": "1042479a-1839-42a5-abbd-83fe7930b14f",
+    "name": "Jasaan",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.430Z",
+    "updatedAt": "2026-02-09T22:01:52.430Z"
+  },
+  {
+    "id": "e74a09a5-e47e-4242-af06-79063435d63d",
+    "name": "Balingasag",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.434Z",
+    "updatedAt": "2026-02-09T22:01:52.434Z"
+  },
+  {
+    "id": "7ea24f45-a52e-49b2-b9ba-94e6a1a8aca9",
+    "name": "Lagonglong",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.437Z",
+    "updatedAt": "2026-02-09T22:01:52.437Z"
+  },
+  {
+    "id": "01d0af0c-1595-4c13-be16-e7ee7530020c",
+    "name": "Salay",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.441Z",
+    "updatedAt": "2026-02-09T22:01:52.441Z"
+  },
+  {
+    "id": "1ed7ccb2-c57a-44ba-83e7-9a0d697084a1",
+    "name": "Binuangan",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.445Z",
+    "updatedAt": "2026-02-09T22:01:52.445Z"
+  },
+  {
+    "id": "b5dd50e9-9d1c-4dfd-acde-9d3ee1e391d8",
+    "name": "Sugbongcogon",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.449Z",
+    "updatedAt": "2026-02-09T22:01:52.449Z"
+  },
+  {
+    "id": "c9c740ca-4b5f-4406-b80f-2c5357ff900e",
+    "name": "Kinoguitan",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.452Z",
+    "updatedAt": "2026-02-09T22:01:52.452Z"
+  },
+  {
+    "id": "aee3c112-332e-4daf-b0f0-ebb76c50e2b5",
+    "name": "Claveria",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.455Z",
+    "updatedAt": "2026-02-09T22:01:52.455Z"
+  },
+  {
+    "id": "8f521308-8d15-4147-a621-8c88cabb02dc",
+    "name": "Medina",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.460Z",
+    "updatedAt": "2026-02-09T22:01:52.460Z"
+  },
+  {
+    "id": "bc1abfe8-eeb8-4f03-87b3-b3241a9867f9",
+    "name": "Talisayan",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.463Z",
+    "updatedAt": "2026-02-09T22:01:52.463Z"
+  },
+  {
+    "id": "a584956d-849d-4997-a905-e203df6fe757",
+    "name": "Magsaysay",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.466Z",
+    "updatedAt": "2026-02-09T22:01:52.466Z"
+  },
+  {
+    "id": "3cdfb059-8766-414d-a502-cc6264d4235f",
+    "name": "Balingoan",
+    "provinceId": "96b48fd1-be70-4755-9e85-3fdc928fcf9f",
+    "createdAt": "2026-02-09T22:01:52.469Z",
+    "updatedAt": "2026-02-09T22:01:52.469Z"
+  },
+  {
+    "id": "9afe67e0-024c-4a6a-9b56-a5b5ab06c66b",
+    "name": "Malaybalay City",
+    "provinceId": "0ba38adf-d6c4-480f-9dc5-81c252f86228",
+    "createdAt": "2026-02-09T22:01:52.473Z",
+    "updatedAt": "2026-02-09T22:01:52.473Z"
+  },
+  {
+    "id": "0dabfebf-55c6-48cb-a04a-8e23144811fa",
+    "name": "Valencia City",
+    "provinceId": "0ba38adf-d6c4-480f-9dc5-81c252f86228",
+    "createdAt": "2026-02-09T22:01:52.478Z",
+    "updatedAt": "2026-02-09T22:01:52.478Z"
+  },
+  {
+    "id": "e96d7c11-c92e-4318-9bea-bbc6c2a15eae",
+    "name": "Manolo Fortich",
+    "provinceId": "0ba38adf-d6c4-480f-9dc5-81c252f86228",
+    "createdAt": "2026-02-09T22:01:52.484Z",
+    "updatedAt": "2026-02-09T22:01:52.484Z"
+  },
+  {
+    "id": "ca331d89-e1b8-407c-bb84-49fc8dc8986f",
+    "name": "Sumilao",
+    "provinceId": "0ba38adf-d6c4-480f-9dc5-81c252f86228",
+    "createdAt": "2026-02-09T22:01:52.487Z",
+    "updatedAt": "2026-02-09T22:01:52.487Z"
+  },
+  {
+    "id": "866baae8-a003-407c-9e79-8b073ef222c5",
+    "name": "Iligan City",
+    "provinceId": "a1abc393-d087-42ef-83ac-ff652f256615",
+    "createdAt": "2026-02-09T22:01:52.493Z",
+    "updatedAt": "2026-02-09T22:01:52.493Z"
+  },
+  {
+    "id": "a82a6d39-b57d-44fa-b9a4-fb28a43448c4",
+    "name": "Kapatagan",
+    "provinceId": "a1abc393-d087-42ef-83ac-ff652f256615",
+    "createdAt": "2026-02-09T22:01:52.498Z",
+    "updatedAt": "2026-02-09T22:01:52.498Z"
+  },
+  {
+    "id": "a2698212-3a68-40ea-87bf-ea748c6e017d",
+    "name": "Tubod",
+    "provinceId": "a1abc393-d087-42ef-83ac-ff652f256615",
+    "createdAt": "2026-02-09T22:01:52.503Z",
+    "updatedAt": "2026-02-09T22:01:52.503Z"
+  },
+  {
+    "id": "3f44f624-35c8-42fe-ae59-43672cfb1186",
+    "name": "Mambajao",
+    "provinceId": "589a636d-b2c7-43f7-b6df-5e38eba24ae3",
+    "createdAt": "2026-02-09T22:01:52.510Z",
+    "updatedAt": "2026-02-09T22:01:52.510Z"
+  },
+  {
+    "id": "4f8fb6df-840b-4aba-b6de-7b0d3f9d0a94",
+    "name": "Catarman",
+    "provinceId": "589a636d-b2c7-43f7-b6df-5e38eba24ae3",
+    "createdAt": "2026-02-09T22:01:52.514Z",
+    "updatedAt": "2026-02-09T22:01:52.514Z"
+  },
+  {
+    "id": "d8348a79-e5f2-49a6-a7a9-2357a4145227",
+    "name": "Sagay",
+    "provinceId": "589a636d-b2c7-43f7-b6df-5e38eba24ae3",
+    "createdAt": "2026-02-09T22:01:52.519Z",
+    "updatedAt": "2026-02-09T22:01:52.519Z"
+  },
+  {
+    "id": "e766fe86-3689-41af-b5bc-ac2fbfa23c73",
+    "name": "Guinsiliban",
+    "provinceId": "589a636d-b2c7-43f7-b6df-5e38eba24ae3",
+    "createdAt": "2026-02-09T22:01:52.524Z",
+    "updatedAt": "2026-02-09T22:01:52.524Z"
+  }
+]

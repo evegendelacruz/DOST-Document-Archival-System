@@ -1,0 +1,12 @@
+[
+  {
+    "id": "74ce9774-7397-4b69-aa01-b8c6ce10527e",
+    "userId": "ce4e8973-3c92-4333-8d29-8d799f472e49",
+    "canAccessSetup": true,
+    "canAccessCest": true,
+    "canAccessMaps": true,
+    "canAccessCalendar": true,
+    "canAccessArchival": true,
+    "canManageUsers": true
+  }
+]
