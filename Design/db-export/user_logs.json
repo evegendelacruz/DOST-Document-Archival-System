@@ -1,0 +1,182 @@
+[
+  {
+    "id": "10a6c790-3ca6-458f-a4f7-d437674a8e4d",
+    "userId": "ce4e8973-3c92-4333-8d29-8d799f472e49",
+    "action": "LOGIN",
+    "timestamp": "2026-02-17T17:36:17.385Z",
+    "details": null,
+    "resourceId": null,
+    "resourceTitle": null,
+    "resourceType": "AUTH"
+  },
+  {
+    "id": "6a5e1e55-5b7d-4f39-b9a4-d1ce2810facf",
+    "userId": "ce4e8973-3c92-4333-8d29-8d799f472e49",
+    "action": "LOGIN",
+    "timestamp": "2026-02-17T21:15:15.180Z",
+    "details": null,
+    "resourceId": null,
+    "resourceTitle": null,
+    "resourceType": "AUTH"
+  },
+  {
+    "id": "34d3e4fb-3cfb-4b1c-ab1a-64683a0f8e10",
+    "userId": "ce4e8973-3c92-4333-8d29-8d799f472e49",
+    "action": "LOGIN",
+    "timestamp": "2026-02-17T21:17:57.024Z",
+    "details": null,
+    "resourceId": null,
+    "resourceTitle": null,
+    "resourceType": "AUTH"
+  },
+  {
+    "id": "8bc0d77f-0ad7-4bf9-81de-e6cc229fedd8",
+    "userId": "ce4e8973-3c92-4333-8d29-8d799f472e49",
+    "action": "LOGIN",
+    "timestamp": "2026-02-17T21:23:42.320Z",
+    "details": null,
+    "resourceId": null,
+    "resourceTitle": null,
+    "resourceType": "AUTH"
+  },
+  {
+    "id": "823e86fa-1300-4c49-876c-24397e7093af",
+    "userId": "8728b7b1-593b-42b6-bd1f-1a704f159364",
+    "action": "LOGIN",
+    "timestamp": "2026-02-17T21:24:10.040Z",
+    "details": null,
+    "resourceId": null,
+    "resourceTitle": null,
+    "resourceType": "AUTH"
+  },
+  {
+    "id": "fc65f11e-12f5-4dcd-a716-e64b6e2e252a",
+    "userId": "ce4e8973-3c92-4333-8d29-8d799f472e49",
+    "action": "LOGIN",
+    "timestamp": "2026-02-17T21:29:50.939Z",
+    "details": null,
+    "resourceId": null,
+    "resourceTitle": null,
+    "resourceType": "AUTH"
+  },
+  {
+    "id": "d434c95d-a014-427d-b37e-257cc49f0108",
+    "userId": "d6088246-3702-435a-bbfa-56616da7c7ed",
+    "action": "LOGIN",
+    "timestamp": "2026-02-17T21:53:42.199Z",
+    "details": null,
+    "resourceId": null,
+    "resourceTitle": null,
+    "resourceType": "AUTH"
+  },
+  {
+    "id": "bf5981f1-6873-4c63-820d-3ba82dbc59c9",
+    "userId": "92406225-13b1-45d1-b4f2-b008695566d0",
+    "action": "LOGIN",
+    "timestamp": "2026-02-17T22:14:26.346Z",
+    "details": null,
+    "resourceId": null,
+    "resourceTitle": null,
+    "resourceType": "AUTH"
+  },
+  {
+    "id": "cc9e1a6d-137a-4044-9083-9663ff0af690",
+    "userId": "ce4e8973-3c92-4333-8d29-8d799f472e49",
+    "action": "LOGIN",
+    "timestamp": "2026-02-17T23:14:41.047Z",
+    "details": null,
+    "resourceId": null,
+    "resourceTitle": null,
+    "resourceType": "AUTH"
+  },
+  {
+    "id": "3719fb52-67d7-455b-b47f-602945207c86",
+    "userId": "ce4e8973-3c92-4333-8d29-8d799f472e49",
+    "action": "LOGIN",
+    "timestamp": "2026-02-17T23:15:25.468Z",
+    "details": null,
+    "resourceId": null,
+    "resourceTitle": null,
+    "resourceType": "AUTH"
+  },
+  {
+    "id": "a47c2eab-da2b-48e8-8037-08c797cb0cd5",
+    "userId": "92406225-13b1-45d1-b4f2-b008695566d0",
+    "action": "LOGIN",
+    "timestamp": "2026-02-17T23:16:26.066Z",
+    "details": null,
+    "resourceId": null,
+    "resourceTitle": null,
+    "resourceType": "AUTH"
+  },
+  {
+    "id": "5c4ebbda-bbea-47e6-88ac-fa334f08929d",
+    "userId": "ce4e8973-3c92-4333-8d29-8d799f472e49",
+    "action": "LOGIN",
+    "timestamp": "2026-02-18T00:24:28.268Z",
+    "details": null,
+    "resourceId": null,
+    "resourceTitle": null,
+    "resourceType": "AUTH"
+  },
+  {
+    "id": "95bc2df8-19ae-4343-b50c-040b270b3083",
+    "userId": "92406225-13b1-45d1-b4f2-b008695566d0",
+    "action": "LOGIN",
+    "timestamp": "2026-02-18T16:40:37.171Z",
+    "details": null,
+    "resourceId": null,
+    "resourceTitle": null,
+    "resourceType": "AUTH"
+  },
+  {
+    "id": "bd01166e-89ff-466f-ae76-4e6577971e73",
+    "userId": "92406225-13b1-45d1-b4f2-b008695566d0",
+    "action": "LOGIN",
+    "timestamp": "2026-02-18T17:15:04.328Z",
+    "details": null,
+    "resourceId": null,
+    "resourceTitle": null,
+    "resourceType": "AUTH"
+  },
+  {
+    "id": "0df1806c-2a92-4272-8a5d-542efff0c7be",
+    "userId": "ce4e8973-3c92-4333-8d29-8d799f472e49",
+    "action": "LOGIN",
+    "timestamp": "2026-02-18T17:39:12.135Z",
+    "details": null,
+    "resourceId": null,
+    "resourceTitle": "User Login",
+    "resourceType": "AUTH"
+  },
+  {
+    "id": "3894edc4-cb0e-43bc-9ae5-6d233201978d",
+    "userId": "ce4e8973-3c92-4333-8d29-8d799f472e49",
+    "action": "UPLOAD",
+    "timestamp": "2026-02-18T17:48:03.705Z",
+    "details": "{\"projectId\":\"a17a8002-f6c6-41fb-9cc5-8bcfb1d50ace\",\"projectTitle\":\"Evegen SM Mall\",\"projectCode\":\"014\",\"phase\":\"INITIATION\"}",
+    "resourceId": "2abe81b1-3cff-4f66-9dfc-c3cf285c9524",
+    "resourceTitle": "REVISED Internship Plan.pdf",
+    "resourceType": "DOCUMENT"
+  },
+  {
+    "id": "ae45fdb9-f6de-40f9-882e-f73a3f76133c",
+    "userId": "ce4e8973-3c92-4333-8d29-8d799f472e49",
+    "action": "DELETE",
+    "timestamp": "2026-02-18T17:49:21.442Z",
+    "details": "{\"projectId\":\"f714877f-2c05-46ce-ae5b-5697e6657369\",\"projectTitle\":\"Acquisition of Equipment for the Mass Production\",\"projectCode\":\"001\",\"phase\":\"INITIATION\"}",
+    "resourceId": "5905398b-d67b-4b86-af3b-e0bba7a98cdc",
+    "resourceTitle": "REVISED Internship Plan.pdf",
+    "resourceType": "DOCUMENT"
+  },
+  {
+    "id": "92f6d8b2-80d6-4a4c-bc28-5550c9fb3c4f",
+    "userId": "92406225-13b1-45d1-b4f2-b008695566d0",
+    "action": "LOGIN",
+    "timestamp": "2026-02-18T18:28:11.016Z",
+    "details": null,
+    "resourceId": null,
+    "resourceTitle": null,
+    "resourceType": "AUTH"
+  }
+]
