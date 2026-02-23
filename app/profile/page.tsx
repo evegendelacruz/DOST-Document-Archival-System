@@ -201,7 +201,7 @@ const ProfilePage = () => {
             <UserManagement currentUserId={user.id} />
           )}
           {currentView === 'user-log' && user && (
-            <UserLog currentUserId={user.id} currentUserRole={user.role} />
+            <UserLog currentUserId={user.id} currentUserRole={user.role} currentUserName={user.fullName} />
           )}
         </div>
       </div>
@@ -1032,73 +1032,548 @@ interface UserLogData {
   };
 }
 
+interface TimeRecordData {
+  id: string;
+  userId: string;
+  date: string;
+  amTimeIn: string | null;
+  amTimeOut: string | null;
+  pmTimeIn: string | null;
+  pmTimeOut: string | null;
+  user?: {
+    id: string;
+    fullName: string;
+    email: string;
+    role: string;
+  };
+}
+
 interface UserLogProps {
   currentUserId: string;
   currentUserRole: string;
+  currentUserName?: string;
 }
 
-const UserLog = ({ currentUserId, currentUserRole }: UserLogProps) => {
+const UserLog = ({ currentUserId, currentUserRole, currentUserName }: UserLogProps) => {
   const [logs, setLogs] = useState<UserLogData[]>([]);
+  const [timeRecords, setTimeRecords] = useState<TimeRecordData[]>([]);
+  const [todayRecord, setTodayRecord] = useState<TimeRecordData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<'day' | 'month' | 'year'>('month');
+  const [filterDay, setFilterDay] = useState(() => new Date().toISOString().slice(0, 10));
+  const [filterMonth, setFilterMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [filterYear, setFilterYear] = useState(() => String(new Date().getFullYear()));
+  const [actionLoading, setActionLoading] = useState(false);
+  const [successModal, setSuccessModal] = useState<{ show: boolean; message: string } | null>(null);
   const isAdmin = currentUserRole === 'ADMIN';
 
+  // Fetch login/logout logs
   useEffect(() => {
     const fetchLogs = async () => {
       const res = await fetch('/api/user-logs');
       if (res.ok) {
         const data = await res.json();
-        const logs = data.logs || [];
-        // If staff, filter to only show their own logs
+        // Only keep LOGIN and LOGOUT actions
+        const allLogs: UserLogData[] = (data.logs || []).filter(
+          (log: UserLogData) => log.action === 'LOGIN' || log.action === 'LOGOUT'
+        );
         if (!isAdmin) {
-          setLogs(logs.filter((log: UserLogData) => log.userId === currentUserId));
+          setLogs(allLogs.filter((log) => log.userId === currentUserId));
         } else {
-          setLogs(logs);
+          setLogs(allLogs);
         }
       }
     };
     fetchLogs();
   }, [currentUserId, isAdmin]);
 
+  // Fetch time records for DTR
+  const fetchTimeRecords = useCallback(async () => {
+    let url = '/api/time-records?';
+    if (!isAdmin) {
+      url += `userId=${currentUserId}&`;
+    }
+    if (filterType === 'day') {
+      url += `date=${filterDay}`;
+    } else if (filterType === 'month') {
+      url += `month=${filterMonth}`;
+    } else {
+      url += `year=${filterYear}`;
+    }
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      setTimeRecords(data);
+    }
+  }, [currentUserId, isAdmin, filterType, filterDay, filterMonth, filterYear]);
+
+  // Fetch today's time record
+  const fetchTodayRecord = useCallback(async () => {
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    console.log('[Profile] Fetching today record for date:', today);
+    const res = await fetch(`/api/time-records?userId=${currentUserId}&date=${today}`);
+    if (res.ok) {
+      const data = await res.json();
+      console.log('[Profile] Today record:', data);
+      setTodayRecord(data[0] || null);
+    }
+  }, [currentUserId]);
+
+  useEffect(() => {
+    fetchTimeRecords();
+    fetchTodayRecord();
+  }, [fetchTimeRecords, fetchTodayRecord]);
+
+  const handleTimeAction = async (action: 'AM_TIME_IN' | 'AM_TIME_OUT' | 'PM_TIME_IN' | 'PM_TIME_OUT') => {
+    if (!currentUserId) {
+      alert('User not found. Please refresh the page.');
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/time-records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUserId, action }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        await fetchTodayRecord();
+        await fetchTimeRecords();
+        const actionLabels: Record<string, string> = {
+          AM_TIME_IN: 'Time In (AM)',
+          AM_TIME_OUT: 'Time Out (AM)',
+          PM_TIME_IN: 'Time In (PM)',
+          PM_TIME_OUT: 'Time Out (PM)',
+        };
+        setSuccessModal({ show: true, message: `${actionLabels[action]} recorded!` });
+      } else {
+        setSuccessModal({ show: true, message: data.error || 'Failed to record time' });
+      }
+    } catch (err) {
+      console.error('Time action error:', err);
+      setSuccessModal({ show: true, message: 'Network error. Please try again.' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const formatDate = (timestamp: string) => {
     const date = new Date(timestamp);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true,
-    });
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
   };
 
-  const filteredLogs = logs.filter(log =>
-    log.user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    log.user.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const formatTimeShort = (timestamp: string | null) => {
+    if (!timestamp) return '--:--';
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  };
+
+  const applyDateFilter = (log: UserLogData) => {
+    if (!isAdmin) return true;
+    const ts = log.timestamp.slice(0, 10); // YYYY-MM-DD
+    if (filterType === 'day') return ts === filterDay;
+    if (filterType === 'month') return ts.slice(0, 7) === filterMonth;
+    if (filterType === 'year') return ts.slice(0, 4) === filterYear;
+    return true;
+  };
+
+  const filteredLogs = logs.filter((log) => {
+    const matchesSearch =
+      log.user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.user.email.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch && applyDateFilter(log);
+  });
+
+  const handleDownloadPDF = async () => {
+    const { default: jsPDF } = await import('jspdf');
+    const { default: html2canvas } = await import('html2canvas');
+
+    // Fetch time records for DTR based on filter
+    let url = '/api/time-records?';
+    if (!isAdmin) {
+      url += `userId=${currentUserId}&`;
+    }
+    if (filterType === 'month') {
+      url += `month=${filterMonth}`;
+    } else if (filterType === 'day') {
+      // For day filter, use the month of that day
+      url += `month=${filterDay.slice(0, 7)}`;
+    } else {
+      url += `year=${filterYear}`;
+    }
+
+    const res = await fetch(url);
+    const records: TimeRecordData[] = res.ok ? await res.json() : [];
+
+    // Get unique users from records
+    const usersMap = new Map<string, { id: string; fullName: string; email: string; role: string }>();
+    records.forEach((r) => {
+      if (r.user && !usersMap.has(r.userId)) {
+        usersMap.set(r.userId, r.user);
+      }
+    });
+
+    // If no records but not admin, use current user
+    if (usersMap.size === 0 && !isAdmin) {
+      usersMap.set(currentUserId, {
+        id: currentUserId,
+        fullName: currentUserName || '',
+        email: '',
+        role: currentUserRole,
+      });
+    }
+
+    const usersInRecords = Array.from(usersMap.entries()).map(([id, user]) => ({ id, user }));
+
+    if (usersInRecords.length === 0) {
+      alert('No time records found for the selected period.');
+      return;
+    }
+
+    // Resolve month/year
+    let year: number, month: number;
+    if (filterType === 'month') {
+      [year, month] = filterMonth.split('-').map(Number);
+    } else if (filterType === 'day') {
+      const d = new Date(filterDay);
+      year = d.getFullYear();
+      month = d.getMonth() + 1;
+    } else {
+      year = parseInt(filterYear);
+      month = new Date().getMonth() + 1;
+    }
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const periodLabel = new Date(`${year}-${String(month).padStart(2, '0')}-01`).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+    });
+
+    // Helpers
+    const isWeekday = (dateStr: string) => {
+      const day = new Date(dateStr + 'T00:00:00').getDay();
+      return day !== 0 && day !== 6;
+    };
+
+    const fmt = (ts: string | null) => {
+      if (!ts) return '';
+      return new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    };
+
+    const calcUndertime = (rec: TimeRecordData) => {
+      let workedMins = 0;
+      if (rec.amTimeIn && rec.amTimeOut) {
+        const diff = (new Date(rec.amTimeOut).getTime() - new Date(rec.amTimeIn).getTime()) / 60000;
+        if (diff > 0) workedMins += Math.min(diff, 240);
+      }
+      if (rec.pmTimeIn && rec.pmTimeOut) {
+        const diff = (new Date(rec.pmTimeOut).getTime() - new Date(rec.pmTimeIn).getTime()) / 60000;
+        if (diff > 0) workedMins += Math.min(diff, 240);
+      }
+      const ut = Math.max(0, 480 - workedMins);
+      const hours = Math.floor(ut / 60);
+      const minutesDecimal = parseFloat((ut % 60).toFixed(2));
+      return { hours, minutes: minutesDecimal };
+    };
+
+    const buildUserDTR = (userId: string) => {
+      const userRecords = records.filter((r) => r.userId === userId);
+      const map: Record<string, TimeRecordData> = {};
+      userRecords.forEach((rec) => {
+        const dateStr = rec.date.slice(0, 10);
+        map[dateStr] = rec;
+      });
+      return map;
+    };
+
+    // Generate DTR HTML
+    const generateDTRHTML = (userId: string, user: { fullName: string }): string => {
+      const dtr = buildUserDTR(userId);
+      let rows = '';
+      let totalUTH = 0,
+        totalUTM = 0;
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const weekday = isWeekday(dateStr);
+        const rec = dtr[dateStr];
+        const hasRec = weekday && rec;
+        const ut = hasRec ? calcUndertime(rec) : null;
+        if (ut) {
+          totalUTH += ut.hours;
+          totalUTM += ut.minutes;
+        }
+
+        const bg = !weekday ? 'background:#f0f0f0;' : '';
+
+        rows += `
+        <tr style="${bg}">
+          <td style="border:1px solid #000;text-align:center;font-size:7pt;padding:2px 0;">${d}</td>
+          <td style="border:1px solid #000;text-align:center;font-size:6.5pt;padding:2px 3px;">${weekday ? fmt(rec?.amTimeIn ?? null) : ''}</td>
+          <td style="border:1px solid #000;text-align:center;font-size:6.5pt;padding:2px 3px;">${weekday ? fmt(rec?.amTimeOut ?? null) : ''}</td>
+          <td style="border:1px solid #000;text-align:center;font-size:6.5pt;padding:2px 3px;">${weekday ? fmt(rec?.pmTimeIn ?? null) : ''}</td>
+          <td style="border:1px solid #000;text-align:center;font-size:6.5pt;padding:2px 3px;">${weekday ? fmt(rec?.pmTimeOut ?? null) : ''}</td>
+          <td style="border:1px solid #000;text-align:center;font-size:6.5pt;padding:2px 3px;">${ut && ut.hours > 0 ? ut.hours : ''}</td>
+          <td style="border:1px solid #000;text-align:center;font-size:6.5pt;padding:2px 3px;">${ut && ut.minutes > 0 ? ut.minutes.toFixed(2) : ''}</td>
+        </tr>`;
+      }
+
+      totalUTH += Math.floor(totalUTM / 60);
+      totalUTM = parseFloat((totalUTM % 60).toFixed(2));
+
+      const tbl = `width:100%;border-collapse:collapse;`;
+      const dtrT = `width:100%;border-collapse:collapse;table-layout:fixed;font-size:6.5pt;`;
+
+      return `
+        <div style="font-family:Arial,sans-serif;width:100%;">
+          <div style="font-size:6pt;margin-bottom:3px;">Civil Service Form No. 48</div>
+          <div style="font-size:10pt;font-weight:bold;text-align:center;letter-spacing:0.5px;margin-bottom:4px;">
+            DAILY TIME RECORD
+          </div>
+          <div style="margin:0 20px;border-bottom:1.5px solid #000;text-align:center;padding-bottom:2px;">
+            <span style="font-size:9pt;font-weight:bold;display:inline-block;line-height:1.4;">
+              ${user?.fullName?.toUpperCase() || ''}
+            </span>
+          </div>
+          <div style="text-align:center;font-size:6pt;margin-top:1px;margin-bottom:5px;">(NAME)</div>
+          <div style="padding-bottom:3px;margin-bottom:4px;">
+            <table style="${tbl}">
+              <tr>
+                <td style="font-size:7pt;white-space:nowrap;padding-right:4px;width:72px;vertical-align:bottom;">
+                  For the month of
+                </td>
+                <td style="font-size:8pt;font-weight:bold;text-align:center;border-bottom:1.5px solid #000;vertical-align:bottom;padding-bottom:5px;">
+                  ${periodLabel}
+                </td>
+              </tr>
+            </table>
+          </div>
+          <div style="padding-bottom:4px;margin-bottom:4px;display:flex;gap:6px;align-items:flex-start;">
+            <div style="flex:1.2;font-size:6.8pt;line-height:1.6;">
+              Official hours for arrival<br>and departure
+            </div>
+            <div style="flex:1;">
+              <table style="${tbl}">
+                <tr>
+                  <td style="font-size:6.8pt;font-weight:bold;padding:1px 4px 1px 0;vertical-align:bottom;">Regular days</td>
+                  <td style="font-size:6.8pt;text-align:right;width:36px;border-bottom:1px solid #000;vertical-align:bottom;padding-bottom:5px;">31.00</td>
+                </tr>
+                <tr>
+                  <td style="font-size:6.8pt;font-weight:bold;padding:1px 4px 1px 0;vertical-align:bottom;">Saturdays</td>
+                  <td style="font-size:6.8pt;text-align:right;width:36px;border-bottom:1px solid #000;vertical-align:bottom;padding-bottom:5px;">5.00</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          <table style="${dtrT}">
+            <thead>
+              <tr>
+                <th rowspan="2" style="border:1px solid #000;font-size:7.5pt;font-weight:bold;text-align:center;vertical-align:middle;padding:5px 0;">Day</th>
+                <th colspan="2" style="border:1px solid #000;font-size:7pt;font-weight:bold;text-align:center;padding:5px;">A M</th>
+                <th colspan="2" style="border:1px solid #000;font-size:7pt;font-weight:bold;text-align:center;padding:5px;">P M</th>
+                <th colspan="2" style="border:1px solid #000;font-size:7pt;font-weight:bold;text-align:center;padding:5px;">UNDERTIME</th>
+              </tr>
+              <tr>
+                <th style="border:1px solid #000;font-size:6pt;font-weight:normal;text-align:center;padding:5px;">Arrival</th>
+                <th style="border:1px solid #000;font-size:6pt;font-weight:normal;text-align:center;padding:5px;">Departure</th>
+                <th style="border:1px solid #000;font-size:6pt;font-weight:normal;text-align:center;padding:5px;">Arrival</th>
+                <th style="border:1px solid #000;font-size:6pt;font-weight:normal;text-align:center;padding:5px;">Departure</th>
+                <th style="border:1px solid #000;font-size:6pt;font-weight:normal;text-align:center;padding:5px;">Hours</th>
+                <th style="border:1px solid #000;font-size:6pt;font-weight:normal;text-align:center;padding:5px;">Minutes</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+              <tr>
+                <td colspan="5" style="border:1px solid #000;text-align:right;font-weight:bold;font-size:7pt;padding:5px 5px;">TOTAL</td>
+                <td style="border:1px solid #000;text-align:center;font-weight:bold;font-size:7pt;padding:5px;">${totalUTH}</td>
+                <td style="border:1px solid #000;text-align:center;font-weight:bold;font-size:7pt;padding:5px;">${totalUTM > 0 ? totalUTM.toFixed(2) : '0.00'}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p style="font-size:6.3pt;line-height:1.6;margin:8px 0 16px 0;">
+            I Certify on my honor that the above is a true and correct report<br>
+            of the hours work perfomed, record of which was daily at the<br>
+            time of arrival and departure from office.
+          </p>
+          <div>
+            <div style="font-size:8pt;font-weight:bold;margin-left:20px;margin-bottom:5px;">
+              Junelyn Louvena B. Ruiz
+            </div>
+            <div style="border-bottom:1px solid #000;margin-bottom:3px;"></div>
+            <div style="font-size:8pt;font-weight:bold;margin-left:20px;">
+              Provincial Director, PSTO MIS. OR.
+            </div>
+          </div>
+        </div>`;
+    };
+
+    // Pair users 2-per-page
+    const PAGE_W = 816;
+    const PAGE_H = 1056;
+
+    const pairs: Array<[(typeof usersInRecords)[0], (typeof usersInRecords)[0] | null]> = [];
+    for (let i = 0; i < usersInRecords.length; i += 2) pairs.push([usersInRecords[i], usersInRecords[i + 1] ?? null]);
+
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'in', format: 'letter' });
+
+    for (let p = 0; p < pairs.length; p++) {
+      const [left, right] = pairs[p];
+
+      const container = document.createElement('div');
+      container.style.cssText = `
+        position: fixed;
+        top: -9999px;
+        left: -9999px;
+        width: ${PAGE_W}px;
+        height: ${PAGE_H}px;
+        background: #fff;
+        display: flex;
+        flex-direction: row;
+        padding: 40px 36px;
+        box-sizing: border-box;
+        gap: 0;
+      `;
+
+      const leftDiv = document.createElement('div');
+      leftDiv.style.cssText = `flex: 1; padding-right: 12px; border-right: 1px dashed #aaa; box-sizing: border-box; overflow: hidden;`;
+      leftDiv.innerHTML = generateDTRHTML(left.id, left.user);
+
+      const rightDiv = document.createElement('div');
+      rightDiv.style.cssText = `flex: 1; padding-left: 12px; box-sizing: border-box; overflow: hidden;`;
+      rightDiv.innerHTML = right ? generateDTRHTML(right.id, right.user) : '';
+
+      container.appendChild(leftDiv);
+      container.appendChild(rightDiv);
+      document.body.appendChild(container);
+
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        width: PAGE_W,
+        height: PAGE_H,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+      });
+
+      document.body.removeChild(container);
+
+      if (p > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 8.5, 11);
+    }
+
+    pdf.save(`DTR_${periodLabel.replace(/\s/g, '_')}.pdf`);
+  };
+
+  const years = Array.from({ length: 6 }, (_, i) => String(new Date().getFullYear() - i));
+
+  // Determine current period (AM or PM)
+  const currentHour = new Date().getHours();
+  const isCurrentlyAM = currentHour < 12;
+
+  // Check button availability based on sequential logic and current time period
+  const canTimeIn = isCurrentlyAM
+    ? !todayRecord?.amTimeIn // AM: can time in if not yet timed in
+    : !todayRecord?.pmTimeIn; // PM: can time in if not yet timed in
+
+  const canTimeOut = isCurrentlyAM
+    ? !!todayRecord?.amTimeIn && !todayRecord?.amTimeOut // AM: can time out if timed in but not out
+    : !!todayRecord?.pmTimeIn && !todayRecord?.pmTimeOut; // PM: can time out if timed in but not out
+
+  // Simplified handlers that auto-detect AM/PM
+  const handleTimeIn = () => {
+    if (isCurrentlyAM) {
+      handleTimeAction('AM_TIME_IN');
+    } else {
+      handleTimeAction('PM_TIME_IN');
+    }
+  };
+
+  const handleTimeOut = () => {
+    if (isCurrentlyAM) {
+      handleTimeAction('AM_TIME_OUT');
+    } else {
+      handleTimeAction('PM_TIME_OUT');
+    }
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
       <h2 className="text-xl font-semibold text-cyan-600 mb-4">
-        {isAdmin ? 'User Log' : 'My Login History'}
+        {isAdmin ? 'User Log' : 'My Time Record'}
       </h2>
 
-      {/* Search Bar - Only show for admins */}
-      {isAdmin && (
-        <div className="mb-6">
-          <div className="relative w-72">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+      {/* Time In/Time Out Section */}
+      <div className="mb-4 p-4 bg-gradient-to-r from-cyan-50 to-blue-50 rounded-lg border border-cyan-100">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="text-sm font-semibold text-cyan-700">Today's Attendance</h3>
+            <div className="text-xs text-gray-500">
+              {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleTimeIn}
+              disabled={!canTimeIn || actionLoading}
+              className={`flex items-center gap-1.5 py-2 px-4 text-xs font-semibold rounded-md transition-all ${
+                canTimeIn
+                  ? 'bg-green-500 text-white hover:bg-green-600 shadow-sm'
+                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              }`}
             >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M11 16l-4-4m0 0l4-4m-4 4h14" />
+              </svg>
+              Time In
+            </button>
+            <button
+              onClick={handleTimeOut}
+              disabled={!canTimeOut || actionLoading}
+              className={`flex items-center gap-1.5 py-2 px-4 text-xs font-semibold rounded-md transition-all ${
+                canTimeOut
+                  ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-sm'
+                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+              Time Out
+            </button>
+          </div>
+        </div>
+
+        {/* Compact Time Display */}
+        <div className="flex gap-2 text-xs">
+          <div className="flex-1 flex items-center gap-2 px-2 py-1.5 bg-white rounded border">
+            <span className="text-gray-400 font-medium">AM:</span>
+            <span className="text-cyan-700 font-semibold">{formatTimeShort(todayRecord?.amTimeIn ?? null)}</span>
+            <span className="text-gray-300">-</span>
+            <span className="text-cyan-700 font-semibold">{formatTimeShort(todayRecord?.amTimeOut ?? null)}</span>
+          </div>
+          <div className="flex-1 flex items-center gap-2 px-2 py-1.5 bg-white rounded border">
+            <span className="text-gray-400 font-medium">PM:</span>
+            <span className="text-cyan-700 font-semibold">{formatTimeShort(todayRecord?.pmTimeIn ?? null)}</span>
+            <span className="text-gray-300">-</span>
+            <span className="text-cyan-700 font-semibold">{formatTimeShort(todayRecord?.pmTimeOut ?? null)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Admin: Search + Filter + Download */}
+      {isAdmin && (
+        <div className="mb-6 flex flex-wrap items-end gap-3">
+          {/* Search */}
+          <div className="relative w-56">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
@@ -1109,10 +1584,87 @@ const UserLog = ({ currentUserId, currentUserRole }: UserLogProps) => {
               className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-cyan-500"
             />
           </div>
+
+          {/* Filter Type */}
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Filter by</label>
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value as 'day' | 'month' | 'year')}
+              className="px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-cyan-500"
+            >
+              <option value="day">Day</option>
+              <option value="month">Month</option>
+              <option value="year">Year</option>
+            </select>
+          </div>
+
+          {/* Filter Value */}
+          {filterType === 'day' && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Select Date</label>
+              <input
+                type="date"
+                value={filterDay}
+                onChange={(e) => setFilterDay(e.target.value)}
+                className="px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              />
+            </div>
+          )}
+          {filterType === 'month' && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Select Month</label>
+              <input
+                type="month"
+                value={filterMonth}
+                onChange={(e) => setFilterMonth(e.target.value)}
+                className="px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              />
+            </div>
+          )}
+          {filterType === 'year' && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Select Year</label>
+              <select
+                value={filterYear}
+                onChange={(e) => setFilterYear(e.target.value)}
+                className="px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              >
+                {years.map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
+          )}
+
+          {/* Download PDF */}
+          <button
+            onClick={handleDownloadPDF}
+            className="ml-auto flex items-center gap-2 px-4 py-2.5 text-sm bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+            </svg>
+            Download DTR
+          </button>
         </div>
       )}
 
-      {/* Logs Table */}
+      {/* Staff: Download DTR button */}
+      {!isAdmin && (
+        <div className="mb-4 flex justify-end">
+          <button
+            onClick={handleDownloadPDF}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+            </svg>
+            Download My DTR
+          </button>
+        </div>
+      )}
+
+      {/* Login/Logout History Table */}
+      <h3 className="text-sm font-semibold text-gray-600 mb-3">Login/Logout History</h3>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -1138,9 +1690,7 @@ const UserLog = ({ currentUserId, currentUserRole }: UserLogProps) => {
                     <td className="px-4 py-4 text-sm text-cyan-600">{log.user.email}</td>
                     <td className="px-4 py-4">
                       <span className={`px-2 py-1 text-xs font-medium rounded ${
-                        log.user.role === 'ADMIN'
-                          ? 'bg-purple-100 text-purple-700'
-                          : 'bg-green-100 text-green-700'
+                        log.user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'
                       }`}>
                         {log.user.role}
                       </span>
@@ -1150,7 +1700,9 @@ const UserLog = ({ currentUserId, currentUserRole }: UserLogProps) => {
                 <td className="px-4 py-4 text-sm text-gray-600">{formatDate(log.timestamp)}</td>
                 <td className="px-4 py-4 text-sm text-gray-600">{formatTime(log.timestamp)}</td>
                 <td className="px-4 py-4">
-                  <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded">
+                  <span className={`px-2 py-1 text-xs font-medium rounded ${
+                    log.action === 'LOGIN' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                  }`}>
                     {log.action}
                   </span>
                 </td>
@@ -1161,10 +1713,34 @@ const UserLog = ({ currentUserId, currentUserRole }: UserLogProps) => {
 
         {filteredLogs.length === 0 && (
           <div className="text-center py-8 text-gray-500">
-            {isAdmin ? 'No login logs found.' : 'No login history found.'}
+            {isAdmin ? 'No login/logout logs found for the selected period.' : 'No login history found.'}
           </div>
         )}
       </div>
+
+      {/* Success Modal */}
+      {successModal?.show && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm mx-4 p-6">
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+            <h2 className="text-lg font-bold text-[#146184] text-center mb-6">
+              {successModal.message}
+            </h2>
+            <button
+              onClick={() => setSuccessModal(null)}
+              className="block w-full py-2 mx-auto bg-cyan-500 text-white text-sm rounded-lg hover:bg-cyan-600 transition-colors"
+            >
+              Okay
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

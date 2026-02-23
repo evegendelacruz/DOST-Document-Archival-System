@@ -11,6 +11,7 @@ export async function GET() {
       role: true,
       isApproved: true,
       createdAt: true,
+      profileImageUrl: true,
     },
     orderBy: { createdAt: 'desc' },
   });

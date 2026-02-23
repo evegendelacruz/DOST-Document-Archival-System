@@ -45,28 +45,28 @@ export default function LoginPage() {
 
   return (
     <AuthLayout>
-      <div className="bg-white rounded-[18px] shadow-[0_10px_40px_rgba(0,0,0,0.2),0_4px_12px_rgba(0,0,0,0.1)] px-[25px] py-6 w-full max-w-[290px] min-h-[300px] max-h-[95vh] overflow-y-auto z-10 relative max-[480px]:max-w-full max-[480px]:mx-2.5 max-[480px]:px-4 max-[480px]:rounded-[14px] max-[480px]:max-h-[90vh]">
-        <h2 className="text-[19px] font-bold text-primary mb-1 text-left max-[480px]:text-base">Log In</h2>
-        <p className="text-left text-[12px] text-[#666] mb-2.5 max-[480px]:text-[9px] max-[480px]:mb-2">
+      <div className="w-[85vw] sm:w-full sm:max-w-[290px] bg-white rounded-[18px] shadow-[0_10px_40px_rgba(0,0,0,0.2),0_4px_12px_rgba(0,0,0,0.1)] px-4 sm:px-[25px] py-6 min-h-[300px] max-h-[95vh] overflow-y-auto z-10 relative">
+        <h2 className="text-[17px] sm:text-[19px] font-bold text-primary mb-1 text-left">Log In</h2>
+        <p className="text-left text-[11px] sm:text-[12px] text-[#666] mb-2.5">
           No Account yet? <Link href="/signup" className="text-accent no-underline font-bold hover:underline">Click here</Link>
         </p>
 
         <form onSubmit={handleLogin}>
-          {error && <div className="bg-red-100 text-red-600 py-3 px-3 rounded-lg text-xs mb-3.5 text-center max-[480px]:py-1.5 max-[480px]:px-2 max-[480px]:text-[10px] max-[480px]:mb-2">{error}</div>}
-          <div className="mb-[10px] max-[490px]:mb-2">
-            <label htmlFor="email" className="block text-[11px] text-[#666] mb-0.5 font-medium max-[480px]:text-[9px] max-[480px]:mb-px">Email</label>
+          {error && <div className="bg-red-100 text-red-600 py-2 px-3 rounded-lg text-[10px] sm:text-xs mb-3 text-center">{error}</div>}
+          <div className="mb-[10px]">
+            <label htmlFor="email" className="block text-[10px] sm:text-[11px] text-[#666] mb-0.5 font-medium">Email</label>
             <input
               type="email"
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full py-1.5 px-2 border border-[#d0d0d0] rounded-md text-[11px] transition-all duration-200 bg-white focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(20,97,132,0.1)] max-[480px]:py-[5px] max-[480px]:px-[7px] max-[480px]:text-[10px] max-[480px]:rounded-[5px]"
+              className="w-full py-2 sm:py-1.5 px-2 border border-[#d0d0d0] rounded-md text-[11px] transition-all duration-200 bg-white focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(20,97,132,0.1)]"
             />
           </div>
 
-          <div className="mb-[10px] max-[490px]:mb-2">
-            <label htmlFor="password" className="block text-[11px] text-[#666] mb-0.5 font-medium max-[480px]:text-[9px] max-[480px]:mb-px">Password</label>
+          <div className="mb-[10px]">
+            <label htmlFor="password" className="block text-[10px] sm:text-[11px] text-[#666] mb-0.5 font-medium">Password</label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -74,7 +74,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full py-1.5 px-2 pr-8 border border-[#d0d0d0] rounded-md text-[11px] transition-all duration-200 bg-white focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(20,97,132,0.1)] max-[480px]:py-[5px] max-[480px]:px-[7px] max-[480px]:pr-7 max-[480px]:text-[10px] max-[480px]:rounded-[5px]"
+                className="w-full py-2 sm:py-1.5 px-2 pr-8 border border-[#d0d0d0] rounded-md text-[11px] transition-all duration-200 bg-white focus:outline-none focus:border-primary focus:shadow-[0_0_0_3px_rgba(20,97,132,0.1)]"
               />
               <button
                 type="button"
@@ -87,7 +87,7 @@ export default function LoginPage() {
             <Link href="/forgot-password" className="block text-center text-[11px] text-primary no-underline mt-[15px] font-bold hover:underline">Forgot Password?</Link>
           </div>
 
-          <button type="submit" className="w-full py-[7px] bg-accent text-white border-none rounded-md text-[12px] font-semibold mt-1.5 cursor-pointer transition-colors duration-200 hover:bg-accent-hover active:translate-y-px max-[480px]:py-1.5 max-[480px]:text-[10px] max-[480px]:rounded-[5px]" disabled={loading}>
+          <button type="submit" className="w-full py-2 sm:py-[7px] bg-accent text-white border-none rounded-md text-[12px] font-semibold mt-1.5 cursor-pointer transition-colors duration-200 hover:bg-accent-hover active:translate-y-px" disabled={loading}>
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>

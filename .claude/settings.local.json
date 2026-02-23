@@ -44,16 +44,14 @@
       "Bash(nslookup:*)",
       "Bash(host:*)",
       "Bash(cmd.exe /c \"nslookup 0.tcp.ap.ngrok.io 8.8.8.8\")",
-<<<<<<< HEAD
-      "Bash(cmd.exe /c 'sc query state= all')",
-      "Bash(cmd.exe /c 'sc start postgresql-x64-18')",
-      "Bash(node scripts/push-to-cockroach.cjs:*)"
-=======
       "Bash(npm run build:*)",
       "Bash(git checkout:*)",
       "Bash(npx eslint:*)",
-      "Bash(git diff:*)"
->>>>>>> 9a32796a8c840e19e61cdb2f8de226cc22a13461
+      "Bash(git diff:*)",
+      "Bash(find:*)",
+      "Bash(npx next lint:*)",
+      "Bash(npm run lint:*)"
+
     ]
   }
 }

@@ -1,81 +1,38 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { Icon } from '@iconify/react';
-import { Cake, FileEdit, Clock, Tag, X } from 'lucide-react';
+import { Cake, FileEdit, Clock, Tag, X, CalendarPlus } from 'lucide-react';
 
 interface Notification {
   id: string;
-  type: 'birthday' | 'edit-request' | 'liquidation' | 'untagging';
+  type: 'birthday' | 'edit-request' | 'liquidation' | 'untagging' | 'event-mention';
   title: string;
   message: string;
   time: string;
   read: boolean;
+  eventId?: string;
+  bookedByUserId?: string;
+  bookedByName?: string;
+  bookedByProfileUrl?: string;
 }
 
 interface ToastNotification extends Notification {
   isExiting?: boolean;
 }
 
-// Sample notifications data
-const sampleNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'birthday',
-    title: 'Birthday Reminder',
-    message: "It's Jane Doe's birthday today!",
-    time: '2 hours ago',
-    read: false,
-  },
-  {
-    id: '2',
-    type: 'edit-request',
-    title: 'Edit Request',
-    message: 'Christian Harry Paasa requested to edit Project SETUP-2024-001',
-    time: '3 hours ago',
-    read: false,
-  },
-  {
-    id: '3',
-    type: 'liquidation',
-    title: 'Project Liquidation',
-    message: 'Project SETUP-2024-005 liquidation deadline: 3 months remaining',
-    time: '5 hours ago',
-    read: false,
-  },
-  {
-    id: '4',
-    type: 'untagging',
-    title: 'Upcoming Untagging',
-    message: 'Project SETUP-2024-003 untagging: 9 months remaining (Q3)',
-    time: '1 day ago',
-    read: true,
-  },
-  {
-    id: '5',
-    type: 'birthday',
-    title: 'Birthday Reminder',
-    message: "Evegen P. Dela Cruz's birthday is tomorrow!",
-    time: '1 day ago',
-    read: true,
-  },
-  {
-    id: '6',
-    type: 'liquidation',
-    title: 'Project Liquidation',
-    message: 'URGENT: Project SETUP-2024-002 liquidation deadline: 15 days remaining!',
-    time: '2 days ago',
-    read: true,
-  },
-  {
-    id: '7',
-    type: 'untagging',
-    title: 'Upcoming Untagging',
-    message: 'Project SETUP-2024-007 untagging: 3 months remaining (Q1)',
-    time: '3 days ago',
-    read: true,
-  },
-];
+// Helper to get userId from localStorage
+function getUserId(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem('user');
+    if (!stored) return null;
+    return JSON.parse(stored)?.id || null;
+  } catch {
+    return null;
+  }
+}
 
 const getNotificationIcon = (type: Notification['type'], size: 'sm' | 'md' = 'sm') => {
   const className = size === 'sm' ? 'w-5 h-5' : 'w-6 h-6';
@@ -88,6 +45,8 @@ const getNotificationIcon = (type: Notification['type'], size: 'sm' | 'md' = 'sm
       return <Clock className={`${className} text-orange-500`} />;
     case 'untagging':
       return <Tag className={`${className} text-purple-500`} />;
+    case 'event-mention':
+      return <CalendarPlus className={`${className} text-cyan-500`} />;
     default:
       return <Icon icon="mdi:bell" className={`${className} text-gray-500 transition-all duration-300 hover:text-accent hover:scale-110 active:scale-90 active:transition-all active:duration-100`} />;
   }
@@ -103,6 +62,8 @@ const getNotificationBgColor = (type: Notification['type']) => {
       return 'bg-orange-50';
     case 'untagging':
       return 'bg-purple-50';
+    case 'event-mention':
+      return 'bg-cyan-50';
     default:
       return 'bg-gray-50';
   }
@@ -118,57 +79,70 @@ const getNotificationBorderColor = (type: Notification['type']) => {
       return 'border-l-orange-500';
     case 'untagging':
       return 'border-l-purple-500';
+    case 'event-mention':
+      return 'border-l-cyan-500';
     default:
       return 'border-l-gray-500';
   }
 };
 
-// Helper to format liquidation countdown (7 months to 0)
-const formatLiquidationCountdown = (months: number, days?: number): string => {
-  if (months <= 0 && (!days || days <= 0)) {
-    return 'Overdue!';
+// Render toast icon - profile picture for event-mention, otherwise standard icon
+const renderToastIcon = (notification: ToastNotification) => {
+  if (notification.type === 'event-mention') {
+    if (notification.bookedByProfileUrl) {
+      return (
+        <img
+          src={notification.bookedByProfileUrl}
+          alt={notification.bookedByName || 'User'}
+          className="w-10 h-10 rounded-full object-cover border-2 border-[#00AEEF]"
+        />
+      );
+    }
+    // Default avatar with blue border
+    return (
+      <div className="w-10 h-10 rounded-full border-2 border-[#00AEEF] bg-gray-100 flex items-center justify-center">
+        <Icon icon="mdi:account" className="w-6 h-6 text-gray-400" />
+      </div>
+    );
   }
-  if (months <= 0 && days && days > 0) {
-    return `${days} day${days > 1 ? 's' : ''} remaining!`;
-  }
-  return `${months} month${months > 1 ? 's' : ''} remaining`;
-};
 
-// Helper to format untagging countdown (12 months, quarterly)
-const formatUntaggingCountdown = (months: number): string => {
-  if (months <= 0) {
-    return 'Due for untagging!';
-  }
-  const quarter = Math.ceil(months / 3);
-  return `${months} month${months > 1 ? 's' : ''} remaining (Q${quarter})`;
+  // Standard icon for other notification types
+  return (
+    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${getNotificationBgColor(notification.type)}`}>
+      {getNotificationIcon(notification.type, 'md')}
+    </div>
+  );
 };
 
 // Desktop Toast Notification Component
 const ToastNotificationItem = ({
   notification,
   onClose,
+  onClick,
 }: {
   notification: ToastNotification;
   onClose: (id: string) => void;
+  onClick?: (notification: ToastNotification) => void;
 }) => {
+  const handleClick = () => {
+    if (onClick) {
+      onClick(notification);
+    }
+  };
+
   return (
     <div
+      onClick={handleClick}
       className={`flex items-start gap-3 p-4 bg-white rounded-lg shadow-lg border-l-4 ${getNotificationBorderColor(
         notification.type
-      )} min-w-[320px] max-w-[400px] transform transition-all duration-300 ${
+      )} min-w-[320px] max-w-[400px] transform transition-all duration-300 cursor-pointer hover:bg-gray-50 ${
         notification.isExiting
           ? 'translate-x-full opacity-0'
           : 'translate-x-0 opacity-100'
       }`}
     >
-      {/* Icon */}
-      <div
-        className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${getNotificationBgColor(
-          notification.type
-        )}`}
-      >
-        {getNotificationIcon(notification.type, 'md')}
-      </div>
+      {/* Icon / Profile Picture */}
+      {renderToastIcon(notification)}
 
       {/* Content */}
       <div className="flex-1 min-w-0">
@@ -179,7 +153,7 @@ const ToastNotificationItem = ({
 
       {/* Close Button */}
       <button
-        onClick={() => onClose(notification.id)}
+        onClick={(e) => { e.stopPropagation(); onClose(notification.id); }}
         className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 transition-colors"
       >
         <X className="w-4 h-4" />
@@ -190,16 +164,56 @@ const ToastNotificationItem = ({
 
 export default function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>(sampleNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const isInitialLoad = useRef(true);
+  const previousNotificationIdsRef = useRef<Set<string>>(new Set());
+  const shownToastIdsRef = useRef<Set<string>>(new Set());
+  const router = useRouter();
+  const pathname = usePathname();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  // Audio context for notification sounds (persistent)
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  // Initialize audio context on first user interaction
+  useEffect(() => {
+    const initAudio = () => {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      }
+      // Resume if suspended
+      if (audioContextRef.current.state === 'suspended') {
+        audioContextRef.current.resume();
+      }
+    };
+
+    // Initialize on any user interaction
+    document.addEventListener('click', initAudio, { once: true });
+    document.addEventListener('keydown', initAudio, { once: true });
+
+    return () => {
+      document.removeEventListener('click', initAudio);
+      document.removeEventListener('keydown', initAudio);
+    };
+  }, []);
 
   // Play notification sound using Web Audio API
   const playNotificationSound = useCallback(() => {
     try {
-      const audioContext = new (window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      // Create new context if needed
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      }
+
+      const audioContext = audioContextRef.current;
+
+      // Resume if suspended
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
 
       // Create oscillator for the notification tone
       const oscillator = audioContext.createOscillator();
@@ -208,34 +222,23 @@ export default function NotificationDropdown() {
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
 
-      // Set up a pleasant notification tone
-      oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A5 note
-      oscillator.frequency.setValueAtTime(1108.73, audioContext.currentTime + 0.1); // C#6 note
+      // Set up a pleasant notification tone (two-tone chime)
+      oscillator.frequency.setValueAtTime(830, audioContext.currentTime); // G#5
+      oscillator.frequency.setValueAtTime(1046, audioContext.currentTime + 0.15); // C6
       oscillator.type = 'sine';
 
-      // Fade in and out
+      // Volume envelope
       gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.05);
-      gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.1);
-      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.15);
-      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.3);
+      gainNode.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + 0.02);
+      gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.15);
+      gainNode.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + 0.17);
+      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.4);
 
       oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.3);
-    } catch {
-      // Audio not supported or blocked, ignore
+      oscillator.stop(audioContext.currentTime + 0.4);
+    } catch (error) {
+      console.error('Failed to play notification sound:', error);
     }
-  }, []);
-
-  // Show toast notification
-  const showToast = useCallback((notification: Notification) => {
-    const toastNotification: ToastNotification = { ...notification, isExiting: false };
-    setToasts((prev) => [...prev, toastNotification]);
-
-    // Auto-remove after 8 seconds (longer duration)
-    setTimeout(() => {
-      closeToast(notification.id);
-    }, 8000);
   }, []);
 
   // Close toast with animation
@@ -249,66 +252,70 @@ export default function NotificationDropdown() {
     }, 300);
   }, []);
 
-  // Add new notification (can be called from outside or for demo)
-  const addNotification = useCallback(
-    (notification: Omit<Notification, 'id' | 'time' | 'read'>) => {
-      const newNotification: Notification = {
-        ...notification,
-        id: Date.now().toString(),
-        time: 'Just now',
-        read: false,
-      };
+  // Fetch notifications from API
+  const fetchNotifications = useCallback(async () => {
+    const userId = getUserId();
+    if (!userId) return;
 
-      setNotifications((prev) => [newNotification, ...prev]);
-      playNotificationSound();
-      showToast(newNotification);
-    },
-    [playNotificationSound, showToast]
-  );
+    try {
+      const res = await fetch('/api/notifications', {
+        headers: { 'x-user-id': userId },
+      });
+      if (res.ok) {
+        const data = await res.json();
 
-  // Demo: Simulate new notifications periodically
+        // Check for new notifications (after initial load)
+        if (!isInitialLoad.current) {
+          const newNotifications = data.filter(
+            (n: Notification) =>
+              !previousNotificationIdsRef.current.has(n.id) &&
+              !shownToastIdsRef.current.has(n.id)
+          );
+
+          // Show toast for each new notification
+          newNotifications.forEach((n: Notification) => {
+            // Mark as shown to avoid duplicate toasts
+            shownToastIdsRef.current.add(n.id);
+
+            const toastNotification: ToastNotification = { ...n, isExiting: false };
+            setToasts((prev) => [...prev, toastNotification]);
+            playNotificationSound();
+
+            // Auto-remove after 8 seconds
+            setTimeout(() => {
+              setToasts((prev) =>
+                prev.map((t) => (t.id === n.id ? { ...t, isExiting: true } : t))
+              );
+              setTimeout(() => {
+                setToasts((prev) => prev.filter((t) => t.id !== n.id));
+              }, 300);
+            }, 8000);
+          });
+        } else {
+          // On initial load, just record all IDs without showing toasts
+          data.forEach((n: Notification) => {
+            previousNotificationIdsRef.current.add(n.id);
+          });
+        }
+
+        setNotifications(data);
+        // Update the ref with current IDs
+        data.forEach((n: Notification) => {
+          previousNotificationIdsRef.current.add(n.id);
+        });
+        isInitialLoad.current = false;
+      }
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  }, [playNotificationSound]);
+
+  // Fetch notifications on mount and poll every 5 seconds
   useEffect(() => {
-    const demoNotifications = [
-      {
-        type: 'birthday' as const,
-        title: 'Birthday Reminder',
-        message: "Don't forget! Maria Santos's birthday is coming up next week.",
-      },
-      {
-        type: 'edit-request' as const,
-        title: 'Edit Request',
-        message: 'John Smith requested access to edit Project CEST-2024-010.',
-      },
-      {
-        type: 'liquidation' as const,
-        title: 'Project Liquidation',
-        message: `Project SETUP-2024-012 liquidation: ${formatLiquidationCountdown(2)}`,
-      },
-      {
-        type: 'liquidation' as const,
-        title: 'Project Liquidation',
-        message: `URGENT: Project SETUP-2024-015 liquidation: ${formatLiquidationCountdown(0, 7)}`,
-      },
-      {
-        type: 'untagging' as const,
-        title: 'Upcoming Untagging',
-        message: `Project SETUP-2024-008 untagging: ${formatUntaggingCountdown(6)}`,
-      },
-      {
-        type: 'untagging' as const,
-        title: 'Upcoming Untagging',
-        message: `Project SETUP-2024-011 untagging: ${formatUntaggingCountdown(12)}`,
-      },
-    ];
-
-    // Demo: Add a random notification after 10 seconds (only once for demo)
-    const timeout = setTimeout(() => {
-      const randomIndex = Math.floor(Math.random() * demoNotifications.length);
-      addNotification(demoNotifications[randomIndex]);
-    }, 10000);
-
-    return () => clearTimeout(timeout);
-  }, [addNotification]);
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 5000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -322,6 +329,19 @@ export default function NotificationDropdown() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Mark notification as read via API
+  const markAsReadApi = async (id: string) => {
+    try {
+      await fetch(`/api/notifications/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ read: true }),
+      });
+    } catch {
+      // Silently fail
+    }
+  };
+
   // Mark all as read when dropdown is opened
   const handleToggleDropdown = () => {
     const newIsOpen = !isOpen;
@@ -329,18 +349,99 @@ export default function NotificationDropdown() {
 
     // Mark all as read when opening the dropdown
     if (newIsOpen) {
+      const unreadNotifications = notifications.filter((n) => !n.read);
+      unreadNotifications.forEach((n) => markAsReadApi(n.id));
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     }
   };
 
   const markAsRead = (id: string) => {
+    markAsReadApi(id);
     setNotifications(
       notifications.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
   };
 
   const markAllAsRead = () => {
+    notifications.filter((n) => !n.read).forEach((n) => markAsReadApi(n.id));
     setNotifications(notifications.map((n) => ({ ...n, read: true })));
+  };
+
+  // Handle notification click - navigate to event for event-mention
+  const handleNotificationClick = useCallback((notification: Notification) => {
+    // Mark as read
+    markAsReadApi(notification.id);
+    setNotifications((prev) => prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n)));
+
+    if (notification.type === 'event-mention' && notification.eventId) {
+      setIsOpen(false);
+
+      // If not on dashboard, navigate there first with the eventId as query param
+      if (pathname !== '/dashboard') {
+        // Store eventId in sessionStorage so dashboard can open it after navigation
+        sessionStorage.setItem('pendingEventId', notification.eventId);
+        router.push('/dashboard');
+      } else {
+        // Already on dashboard, dispatch custom event to open event modal
+        const event = new CustomEvent('openEventModal', {
+          detail: { eventId: notification.eventId }
+        });
+        window.dispatchEvent(event);
+      }
+    }
+  }, [pathname, router]);
+
+  // Handle toast notification click
+  const handleToastClick = useCallback((notification: ToastNotification) => {
+    // Mark as read
+    markAsReadApi(notification.id);
+    setNotifications((prev) => prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n)));
+
+    // Close the toast
+    closeToast(notification.id);
+
+    if (notification.type === 'event-mention' && notification.eventId) {
+      // If not on dashboard, navigate there first
+      if (pathname !== '/dashboard') {
+        sessionStorage.setItem('pendingEventId', notification.eventId);
+        router.push('/dashboard');
+      } else {
+        // Already on dashboard, dispatch custom event to open event modal
+        const event = new CustomEvent('openEventModal', {
+          detail: { eventId: notification.eventId }
+        });
+        window.dispatchEvent(event);
+      }
+    }
+  }, [pathname, router, closeToast]);
+
+  // Render notification icon - profile picture for event-mention, otherwise standard icon
+  const renderNotificationIcon = (notification: Notification, size: 'sm' | 'md' = 'sm') => {
+    if (notification.type === 'event-mention') {
+      const imgSize = size === 'sm' ? 'w-10 h-10' : 'w-10 h-10';
+      if (notification.bookedByProfileUrl) {
+        return (
+          <img
+            src={notification.bookedByProfileUrl}
+            alt={notification.bookedByName || 'User'}
+            className={`${imgSize} rounded-full object-cover border-2 border-[#00AEEF]`}
+          />
+        );
+      }
+      // Default avatar with blue border
+      return (
+        <div className={`${imgSize} rounded-full border-2 border-[#00AEEF] bg-gray-100 flex items-center justify-center`}>
+          <Icon icon="mdi:account" className="w-6 h-6 text-gray-400" />
+        </div>
+      );
+    }
+
+    // Standard icon for other notification types
+    return (
+      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${getNotificationBgColor(notification.type)}`}>
+        {getNotificationIcon(notification.type, size)}
+      </div>
+    );
   };
 
   return (
@@ -385,19 +486,13 @@ export default function NotificationDropdown() {
                 notifications.map((notification) => (
                   <div
                     key={notification.id}
-                    onClick={() => markAsRead(notification.id)}
+                    onClick={() => handleNotificationClick(notification)}
                     className={`flex items-start gap-3 px-4 py-3 border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-50 ${
                       !notification.read ? 'bg-cyan-50/50' : ''
                     }`}
                   >
-                    {/* Icon */}
-                    <div
-                      className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${getNotificationBgColor(
-                        notification.type
-                      )}`}
-                    >
-                      {getNotificationIcon(notification.type)}
-                    </div>
+                    {/* Icon / Profile Picture */}
+                    {renderNotificationIcon(notification)}
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
@@ -436,6 +531,7 @@ export default function NotificationDropdown() {
             key={toast.id}
             notification={toast}
             onClose={closeToast}
+            onClick={handleToastClick}
           />
         ))}
       </div>
