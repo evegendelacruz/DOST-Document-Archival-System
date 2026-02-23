@@ -121,7 +121,7 @@ const implementationDocs: DocRow[] = [
     options: ['Main MOA', 'Supplemental MOA']
   },
   { id: 0, label: 'PHASE 1', type: 'section' },
-  { id: 4, label: 'Approved Amount for Release', type: 'textInput' },
+  { id: 4, label: 'Approved Amount for Release', type: 'dropdown' },
   { 
     id: 5, 
     label: 'Fund Release Date', 
@@ -731,7 +731,73 @@ function DocumentTable({
               if (doc.type === 'dropdown') {
                 const key = `dropdown-${idx}`;
                 const isExpanded = expandedDropdowns[key];
-                
+
+                // Approved Amount for Release dropdown with text input
+                if (doc.label === 'Approved Amount for Release') {
+                  const hasSavedValue = !!approvedAmount;
+
+                  return (
+                    <React.Fragment key={key}>
+                      <tr>
+                        <td colSpan={5} className="p-0 border-b border-[#eee]">
+                          <button
+                            className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                            onClick={() => toggleDropdown(key)}
+                          >
+                            <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                            <span>{doc.label}</span>
+                            {hasSavedValue && (
+                              <span className="ml-2 text-[10px] bg-[#2e7d32] text-white px-2 py-0.5 rounded-full">
+                                ₱{Number(approvedAmount).toLocaleString()}
+                              </span>
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                            <div className="flex items-center gap-3">
+                              <label className="text-xs font-semibold text-[#555] min-w-[120px]">Amount:</label>
+                              <div className="relative flex-1">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666] text-xs font-semibold">₱</span>
+                                <input
+                                  type="text"
+                                  value={approvedAmount}
+                                  onChange={(e) => {
+                                    // Allow only numbers and decimal
+                                    const value = e.target.value.replace(/[^0-9.]/g, '');
+                                    setApprovedAmount(value);
+                                  }}
+                                  placeholder="Enter approved amount"
+                                  disabled={!isEditMode}
+                                  className={`w-full border border-[#ddd] rounded px-3 py-2 pl-7 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                />
+                              </div>
+                              <button
+                                onClick={() => saveDropdownData(
+                                  { approvedAmountForRelease: approvedAmount },
+                                  `Approved amount "₱${Number(approvedAmount).toLocaleString()}" saved successfully!`
+                                )}
+                                disabled={savingData || !isEditMode || !approvedAmount}
+                                className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] disabled:bg-[#ccc] disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                              >
+                                {savingData ? 'Saving...' : 'Save'}
+                              </button>
+                            </div>
+                            {hasSavedValue && (
+                              <div className="mt-2 text-[11px] text-[#2e7d32] flex items-center gap-1">
+                                <Icon icon="mdi:check-circle" width={14} height={14} />
+                                <span>Saved: ₱{Number(approvedAmount).toLocaleString()}</span>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                }
+
                 // Special handling for List of Intervention
                 if (doc.label === 'List of Intervention') {
                   return (
@@ -1510,11 +1576,8 @@ function DocumentTable({
 
               // Clearance to Untag dropdown handler
               if (doc.label === 'Clearance to Untag' && doc.type === 'dropdown') {
-                // Calculate total cost from List of Intervention
-                const totalInterventionCost = interventionInputs.reduce((sum, item) => {
-                  const cost = parseFloat(item.cost?.replace(/,/g, '') || '0') || 0;
-                  return sum + cost;
-                }, 0);
+                // Get Approved Amount for Release
+                const approvedAmountValue = parseFloat(approvedAmount?.replace(/,/g, '') || '0') || 0;
 
                 // Calculate total deductions from Clearance to Untag rows
                 const totalDeductions = clearanceUntagRows.reduce((sum, row) => {
@@ -1523,7 +1586,7 @@ function DocumentTable({
                 }, 0);
 
                 // Calculate running balance
-                const remainingBalance = totalInterventionCost - totalDeductions;
+                const remainingBalance = approvedAmountValue - totalDeductions;
 
                 // Determine the item type label based on Abstract of Quotation selection
                 const itemTypeLabel = abstractQuotationType === 'Non-equipment' ? 'Non-Equipment' : 'Equipment';
@@ -1545,16 +1608,20 @@ function DocumentTable({
                       <tr>
                         <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
                           <div className="space-y-3">
-                            {/* Total Cost Summary from List of Intervention */}
-                            <div className="bg-[#e3f2fd] border border-[#90caf9] rounded-lg p-3">
+                            {/* Approved Amount for Release Summary */}
+                            <div className={`border rounded-lg p-3 ${approvedAmountValue > 0 ? 'bg-[#e3f2fd] border-[#90caf9]' : 'bg-[#fff3e0] border-[#ffb74d]'}`}>
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                  <Icon icon="mdi:information-outline" width={16} height={16} className="text-[#1565c0]" />
-                                  <span className="text-xs font-semibold text-[#1565c0]">Total Cost from List of Intervention:</span>
+                                  <Icon icon={approvedAmountValue > 0 ? "mdi:cash-multiple" : "mdi:alert-circle-outline"} width={16} height={16} className={approvedAmountValue > 0 ? "text-[#1565c0]" : "text-[#e65100]"} />
+                                  <span className={`text-xs font-semibold ${approvedAmountValue > 0 ? 'text-[#1565c0]' : 'text-[#e65100]'}`}>Approved Amount for Release:</span>
                                 </div>
-                                <span className="text-sm font-bold text-[#1565c0]">
-                                  ₱{totalInterventionCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </span>
+                                {approvedAmountValue > 0 ? (
+                                  <span className="text-sm font-bold text-[#1565c0]">
+                                    ₱{approvedAmountValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-[#e65100] italic">Not set - please set in PHASE 1</span>
+                                )}
                               </div>
                               {clearanceUntagRows.some(r => r.amount) && (
                                 <div className="mt-2 pt-2 border-t border-[#90caf9]">
@@ -1588,7 +1655,7 @@ function DocumentTable({
                                   const amount = parseFloat(r.amount?.replace(/,/g, '') || '0') || 0;
                                   return sum + amount;
                                 }, 0);
-                                const runningBalance = totalInterventionCost - runningDeduction;
+                                const runningBalance = approvedAmountValue - runningDeduction;
 
                                 return (
                                   <div key={idx} className="mb-3">
@@ -2250,56 +2317,6 @@ function DocumentTable({
                         <Icon icon={expandedDropdowns[key] ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
                         <span>{doc.label}</span>
                       </button>
-                    </td>
-                  </tr>
-                );
-              }
-
-              // Text Input type (Approved Amount for Release)
-              if (doc.type === 'textInput') {
-                itemCounter++;
-                const savedValue = approvedAmount;
-                const hasSavedValue = !!savedValue;
-
-                return (
-                  <tr key={`${title}-${doc.id}-${idx}`}>
-                    <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#888] font-medium">{itemCounter}</td>
-                    <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#333]">{doc.label}</td>
-                    <td className="py-2.5 px-3 border-b border-[#eee] align-middle" colSpan={2}>
-                      <div className="flex items-center gap-2">
-                        <div className="relative flex-1">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666] text-xs">₱</span>
-                          <input
-                            type="text"
-                            value={approvedAmount}
-                            onChange={(e) => {
-                              // Format as currency
-                              const value = e.target.value.replace(/[^0-9.]/g, '');
-                              setApprovedAmount(value);
-                            }}
-                            placeholder="Enter amount"
-                            disabled={!isEditMode}
-                            className={`w-full border border-[#ddd] rounded px-3 py-2 pl-7 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                          />
-                        </div>
-                        <button
-                          onClick={() => saveDropdownData(
-                            { approvedAmountForRelease: approvedAmount },
-                            `Approved amount "₱${Number(approvedAmount).toLocaleString()}" saved successfully!`
-                          )}
-                          disabled={savingData || !isEditMode || !approvedAmount}
-                          className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] disabled:bg-[#ccc] disabled:cursor-not-allowed transition-colors whitespace-nowrap"
-                        >
-                          {savingData ? 'Saving...' : 'Save'}
-                        </button>
-                      </div>
-                    </td>
-                    <td className="py-2.5 px-3 border-b border-[#eee] align-middle">
-                      {hasSavedValue && (
-                        <span className="text-[10px] text-[#2e7d32] bg-[#e8f5e9] px-2 py-1 rounded font-semibold">
-                          Saved
-                        </span>
-                      )}
                     </td>
                   </tr>
                 );
