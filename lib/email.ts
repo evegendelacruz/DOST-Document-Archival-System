@@ -1,22 +1,11 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.SMTP_EMAIL,
-    pass: process.env.SMTP_PASSWORD,
-  },
-  connectionTimeout: 5000,
-  greetingTimeout: 5000,
-  socketTimeout: 10000,
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendOtpEmail(to: string, otp: string) {
   try {
-    const info = await transporter.sendMail({
-      from: `"DOST X - Misamis Oriental" <${process.env.SMTP_EMAIL}>`,
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL ?? 'DOST X - Misamis Oriental <onboarding@resend.dev>',
       to,
       subject: 'Your Password Reset Code',
       html: `
@@ -32,7 +21,8 @@ export async function sendOtpEmail(to: string, otp: string) {
         </div>
       `,
     });
-    console.log('[EMAIL] Sent:', info.messageId);
+    if (error) throw error;
+    console.log('[EMAIL] Sent:', data?.id);
   } catch (err) {
     console.error('[EMAIL] Failed:', err);
   }
