@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
+export const runtime = 'edge';
+
 export async function POST(req: NextRequest) {
   const { email, otp } = await req.json();
 

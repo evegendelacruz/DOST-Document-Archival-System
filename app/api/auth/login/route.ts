@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import { logActivity } from '@/lib/activity-log';
 
+export const runtime = 'edge';
+
 export async function POST(req: NextRequest) {
   const { email, password } = await req.json();
 

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
+export const runtime = 'edge';
+
 // GET /api/conversations/[id]/messages — fetch all messages
 export async function GET(
   req: NextRequest,

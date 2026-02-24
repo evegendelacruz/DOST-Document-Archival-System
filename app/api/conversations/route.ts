@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
+export const runtime = 'edge';
+
 // GET /api/conversations — list conversations for current user
 export async function GET(req: NextRequest) {
   const userId = req.headers.get('x-user-id');

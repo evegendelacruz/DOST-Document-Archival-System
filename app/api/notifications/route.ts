@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/activity-log';
 
+export const runtime = 'edge';
+
 export async function GET(req: NextRequest) {
   const userId = getUserIdFromRequest(req);
 

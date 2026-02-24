@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
+export const runtime = 'edge';
+
 // PATCH /api/conversations/[id]/read — mark conversation as read for current user
 export async function PATCH(
   req: NextRequest,
