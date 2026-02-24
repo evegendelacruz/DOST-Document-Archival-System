@@ -34,8 +34,22 @@ export async function POST(req: NextRequest) {
   const nextNum = last ? parseInt(last.code, 10) + 1 : 1;
   const code = String(nextNum).padStart(3, '0');
 
+  // Get logged-in user info to set as assignee
+  let assignee: string | null = null;
+  let assigneeProfileUrl: string | null = null;
+  if (userId) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { fullName: true, profileImageUrl: true },
+    });
+    if (user) {
+      assignee = user.fullName;
+      assigneeProfileUrl = user.profileImageUrl;
+    }
+  }
+
   const project = await prisma.setupProject.create({
-    data: { ...data, code },
+    data: { ...data, code, assignee, assigneeProfileUrl },
   });
 
   // Log activity

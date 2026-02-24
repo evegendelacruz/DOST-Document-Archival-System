@@ -74,28 +74,29 @@ model UserPermission {
 }
 
 model SetupProject {
-  id             String            @id @default(uuid()) @db.Uuid
-  code           String            @unique
-  title          String
-  firm           String?
-  typeOfFirm     String?
-  address        String?
-  coordinates    String?
-  corporatorName String?
-  contactNumbers String[]
-  emails         String[]
-  status         SetupStatus       @default(PROPOSAL)
-  prioritySector String?
-  firmSize       String?
-  fund           String?
-  typeOfFund     String?
-  assignee       String?
-  companyLogoUrl String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  year           String?
-  dropdownData   Json?
-  documents      ProjectDocument[]
+  id                 String            @id @default(uuid()) @db.Uuid
+  code               String            @unique
+  title              String
+  firm               String?
+  typeOfFirm         String?
+  address            String?
+  coordinates        String?
+  corporatorName     String?
+  contactNumbers     String[]
+  emails             String[]
+  status             SetupStatus       @default(PROPOSAL)
+  prioritySector     String?
+  firmSize           String?
+  fund               String?
+  typeOfFund         String?
+  assignee           String?
+  assigneeProfileUrl String?
+  companyLogoUrl     String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  year               String?
+  dropdownData       Json?
+  documents          ProjectDocument[]
 
   @@map("setup_projects")
 }
