@@ -11,7 +11,8 @@
       "Bash(grep:*)",
       "Bash(npx next build:*)",
       "Bash(npm run build:*)",
-      "Bash(tail:*)"
+      "Bash(tail:*)",
+      "Bash(npm view:*)"
     ]
   }
 }
