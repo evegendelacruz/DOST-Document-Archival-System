@@ -10,7 +10,8 @@
       "Bash(node -e:*)",
       "Bash(grep:*)",
       "Bash(npx next build:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(tail:*)"
     ]
   }
 }
