@@ -74,28 +74,29 @@ model UserPermission {
 }
 
 model SetupProject {
-  id             String            @id @default(uuid()) @db.Uuid
-  code           String            @unique
-  title          String
-  firm           String?
-  typeOfFirm     String?
-  address        String?
-  coordinates    String?
-  corporatorName String?
-  contactNumbers String[]
-  emails         String[]
-  status         SetupStatus       @default(PROPOSAL)
-  prioritySector String?
-  firmSize       String?
-  fund           String?
-  typeOfFund     String?
-  assignee       String?
-  companyLogoUrl String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  year           String?
-  dropdownData   Json?
-  documents      ProjectDocument[]
+  id                 String            @id @default(uuid()) @db.Uuid
+  code               String            @unique
+  title              String
+  firm               String?
+  typeOfFirm         String?
+  address            String?
+  coordinates        String?
+  corporatorName     String?
+  contactNumbers     String[]
+  emails             String[]
+  status             SetupStatus       @default(PROPOSAL)
+  prioritySector     String?
+  firmSize           String?
+  fund               String?
+  typeOfFund         String?
+  assignee           String?
+  assigneeProfileUrl String?
+  companyLogoUrl     String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  year               String?
+  dropdownData       Json?
+  documents          ProjectDocument[]
 
   @@map("setup_projects")
 }
@@ -117,24 +118,30 @@ model ProjectDocument {
 }
 
 model CestProject {
-  id              String                @id @default(uuid()) @db.Uuid
-  code            String                @unique
-  projectTitle    String
-  location        String?
-  coordinates     String?
-  beneficiaries   String?
-  programFunding  String?
-  status          String?
-  approvedAmount  Float?
-  releasedAmount  Float?
-  projectDuration String?
-  staffAssigned   String?
-  year            String?
-  dateOfApproval  String?
-  companyLogoUrl  String?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  documents       CestProjectDocument[]
+  id                 String                @id @default(uuid()) @db.Uuid
+  code               String                @unique
+  projectTitle       String
+  location           String?
+  coordinates        String?
+  beneficiaries      String?
+  typeOfBeneficiary  String?
+  programFunding     String?
+  status             String?
+  approvedAmount     Float?
+  releasedAmount     Float?
+  projectDuration    String?
+  staffAssigned      String?
+  assigneeProfileUrl String?
+  year               String?
+  dateOfApproval     String?
+  companyLogoUrl     String?
+  partnerLGUs        Json?
+  categories         Json?
+  emails             Json?
+  contactNumbers     Json?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  documents          CestProjectDocument[]
 
   @@map("cest_projects")
 }

@@ -41,10 +41,18 @@ interface Project {
   fund: string | null;
   typeOfFund: string | null;
   assignee: string | null;
+  assigneeProfileUrl: string | null;
   year: string | null;
   companyLogoUrl: string | null;
   dropdownData: Record<string, unknown> | null;
   createdAt: string;
+}
+
+interface EditRequest {
+  userId: string;
+  userName: string;
+  userProfileUrl: string | null;
+  requestedAt: string;
 }
 
 interface ProjectDocument {
@@ -110,14 +118,11 @@ const implementationDocs: DocRow[] = [
     type: 'dropdown',
     options: ['DV', 'ORS']
   },
-  { id: 6, label: 'Project Code', type: 'item' },
   { id: 7, label: 'Authority to Tag', type: 'dropdown', options: ['Tagging of Account', 'Tagging of Funds'] },
   { id: 8, label: 'Official Receipt of DOST Financial Assistance', type: 'item' },
   { id: 9, label: 'Untagging Requirement', type: 'item' },
   { id: 0, label: '1ST', type: 'section' },
-  { id: 10, label: 'Irrevocable Purchase Order', type: 'item' },
-  { id: 11, label: 'Supplier Documentary Requirements', type: 'item' },
-  { id: 12, label: 'Untagging Amount', type: 'item' },
+  { id: 12, label: 'Untagging Amount', type: 'dropdown' },
   { id: 13, label: 'Clearance to Untag', type: 'dropdown' },
   { id: 0, label: '2ND', type: 'section' },
   { id: 14, label: 'AR', type: 'item' },
@@ -148,6 +153,7 @@ function ActionButtons({
   onUpload,
   onDelete,
   extra,
+  isEditMode = true,
 }: {
   templateItemId: string;
   isUploading: boolean;
@@ -155,20 +161,25 @@ function ActionButtons({
   onUpload: () => void;
   onDelete: () => void;
   extra?: React.ReactNode;
+  isEditMode?: boolean;
 }) {
   return (
     <div className="flex gap-1.5">
       <button
-        className="w-7 h-7 border-none rounded-md flex items-center justify-center cursor-pointer text-white bg-[#f5a623] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
-        title="Upload" onClick={onUpload} disabled={isUploading}
+        className={`w-7 h-7 border-none rounded-md flex items-center justify-center text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
+        title={isEditMode ? "Upload" : "View mode - editing disabled"}
+        onClick={onUpload}
+        disabled={!isEditMode || isUploading}
       >
         {isUploading
           ? <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
           : <Icon icon="mdi:upload" width={14} height={14} />}
       </button>
       <button
-        className={`w-7 h-7 border-none rounded-md flex items-center justify-center text-white ${hasFile ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
-        title="Delete" onClick={onDelete} disabled={!hasFile}
+        className={`w-7 h-7 border-none rounded-md flex items-center justify-center text-white ${hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
+        title={isEditMode ? "Delete" : "View mode - editing disabled"}
+        onClick={onDelete}
+        disabled={!hasFile || !isEditMode}
       >
         <Icon icon="mdi:delete-outline" width={14} height={14} />
       </button>
@@ -232,6 +243,9 @@ function DocumentTable({
     equipment: string;
     supplier: string;
   }>>([{ amount: '', equipment: '', supplier: '' }]);
+  const [untaggingAmountRows, setUntaggingAmountRows] = useState<Array<{
+    amount: string;
+  }>>([{ amount: '' }]);
   const [completionReportRows, setCompletionReportRows] = useState<Array<{
     type: string;
   }>>([]);
@@ -307,6 +321,11 @@ function DocumentTable({
           equipment: string;
           supplier: string;
         }>);
+      }
+
+      // Restore untagging amount rows
+      if (data.untaggingAmountRows) {
+        setUntaggingAmountRows(data.untaggingAmountRows as Array<{ amount: string }>);
       }
 
       // Restore completion report rows
@@ -582,6 +601,7 @@ function DocumentTable({
             onUpload={() => handleUploadClick(tid)}
             onDelete={() => hasFile && handleDeleteAll(tid)}
             extra={extraAction}
+            isEditMode={isEditMode}
           />
         </td>
       </tr>
@@ -1484,22 +1504,19 @@ function DocumentTable({
                 );
               }
 
-              // Clearance to Untag dropdown handler
-              if (doc.label === 'Clearance to Untag' && doc.type === 'dropdown') {
+              // Untagging Amount dropdown handler
+              if (doc.label === 'Untagging Amount' && doc.type === 'dropdown') {
                 // Get Approved Amount for Release
                 const approvedAmountValue = parseFloat(approvedAmount?.replace(/,/g, '') || '0') || 0;
 
-                // Calculate total deductions from Clearance to Untag rows
-                const totalDeductions = clearanceUntagRows.reduce((sum, row) => {
+                // Calculate total deductions from Untagging Amount rows
+                const totalDeductions = untaggingAmountRows.reduce((sum, row) => {
                   const amount = parseFloat(row.amount?.replace(/,/g, '') || '0') || 0;
                   return sum + amount;
                 }, 0);
 
-                // Calculate running balance
+                // Calculate remaining balance
                 const remainingBalance = approvedAmountValue - totalDeductions;
-
-                // Determine the item type label based on Abstract of Quotation selection
-                const itemTypeLabel = abstractQuotationType === 'Non-equipment' ? 'Non-Equipment' : 'Equipment';
 
                 return (
                   <React.Fragment key={key}>
@@ -1511,6 +1528,11 @@ function DocumentTable({
                         >
                           <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
                           <span>{doc.label}</span>
+                          {totalDeductions > 0 && (
+                            <span className="ml-2 text-[10px] bg-[#c62828] text-white px-2 py-0.5 rounded-full">
+                              -₱{totalDeductions.toLocaleString()}
+                            </span>
+                          )}
                         </button>
                       </td>
                     </tr>
@@ -1533,10 +1555,10 @@ function DocumentTable({
                                   <span className="text-xs text-[#e65100] italic">Not set - please set in PHASE 1</span>
                                 )}
                               </div>
-                              {clearanceUntagRows.some(r => r.amount) && (
+                              {untaggingAmountRows.some(r => r.amount) && (
                                 <div className="mt-2 pt-2 border-t border-[#90caf9]">
                                   <div className="flex items-center justify-between text-xs">
-                                    <span className="text-[#1565c0]">Total Deductions (Clearance to Untag):</span>
+                                    <span className="text-[#1565c0]">Total Deductions (Untagging Amount):</span>
                                     <span className="font-semibold text-[#c62828]">
                                       -₱{totalDeductions.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
@@ -1552,16 +1574,11 @@ function DocumentTable({
                             </div>
 
                             <div className="bg-white border border-[#ddd] rounded p-3">
-                              <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 mb-2 text-xs font-semibold text-[#555]">
-                                <div>Amount</div>
-                                <div>{itemTypeLabel}</div>
-                                <div>Supplier</div>
-                                <div className="w-7"></div>
-                              </div>
+                              <div className="text-xs font-semibold text-[#555] mb-2">Untagging Amount</div>
 
-                              {clearanceUntagRows.map((row, idx) => {
+                              {untaggingAmountRows.map((row, idx) => {
                                 // Calculate running total up to this row
-                                const runningDeduction = clearanceUntagRows.slice(0, idx + 1).reduce((sum, r) => {
+                                const runningDeduction = untaggingAmountRows.slice(0, idx + 1).reduce((sum, r) => {
                                   const amount = parseFloat(r.amount?.replace(/,/g, '') || '0') || 0;
                                   return sum + amount;
                                 }, 0);
@@ -1569,50 +1586,30 @@ function DocumentTable({
 
                                 return (
                                   <div key={idx} className="mb-3">
-                                    <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 mb-1">
-                                      <input
-                                        type="text"
-                                        value={row.amount}
-                                        onChange={(e) => {
-                                          const updated = [...clearanceUntagRows];
-                                          updated[idx].amount = e.target.value;
-                                          setClearanceUntagRows(updated);
-                                        }}
-                                        placeholder="Enter amount"
-                                        disabled={!isEditMode}
-                                        className={`border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                      />
-                                      <input
-                                        type="text"
-                                        value={row.equipment}
-                                        onChange={(e) => {
-                                          const updated = [...clearanceUntagRows];
-                                          updated[idx].equipment = e.target.value;
-                                          setClearanceUntagRows(updated);
-                                        }}
-                                        placeholder={`Enter ${itemTypeLabel.toLowerCase()}`}
-                                        disabled={!isEditMode}
-                                        className={`border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                      />
-                                      <input
-                                        type="text"
-                                        value={row.supplier}
-                                        onChange={(e) => {
-                                          const updated = [...clearanceUntagRows];
-                                          updated[idx].supplier = e.target.value;
-                                          setClearanceUntagRows(updated);
-                                        }}
-                                        placeholder="Enter supplier"
-                                        disabled={!isEditMode}
-                                        className={`border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                      />
+                                    <div className="flex items-center gap-3 mb-1">
+                                      <div className="flex-1 relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666] text-xs font-semibold">₱</span>
+                                        <input
+                                          type="text"
+                                          value={row.amount}
+                                          onChange={(e) => {
+                                            const value = e.target.value.replace(/[^0-9.]/g, '');
+                                            const updated = [...untaggingAmountRows];
+                                            updated[idx].amount = value;
+                                            setUntaggingAmountRows(updated);
+                                          }}
+                                          placeholder="Enter untagging amount"
+                                          disabled={!isEditMode}
+                                          className={`w-full border border-[#ddd] rounded px-2 py-1.5 pl-7 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                        />
+                                      </div>
                                       <button
                                         onClick={() => {
-                                          if (clearanceUntagRows.length > 1) {
-                                            setClearanceUntagRows(clearanceUntagRows.filter((_, i) => i !== idx));
+                                          if (untaggingAmountRows.length > 1) {
+                                            setUntaggingAmountRows(untaggingAmountRows.filter((_, i) => i !== idx));
                                           }
                                         }}
-                                        disabled={clearanceUntagRows.length === 1 || !isEditMode}
+                                        disabled={untaggingAmountRows.length === 1 || !isEditMode}
                                         className="w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white bg-[#c62828] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
                                         title="Remove row"
                                       >
@@ -1635,6 +1632,154 @@ function DocumentTable({
                             <div className="flex items-center gap-3">
                               <button
                                 onClick={() => {
+                                  setUntaggingAmountRows([...untaggingAmountRows, { amount: '' }]);
+                                }}
+                                disabled={!isEditMode}
+                                className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
+                              >
+                                + Add More Row
+                              </button>
+                              <button
+                                onClick={() => saveDropdownData(
+                                  { untaggingAmountRows },
+                                  `${untaggingAmountRows.length} untagging amount row(s) saved successfully!`
+                                )}
+                                disabled={savingData || !isEditMode}
+                                className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors ml-auto disabled:bg-[#ccc] disabled:cursor-not-allowed"
+                              >
+                                {savingData ? 'Saving...' : 'Save All'}
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              }
+
+              // Clearance to Untag dropdown handler
+              if (doc.label === 'Clearance to Untag' && doc.type === 'dropdown') {
+                // Get Approved Amount for Release (for display only, no deduction)
+                const approvedAmountValue = parseFloat(approvedAmount?.replace(/,/g, '') || '0') || 0;
+
+                // Determine the item type label based on Abstract of Quotation selection
+                const itemTypeLabel = abstractQuotationType === 'Non-equipment' ? 'Non-Equipment' : 'Equipment';
+
+                // Get the template item ID for the Clearance to Untag file upload
+                const clearanceTemplateItemId = `${phase}-${doc.id}-clearance`;
+                const clearanceDoc = getDocForItem(clearanceTemplateItemId);
+                const isClearanceUploading = uploadingItemId === clearanceTemplateItemId;
+                const hasClearanceFile = !!clearanceDoc;
+
+                return (
+                  <React.Fragment key={key}>
+                    <tr>
+                      <td colSpan={5} className="p-0 border-b border-[#eee]">
+                        <button
+                          className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                          onClick={() => toggleDropdown(key)}
+                        >
+                          <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                          <span>{doc.label}</span>
+                        </button>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                          <div className="space-y-3">
+                            {/* Info banner - no deduction */}
+                            <div className="flex items-start gap-2 bg-[#e3f2fd] border border-[#90caf9] rounded-lg py-2.5 px-4 text-xs text-[#1565c0] leading-[1.4]">
+                              <Icon icon="mdi:information-outline" width={16} height={16} className="min-w-4 mt-px" />
+                              <span>This section is for tracking clearance documents. Amounts entered here are for reference only and do not affect the remaining balance.</span>
+                            </div>
+
+                            {/* Clearance to Untag file upload row */}
+                            <div className="bg-white border border-[#ddd] rounded p-3">
+                              <div className="flex items-center gap-3">
+                                <span className="flex-1 text-xs font-semibold text-[#333]">Clearance to Untag</span>
+                                <div className="flex-1">
+                                  {renderFileChips(clearanceTemplateItemId) ?? <span className="text-[#bbb] italic text-xs">No file uploaded</span>}
+                                </div>
+                                <ActionButtons
+                                  templateItemId={clearanceTemplateItemId}
+                                  isUploading={isClearanceUploading}
+                                  hasFile={hasClearanceFile}
+                                  onUpload={() => handleUploadClick(clearanceTemplateItemId)}
+                                  onDelete={() => hasClearanceFile && handleDeleteAll(clearanceTemplateItemId)}
+                                  isEditMode={isEditMode}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Input rows for amount, equipment/non-equipment, supplier */}
+                            <div className="bg-white border border-[#ddd] rounded p-3">
+                              <div className="text-xs font-semibold text-[#555] mb-3">Clearance Details (for reference)</div>
+                              <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 mb-2 text-xs font-semibold text-[#555]">
+                                <div>Amount</div>
+                                <div>{itemTypeLabel}</div>
+                                <div>Supplier</div>
+                                <div className="w-7"></div>
+                              </div>
+
+                              {clearanceUntagRows.map((row, idx) => (
+                                <div key={idx} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 mb-2">
+                                  <input
+                                    type="text"
+                                    value={row.amount}
+                                    onChange={(e) => {
+                                      const updated = [...clearanceUntagRows];
+                                      updated[idx].amount = e.target.value;
+                                      setClearanceUntagRows(updated);
+                                    }}
+                                    placeholder="Enter amount"
+                                    disabled={!isEditMode}
+                                    className={`border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                  />
+                                  <input
+                                    type="text"
+                                    value={row.equipment}
+                                    onChange={(e) => {
+                                      const updated = [...clearanceUntagRows];
+                                      updated[idx].equipment = e.target.value;
+                                      setClearanceUntagRows(updated);
+                                    }}
+                                    placeholder={`Enter ${itemTypeLabel.toLowerCase()}`}
+                                    disabled={!isEditMode}
+                                    className={`border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                  />
+                                  <input
+                                    type="text"
+                                    value={row.supplier}
+                                    onChange={(e) => {
+                                      const updated = [...clearanceUntagRows];
+                                      updated[idx].supplier = e.target.value;
+                                      setClearanceUntagRows(updated);
+                                    }}
+                                    placeholder="Enter supplier"
+                                    disabled={!isEditMode}
+                                    className={`border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      if (clearanceUntagRows.length > 1) {
+                                        setClearanceUntagRows(clearanceUntagRows.filter((_, i) => i !== idx));
+                                      }
+                                    }}
+                                    disabled={clearanceUntagRows.length === 1 || !isEditMode}
+                                    className="w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white bg-[#c62828] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Remove row"
+                                  >
+                                    <Icon icon="mdi:close" width={14} height={14} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={() => {
                                   setClearanceUntagRows([...clearanceUntagRows, { amount: '', equipment: '', supplier: '' }]);
                                 }}
                                 disabled={!isEditMode}
@@ -1645,7 +1790,7 @@ function DocumentTable({
                               <button
                                 onClick={() => saveDropdownData(
                                   { clearanceUntagRows },
-                                  `${clearanceUntagRows.length} clearance to untag row(s) saved successfully!`
+                                  `${clearanceUntagRows.length} clearance row(s) saved successfully!`
                                 )}
                                 disabled={savingData || !isEditMode}
                                 className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors ml-auto disabled:bg-[#ccc] disabled:cursor-not-allowed"
@@ -2493,6 +2638,12 @@ export default function ProjectDetailPage() {
   const [editRequestSent, setEditRequestSent] = useState(false);
   const [sendingRequest, setSendingRequest] = useState(false);
 
+  // Edit Request Permission Modal states (for assignee/owner)
+  const [editPermissionModal, setEditPermissionModal] = useState(false);
+  const [pendingEditRequests, setPendingEditRequests] = useState<EditRequest[]>([]);
+  const [approvedEditorsList, setApprovedEditorsList] = useState<EditRequest[]>([]);
+  const [processingRequest, setProcessingRequest] = useState<string | null>(null);
+
   // Get current user from localStorage
   useEffect(() => {
     try {
@@ -2505,14 +2656,88 @@ export default function ProjectDetailPage() {
     }
   }, []);
 
+  // Listen for openEditRequestModal custom event
+  useEffect(() => {
+    const handleOpenEditRequestModal = (e: CustomEvent) => {
+      if (e.detail.projectId === id) {
+        setEditPermissionModal(true);
+      }
+    };
+
+    window.addEventListener('openEditRequestModal', handleOpenEditRequestModal as EventListener);
+    return () => window.removeEventListener('openEditRequestModal', handleOpenEditRequestModal as EventListener);
+  }, [id]);
+
+  // Check sessionStorage for pending edit request modal on page load
+  useEffect(() => {
+    const pendingProjectId = sessionStorage.getItem('pendingEditRequestModal');
+    if (pendingProjectId === id) {
+      sessionStorage.removeItem('pendingEditRequestModal');
+      sessionStorage.removeItem('pendingEditRequestUserId');
+      // Open the edit permission modal after a short delay to let project load
+      setTimeout(() => setEditPermissionModal(true), 500);
+    }
+  }, [id]);
+
+  // Fetch pending edit requests and approved editors when project data changes
+  useEffect(() => {
+    if (!project) return;
+
+    const fetchEditRequestsAndEditors = async () => {
+      const dropdownData = project.dropdownData as Record<string, unknown> | null;
+      const pendingRequestIds = (dropdownData?.pendingEditRequests as string[]) || [];
+      const approvedEditorIds = (dropdownData?.approvedEditors as string[]) || [];
+
+      // If no pending requests and no approved editors, clear both states
+      if (pendingRequestIds.length === 0 && approvedEditorIds.length === 0) {
+        setPendingEditRequests([]);
+        setApprovedEditorsList([]);
+        return;
+      }
+
+      try {
+        const usersRes = await fetch('/api/users');
+        const users = await usersRes.json();
+
+        // Map pending requests
+        const requests: EditRequest[] = pendingRequestIds.map((userId: string) => {
+          const user = users.find((u: { id: string; fullName: string; profileImageUrl?: string }) => u.id === userId);
+          return {
+            userId,
+            userName: user?.fullName || 'Unknown User',
+            userProfileUrl: user?.profileImageUrl || null,
+            requestedAt: 'Pending',
+          };
+        });
+        setPendingEditRequests(requests);
+
+        // Map approved editors
+        const editors: EditRequest[] = approvedEditorIds.map((userId: string) => {
+          const user = users.find((u: { id: string; fullName: string; profileImageUrl?: string }) => u.id === userId);
+          return {
+            userId,
+            userName: user?.fullName || 'Unknown User',
+            userProfileUrl: user?.profileImageUrl || null,
+            requestedAt: 'Approved',
+          };
+        });
+        setApprovedEditorsList(editors);
+      } catch (err) {
+        console.error('Failed to fetch edit requests and editors:', err);
+      }
+    };
+
+    fetchEditRequestsAndEditors();
+  }, [project]);
+
   useEffect(() => {
     fetch(`/api/setup-projects/${id}`)
       .then(res=>{if(!res.ok)throw new Error('Not found');return res.json();})
       .then(data=>setProject(data)).catch(()=>setError(true)).finally(()=>setLoading(false));
   }, [id]);
 
-  // Check if current user is authorized to edit
-  const isAuthorizedToEdit = (): boolean => {
+  // Check if current user is the owner (assignee) or admin
+  const isOwnerOrAdmin = (): boolean => {
     if (!currentUser || !project) return false;
 
     // Check if user is the assignee (compare by name since assignee is stored as name)
@@ -2521,12 +2746,22 @@ export default function ProjectDetailPage() {
     // Check if user is admin
     const isAdmin = currentUser.role === 'ADMIN';
 
+    return isAssignee || isAdmin;
+  };
+
+  // Check if current user is authorized to edit (includes granted permissions)
+  const isAuthorizedToEdit = (): boolean => {
+    if (!currentUser || !project) return false;
+
+    // Owner or admin can always edit
+    if (isOwnerOrAdmin()) return true;
+
     // Check if user has been granted edit access (stored in dropdownData)
     const dropdownData = project.dropdownData as Record<string, unknown> | null;
     const approvedEditors = (dropdownData?.approvedEditors as string[]) || [];
     const hasEditAccess = approvedEditors.includes(currentUser.id);
 
-    return isAssignee || isAdmin || hasEditAccess;
+    return hasEditAccess;
   };
 
   // Check if user has a pending edit request
@@ -2632,6 +2867,152 @@ export default function ProjectDetailPage() {
     }
   };
 
+  // Accept edit request
+  const acceptEditRequest = async (userId: string) => {
+    if (!project) return;
+
+    setProcessingRequest(userId);
+    try {
+      const dropdownData = (project.dropdownData as Record<string, unknown>) || {};
+      const pendingRequests = (dropdownData.pendingEditRequests as string[]) || [];
+      const approvedEditors = (dropdownData.approvedEditors as string[]) || [];
+
+      // Remove from pending and add to approved
+      const updatedPending = pendingRequests.filter(id => id !== userId);
+      const updatedApproved = approvedEditors.includes(userId) ? approvedEditors : [...approvedEditors, userId];
+
+      await fetch(`/api/setup-projects/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({
+          dropdownData: { ...dropdownData, pendingEditRequests: updatedPending, approvedEditors: updatedApproved },
+        }),
+      });
+
+      // Send notification to the requester with owner's profile
+      await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId,
+          type: 'edit_request',
+          title: 'Edit Access Approved',
+          message: `Your edit access request for project "${project.title}" has been approved by ${currentUser?.fullName || 'the owner'}!`,
+          eventId: project.id,
+          bookedByUserId: currentUser?.id || null,
+          bookedByName: currentUser?.fullName || null,
+          bookedByProfileUrl: currentUser?.profileImageUrl || null,
+        }),
+      });
+
+      // Refresh project data
+      const refreshRes = await fetch(`/api/setup-projects/${id}`);
+      const refreshedData = await refreshRes.json();
+      setProject(refreshedData);
+    } catch (err) {
+      console.error('Failed to accept edit request:', err);
+      alert('Failed to accept edit request. Please try again.');
+    } finally {
+      setProcessingRequest(null);
+    }
+  };
+
+  // Decline edit request
+  const declineEditRequest = async (userId: string) => {
+    if (!project) return;
+
+    setProcessingRequest(userId);
+    try {
+      const dropdownData = (project.dropdownData as Record<string, unknown>) || {};
+      const pendingRequests = (dropdownData.pendingEditRequests as string[]) || [];
+
+      // Remove from pending
+      const updatedPending = pendingRequests.filter(id => id !== userId);
+
+      await fetch(`/api/setup-projects/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({
+          dropdownData: { ...dropdownData, pendingEditRequests: updatedPending },
+        }),
+      });
+
+      // Send notification to the requester with owner's profile
+      await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId,
+          type: 'edit_request',
+          title: 'Edit Access Declined',
+          message: `Your edit access request for project "${project.title}" has been declined by ${currentUser?.fullName || 'the owner'}.`,
+          eventId: project.id,
+          bookedByUserId: currentUser?.id || null,
+          bookedByName: currentUser?.fullName || null,
+          bookedByProfileUrl: currentUser?.profileImageUrl || null,
+        }),
+      });
+
+      // Refresh project data
+      const refreshRes = await fetch(`/api/setup-projects/${id}`);
+      const refreshedData = await refreshRes.json();
+      setProject(refreshedData);
+    } catch (err) {
+      console.error('Failed to decline edit request:', err);
+      alert('Failed to decline edit request. Please try again.');
+    } finally {
+      setProcessingRequest(null);
+    }
+  };
+
+  // Remove approved editor
+  const removeApprovedEditor = async (userId: string) => {
+    if (!project) return;
+
+    setProcessingRequest(userId);
+    try {
+      const dropdownData = (project.dropdownData as Record<string, unknown>) || {};
+      const approvedEditors = (dropdownData.approvedEditors as string[]) || [];
+
+      // Remove from approved editors
+      const updatedApproved = approvedEditors.filter(id => id !== userId);
+
+      await fetch(`/api/setup-projects/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({
+          dropdownData: { ...dropdownData, approvedEditors: updatedApproved },
+        }),
+      });
+
+      // Send notification to the user with owner's profile
+      await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId,
+          type: 'edit_request',
+          title: 'Edit Access Revoked',
+          message: `Your edit access for project "${project.title}" has been revoked by ${currentUser?.fullName || 'the owner'}.`,
+          eventId: project.id,
+          bookedByUserId: currentUser?.id || null,
+          bookedByName: currentUser?.fullName || null,
+          bookedByProfileUrl: currentUser?.profileImageUrl || null,
+        }),
+      });
+
+      // Refresh project data
+      const refreshRes = await fetch(`/api/setup-projects/${id}`);
+      const refreshedData = await refreshRes.json();
+      setProject(refreshedData);
+    } catch (err) {
+      console.error('Failed to remove approved editor:', err);
+      alert('Failed to remove editor. Please try again.');
+    } finally {
+      setProcessingRequest(null);
+    }
+  };
+
   useEffect(() => {
     const handler = (e: MouseEvent) => { if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) setShowStatusDropdown(false); };
     document.addEventListener('mousedown', handler);
@@ -2676,33 +3057,52 @@ export default function ProjectDetailPage() {
             <div className="flex items-center gap-3.5 mb-5">
               <div className="w-[120px] h-auto"><img src="/setup-4.0-logo.png" alt="SETUP" className="w-[120px] h-auto"/></div>
             </div>
-            <button
-              onClick={handleEditModeToggle}
-              disabled={modeTransitioning}
-              className={`flex items-center gap-1.5 border-none rounded-[20px] py-2 px-5 text-[13px] font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed ${
-                isEditMode
-                  ? 'bg-[#2e7d32] text-white hover:bg-[#1b5e20]'
-                  : 'bg-accent text-white hover:bg-accent-hover'
-              }`}
-            >
-              {modeTransitioning ? (
-                <>
-                  <Icon icon="mdi:loading" width={16} height={16} className="animate-spin" />
-                  Switching...
-                </>
-              ) : (
-                <>
-                  <Icon icon={isEditMode ? 'mdi:eye-outline' : 'mdi:pencil-outline'} width={16} height={16} />
-                  {isEditMode ? 'View Mode' : 'Edit Mode'}
-                  {hasPendingRequest() && !isAuthorizedToEdit() && (
-                    <span className="ml-1 text-[10px] bg-yellow-500 text-white px-1.5 py-0.5 rounded-full">Pending</span>
+            <div className="flex items-center gap-2">
+              {/* Permission Button - Show only for owner (assignee) or admin, not for users with granted edit access */}
+              {isOwnerOrAdmin() && (
+                <button
+                  onClick={() => setEditPermissionModal(true)}
+                  className="relative flex items-center justify-center w-10 h-10 border-none rounded-full bg-[#f5f5f5] text-[#666] cursor-pointer transition-all duration-200 hover:bg-[#e0e0e0] hover:text-[#333]"
+                  title="Edit Permissions"
+                >
+                  <Icon icon="mdi:account-key" width={20} height={20} />
+                  {pendingEditRequests.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#f57c00] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                      {pendingEditRequests.length > 9 ? '9+' : pendingEditRequests.length}
+                    </span>
                   )}
-                </>
+                </button>
               )}
-            </button>
+
+              {/* Edit Mode Button */}
+              <button
+                onClick={handleEditModeToggle}
+                disabled={modeTransitioning}
+                className={`flex items-center gap-1.5 border-none rounded-[20px] py-2 px-5 text-[13px] font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed ${
+                  isEditMode
+                    ? 'bg-[#2e7d32] text-white hover:bg-[#1b5e20]'
+                    : 'bg-accent text-white hover:bg-accent-hover'
+                }`}
+              >
+                {modeTransitioning ? (
+                  <>
+                    <Icon icon="mdi:loading" width={16} height={16} className="animate-spin" />
+                    Switching...
+                  </>
+                ) : (
+                  <>
+                    <Icon icon={isEditMode ? 'mdi:eye-outline' : 'mdi:pencil-outline'} width={16} height={16} />
+                    {isEditMode ? 'View Mode' : 'Edit Mode'}
+                    {hasPendingRequest() && !isAuthorizedToEdit() && (
+                      <span className="ml-1 text-[10px] bg-yellow-500 text-white px-1.5 py-0.5 rounded-full">Pending</span>
+                    )}
+                  </>
+                )}
+              </button>
+            </div>
           </div>
           <div className="flex gap-5 items-start">
-            <div className="w-[100px] h-[100px] min-w-[100px] rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+            <div className="w-[100px] h-[100px] min-w-[100px] rounded-full bg-gray-200 flex items-center justify-center overflow-hidden ring-2 ring-[#183166] ring-offset-2">
               {project.companyLogoUrl ? <img src={project.companyLogoUrl} alt="logo" className="w-full h-full object-cover"/> : <Icon icon="mdi:store" width={48} height={48} color="#999"/>}
             </div>
             <div className="flex-1 flex gap-5">
@@ -2735,7 +3135,18 @@ export default function ProjectDetailPage() {
                 <p><strong>Cooperator&apos;s Name:</strong> {project.corporatorName||'—'}</p>
                 <p><strong>Address:</strong> {project.address||'—'}</p>
                 <p><strong>Priority Sector:</strong> {project.prioritySector||'—'}</p>
-                <p><strong>Assignee:</strong> {project.assignee||'—'}</p>
+                <p className="flex items-center gap-2"><strong>Assignee:</strong> {project.assignee ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    {project.assigneeProfileUrl ? (
+                      <img src={project.assigneeProfileUrl} alt={project.assignee} className="w-5 h-5 rounded-full object-cover border border-[#d0d0d0]" />
+                    ) : (
+                      <span className="w-5 h-5 rounded-full bg-[#e3f2fd] flex items-center justify-center">
+                        <Icon icon="mdi:account" width={12} height={12} color="#146184" />
+                      </span>
+                    )}
+                    {project.assignee}
+                  </span>
+                ) : '—'}</p>
                 <p><strong>Date Published:</strong> {datePublished}</p>
               </div>
             </div>
@@ -2854,6 +3265,175 @@ export default function ProjectDetailPage() {
               >
                 Okay
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Permission Modal - For Assignee/Admin to manage edit requests */}
+        {editPermissionModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]" onClick={() => setEditPermissionModal(false)}>
+            <div className="bg-white rounded-2xl w-full max-w-[520px] shadow-[0_12px_40px_rgba(0,0,0,0.25)] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-[#eee] bg-[#f9f9f9]">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#fff3e0] flex items-center justify-center">
+                    <Icon icon="mdi:account-key" width={24} height={24} color="#f57c00" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-[#333] m-0">Edit Permissions</h3>
+                    <p className="text-xs text-[#888] m-0">Manage who can edit this project</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setEditPermissionModal(false)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-transparent border-none cursor-pointer text-[#999] hover:bg-[#eee] hover:text-[#333] transition-colors"
+                >
+                  <Icon icon="mdi:close" width={20} height={20} />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="px-6 py-4 max-h-[400px] overflow-y-auto">
+                {/* Pending Requests Section */}
+                <div className="mb-4">
+                  <h4 className="text-sm font-semibold text-[#333] mb-3 flex items-center gap-2">
+                    <Icon icon="mdi:clock-outline" width={16} height={16} color="#f57c00" />
+                    Pending Requests
+                    {pendingEditRequests.length > 0 && (
+                      <span className="bg-[#f57c00] text-white text-[10px] px-2 py-0.5 rounded-full">
+                        {pendingEditRequests.length}
+                      </span>
+                    )}
+                  </h4>
+
+                  {pendingEditRequests.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-6 text-[#999] text-sm">
+                      <Icon icon="mdi:inbox-outline" width={40} height={40} className="mb-2 opacity-50" />
+                      <p className="m-0">No pending edit requests</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {pendingEditRequests.map((request) => (
+                        <div
+                          key={request.userId}
+                          className="flex items-center gap-3 p-3 bg-[#f9f9f9] rounded-lg border border-[#eee]"
+                        >
+                          {/* User Avatar */}
+                          {request.userProfileUrl ? (
+                            <img
+                              src={request.userProfileUrl}
+                              alt={request.userName}
+                              className="w-10 h-10 rounded-full object-cover border-2 border-[#f57c00]"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full border-2 border-[#f57c00] bg-gray-100 flex items-center justify-center">
+                              <Icon icon="mdi:account" width={20} height={20} color="#999" />
+                            </div>
+                          )}
+
+                          {/* User Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-[#333] m-0 truncate">{request.userName}</p>
+                            <p className="text-xs text-[#888] m-0">Requesting edit access</p>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => acceptEditRequest(request.userId)}
+                              disabled={processingRequest === request.userId}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-[#2e7d32] text-white border-none rounded-md text-xs font-semibold cursor-pointer hover:bg-[#1b5e20] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                            >
+                              {processingRequest === request.userId ? (
+                                <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                              ) : (
+                                <Icon icon="mdi:check" width={14} height={14} />
+                              )}
+                              Accept
+                            </button>
+                            <button
+                              onClick={() => declineEditRequest(request.userId)}
+                              disabled={processingRequest === request.userId}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-[#c62828] text-white border-none rounded-md text-xs font-semibold cursor-pointer hover:bg-[#b71c1c] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                            >
+                              <Icon icon="mdi:close" width={14} height={14} />
+                              Decline
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Approved Editors Section */}
+                {approvedEditorsList.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-[#eee]">
+                    <h4 className="text-sm font-semibold text-[#333] mb-3 flex items-center gap-2">
+                      <Icon icon="mdi:check-circle" width={16} height={16} color="#2e7d32" />
+                      Approved Editors
+                      <span className="bg-[#2e7d32] text-white text-[10px] px-2 py-0.5 rounded-full">
+                        {approvedEditorsList.length}
+                      </span>
+                    </h4>
+                    <p className="text-xs text-[#888] mb-3">
+                      These users have been granted edit access to this project.
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {approvedEditorsList.map((editor) => (
+                        <div
+                          key={editor.userId}
+                          className="flex items-center gap-3 p-3 bg-[#e8f5e9] rounded-lg border border-[#c8e6c9]"
+                        >
+                          {/* User Avatar */}
+                          {editor.userProfileUrl ? (
+                            <img
+                              src={editor.userProfileUrl}
+                              alt={editor.userName}
+                              className="w-10 h-10 rounded-full object-cover border-2 border-[#2e7d32]"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full border-2 border-[#2e7d32] bg-white flex items-center justify-center">
+                              <Icon icon="mdi:account" width={20} height={20} color="#2e7d32" />
+                            </div>
+                          )}
+
+                          {/* User Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-[#2e7d32] m-0 truncate">{editor.userName}</p>
+                            <p className="text-xs text-[#66bb6a] m-0">Has edit access</p>
+                          </div>
+
+                          {/* Remove Button */}
+                          <button
+                            onClick={() => removeApprovedEditor(editor.userId)}
+                            disabled={processingRequest === editor.userId}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-white text-[#c62828] border border-[#c62828] rounded-md text-xs font-semibold cursor-pointer hover:bg-[#ffebee] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                            title="Remove edit access"
+                          >
+                            {processingRequest === editor.userId ? (
+                              <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                            ) : (
+                              <Icon icon="mdi:account-remove" width={14} height={14} />
+                            )}
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-[#eee] bg-[#f9f9f9]">
+                <button
+                  onClick={() => setEditPermissionModal(false)}
+                  className="w-full py-2.5 bg-primary text-white border-none rounded-lg text-sm font-semibold cursor-pointer hover:bg-[#0d4a5f] transition-colors"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         )}

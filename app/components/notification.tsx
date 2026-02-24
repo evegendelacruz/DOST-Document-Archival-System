@@ -7,7 +7,7 @@ import { Cake, FileEdit, Clock, Tag, X, CalendarPlus } from 'lucide-react';
 
 interface Notification {
   id: string;
-  type: 'birthday' | 'edit-request' | 'liquidation' | 'untagging' | 'event-mention';
+  type: 'birthday' | 'edit-request' | 'edit_request' | 'liquidation' | 'untagging' | 'event-mention';
   title: string;
   message: string;
   time: string;
@@ -41,6 +41,8 @@ const getNotificationIcon = (type: Notification['type'], size: 'sm' | 'md' = 'sm
       return <Cake className={`${className} text-pink-500`} />;
     case 'edit-request':
       return <FileEdit className={`${className} text-blue-500`} />;
+    case 'edit_request':
+      return <FileEdit className={`${className} text-orange-500`} />;
     case 'liquidation':
       return <Clock className={`${className} text-orange-500`} />;
     case 'untagging':
@@ -58,6 +60,8 @@ const getNotificationBgColor = (type: Notification['type']) => {
       return 'bg-pink-50';
     case 'edit-request':
       return 'bg-blue-50';
+    case 'edit_request':
+      return 'bg-orange-50';
     case 'liquidation':
       return 'bg-orange-50';
     case 'untagging':
@@ -75,6 +79,8 @@ const getNotificationBorderColor = (type: Notification['type']) => {
       return 'border-l-pink-500';
     case 'edit-request':
       return 'border-l-blue-500';
+    case 'edit_request':
+      return 'border-l-orange-500';
     case 'liquidation':
       return 'border-l-orange-500';
     case 'untagging':
@@ -86,21 +92,22 @@ const getNotificationBorderColor = (type: Notification['type']) => {
   }
 };
 
-// Render toast icon - profile picture for event-mention, otherwise standard icon
+// Render toast icon - profile picture for event-mention and edit_request, otherwise standard icon
 const renderToastIcon = (notification: ToastNotification) => {
-  if (notification.type === 'event-mention') {
+  if (notification.type === 'event-mention' || notification.type === 'edit_request') {
+    const borderColor = notification.type === 'edit_request' ? 'border-[#f57c00]' : 'border-[#00AEEF]';
     if (notification.bookedByProfileUrl) {
       return (
         <img
           src={notification.bookedByProfileUrl}
           alt={notification.bookedByName || 'User'}
-          className="w-10 h-10 rounded-full object-cover border-2 border-[#00AEEF]"
+          className={`w-10 h-10 rounded-full object-cover border-2 ${borderColor}`}
         />
       );
     }
-    // Default avatar with blue border
+    // Default avatar with colored border
     return (
-      <div className="w-10 h-10 rounded-full border-2 border-[#00AEEF] bg-gray-100 flex items-center justify-center">
+      <div className={`w-10 h-10 rounded-full border-2 ${borderColor} bg-gray-100 flex items-center justify-center`}>
         <Icon icon="mdi:account" className="w-6 h-6 text-gray-400" />
       </div>
     );
@@ -367,7 +374,7 @@ export default function NotificationDropdown() {
     setNotifications(notifications.map((n) => ({ ...n, read: true })));
   };
 
-  // Handle notification click - navigate to event for event-mention
+  // Handle notification click - navigate to event for event-mention or edit_request
   const handleNotificationClick = useCallback((notification: Notification) => {
     // Mark as read
     markAsReadApi(notification.id);
@@ -387,6 +394,36 @@ export default function NotificationDropdown() {
           detail: { eventId: notification.eventId }
         });
         window.dispatchEvent(event);
+      }
+    }
+
+    // Handle edit_request notification
+    if (notification.type === 'edit_request' && notification.eventId) {
+      setIsOpen(false);
+      const projectPath = `/setup/${notification.eventId}`;
+
+      // Only open Edit Permission Modal for "Edit Access Request" (sent to owner)
+      // For "Edit Access Approved/Declined/Revoked" (sent to requestor), just navigate to project
+      const isRequestToOwner = notification.title === 'Edit Access Request';
+
+      if (isRequestToOwner) {
+        // This is a request notification sent to the owner - open the modal
+        if (pathname !== projectPath) {
+          sessionStorage.setItem('pendingEditRequestModal', notification.eventId);
+          sessionStorage.setItem('pendingEditRequestUserId', notification.bookedByUserId || '');
+          router.push(projectPath);
+        } else {
+          const event = new CustomEvent('openEditRequestModal', {
+            detail: {
+              projectId: notification.eventId,
+              requesterId: notification.bookedByUserId
+            }
+          });
+          window.dispatchEvent(event);
+        }
+      } else {
+        // This is a response notification sent to the requestor - just navigate to project
+        router.push(projectPath);
       }
     }
   }, [pathname, router]);
@@ -413,24 +450,54 @@ export default function NotificationDropdown() {
         window.dispatchEvent(event);
       }
     }
+
+    // Handle edit_request notification
+    if (notification.type === 'edit_request' && notification.eventId) {
+      const projectPath = `/setup/${notification.eventId}`;
+
+      // Only open Edit Permission Modal for "Edit Access Request" (sent to owner)
+      // For "Edit Access Approved/Declined/Revoked" (sent to requestor), just navigate to project
+      const isRequestToOwner = notification.title === 'Edit Access Request';
+
+      if (isRequestToOwner) {
+        // This is a request notification sent to the owner - open the modal
+        if (pathname !== projectPath) {
+          sessionStorage.setItem('pendingEditRequestModal', notification.eventId);
+          sessionStorage.setItem('pendingEditRequestUserId', notification.bookedByUserId || '');
+          router.push(projectPath);
+        } else {
+          const event = new CustomEvent('openEditRequestModal', {
+            detail: {
+              projectId: notification.eventId,
+              requesterId: notification.bookedByUserId
+            }
+          });
+          window.dispatchEvent(event);
+        }
+      } else {
+        // This is a response notification sent to the requestor - just navigate to project
+        router.push(projectPath);
+      }
+    }
   }, [pathname, router, closeToast]);
 
-  // Render notification icon - profile picture for event-mention, otherwise standard icon
+  // Render notification icon - profile picture for event-mention and edit_request, otherwise standard icon
   const renderNotificationIcon = (notification: Notification, size: 'sm' | 'md' = 'sm') => {
-    if (notification.type === 'event-mention') {
+    if (notification.type === 'event-mention' || notification.type === 'edit_request') {
       const imgSize = size === 'sm' ? 'w-10 h-10' : 'w-10 h-10';
+      const borderColor = notification.type === 'edit_request' ? 'border-[#f57c00]' : 'border-[#00AEEF]';
       if (notification.bookedByProfileUrl) {
         return (
           <img
             src={notification.bookedByProfileUrl}
             alt={notification.bookedByName || 'User'}
-            className={`${imgSize} rounded-full object-cover border-2 border-[#00AEEF]`}
+            className={`${imgSize} rounded-full object-cover border-2 ${borderColor}`}
           />
         );
       }
-      // Default avatar with blue border
+      // Default avatar with colored border
       return (
-        <div className={`${imgSize} rounded-full border-2 border-[#00AEEF] bg-gray-100 flex items-center justify-center`}>
+        <div className={`${imgSize} rounded-full border-2 ${borderColor} bg-gray-100 flex items-center justify-center`}>
           <Icon icon="mdi:account" className="w-6 h-6 text-gray-400" />
         </div>
       );

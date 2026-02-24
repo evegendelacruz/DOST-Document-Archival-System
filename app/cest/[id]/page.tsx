@@ -698,14 +698,9 @@ export default function CestProfilePage() {
 
         {/* Project Info Card */}
         <div className="bg-white rounded-xl py-6 px-7 mb-2 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-          {/* Header with CEST logo and Edit button */}
           <div className="flex items-start justify-between mb-5">
-            <div className="flex items-center gap-3.5">
-              <div className="flex items-center gap-3.5 mb-5">
-                <div className="w-[120px] h-auto flex items-center justify-center">
-                  <img src="/cest-sidebar-logo.png" alt="CEST" className="w-[120px] h-auto" />
-                </div>
-              </div>
+            <div className="flex items-center gap-1.5 mt-[-10px]">
+              <div className="w-[90px] h-auto"><img src="/cest-logo-text.png" alt="CEST" className="w-[120px] h-auto"/></div>
             </div>
             <button className="flex items-center gap-1.5 bg-accent text-white border-none rounded-[20px] py-2 px-5 text-[13px] font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover">
               <Icon icon="mdi:pencil-outline" width={16} height={16} />

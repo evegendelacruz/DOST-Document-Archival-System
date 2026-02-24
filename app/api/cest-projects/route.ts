@@ -34,7 +34,29 @@ export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
     const userId = getUserIdFromRequest(req);
-    const project = await prisma.cestProject.create({ data });
+
+    // Get logged-in user info to set as assignee
+    let staffAssigned: string | null = data.staffAssigned || null;
+    let assigneeProfileUrl: string | null = data.assigneeProfileUrl || null;
+
+    if (userId && !staffAssigned) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { fullName: true, profileImageUrl: true },
+      });
+      if (user) {
+        staffAssigned = user.fullName;
+        assigneeProfileUrl = user.profileImageUrl;
+      }
+    }
+
+    const project = await prisma.cestProject.create({
+      data: {
+        ...data,
+        staffAssigned,
+        assigneeProfileUrl,
+      },
+    });
 
     if (userId) {
       await logActivity({

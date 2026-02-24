@@ -108,6 +108,7 @@ interface Project {
   fund: string | null;
   typeOfFund: string | null;
   assignee: string | null;
+  assigneeProfileUrl: string | null;
   year: string | null;
   companyLogoUrl: string | null;
   createdAt: string;
@@ -714,7 +715,7 @@ export default function SetupPage() {
 
   return (
     <DashboardLayout activePath="/setup">
-      <main className="flex-1 py-5 px-[30px] bg-[#f5f5f5] overflow-x-auto">
+      <main className="flex-1 py-5 px-[30px] bg-[#f5f5f5] overflow-x-auto min-w-0">
         {/* SETUP Header */}
         <div className="flex justify-between items-center bg-white py-[15px] px-[25px] rounded-[15px] mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.05)] gap-[30px]">
           <div className="flex items-center gap-[15px]">
@@ -827,7 +828,7 @@ export default function SetupPage() {
                     <input type="checkbox" className="w-4 h-4 accent-accent cursor-pointer" checked={selectedProjects.length === filteredProjects.length && filteredProjects.length > 0} onChange={(e) => setSelectedProjects(e.target.checked ? filteredProjects.map(p => p.id) : [])} />
                   </th>
                     <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[10px] align-middle">Code</th>
-                    <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[200px] align-middle">Project Title</th>
+                    <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[250px] align-middle">Project Title</th>
                     <th className="py-3 px-1.5 text-center border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[50px] align-middle">Logo</th>
                     <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[150px] align-middle">Firm</th>
                     <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[120px] align-middle">Type of Firm</th>
@@ -839,7 +840,7 @@ export default function SetupPage() {
                     <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[100px] align-middle">Priority Sector</th>
                     <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[50px] align-middle">Firm Size</th>
                     <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[50px] align-middle">Year</th>
-                    <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[100px] align-middle">Assignee</th>
+                    <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[150px] align-middle">Assignee</th>
                 </tr>
               </thead>
               <tbody>
@@ -873,7 +874,26 @@ export default function SetupPage() {
                       <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.prioritySector}</td>
                       <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.firmSize}</td>
                       <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.year || '—'}</td>
-                      <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.assignee}</td>
+                      <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">
+                        {project.assignee ? (
+                          <div className="flex items-center gap-2">
+                            {project.assigneeProfileUrl ? (
+                              <img
+                                src={project.assigneeProfileUrl}
+                                alt={project.assignee}
+                                className="w-6 h-6 rounded-full object-cover border border-[#d0d0d0]"
+                              />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full bg-[#e3f2fd] flex items-center justify-center">
+                                <Icon icon="mdi:account" width={14} height={14} color="#146184" />
+                              </div>
+                            )}
+                            <span className="text-[#333] text-[11px]">{project.assignee}</span>
+                          </div>
+                        ) : (
+                          <span className="text-[#999]">—</span>
+                        )}
+                      </td>
                   </tr>
                 ))}
               </tbody>
