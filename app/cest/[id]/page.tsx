@@ -703,7 +703,7 @@ export default function CestProfilePage() {
             <div className="flex items-center gap-3.5">
               <div className="flex items-center gap-3.5 mb-5">
                 <div className="w-[120px] h-auto flex items-center justify-center">
-                  <img src="/cest-logo-text.png" alt="CEST" className="w-[120px] h-auto" />
+                  <img src="/cest-sidebar-logo.png" alt="CEST" className="w-[120px] h-auto" />
                 </div>
               </div>
             </div>
