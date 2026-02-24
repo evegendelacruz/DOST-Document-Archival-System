@@ -2,7 +2,6 @@ import { NextRequest, NextResponse, after } from 'next/server';
 import prisma from '@/lib/prisma';
 import { sendOtpEmail } from '@/lib/email';
 
-export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
   const { email } = await req.json();

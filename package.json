@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbo --hostname 0.0.0.0",
     "build": "prisma generate && next build",
-    "pages:build": "prisma generate && next build && npx @cloudflare/next-on-pages",
+    "pages:build": "prisma generate && npx @opennextjs/cloudflare build",
     "start": "next start",
     "lint": "next lint",
     "postinstall": "node scripts/fix-wsl-binaries.cjs"
@@ -36,7 +36,7 @@
     "xlsx-js-style": "^1.2.0"
   },
   "devDependencies": {
-    "@cloudflare/next-on-pages": "^1.13.16",
+    "@opennextjs/cloudflare": "^1.17.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^20",

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
-export const runtime = 'edge';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string; docId: string }> }) {
   const { id, docId } = await params;
