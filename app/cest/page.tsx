@@ -42,6 +42,7 @@ interface CestProject {
   status: string | null;
   approvedAmount: number | null;
   releasedAmount: number | null;
+  counterpartAmount: number | null;
   projectDuration: string | null;
   staffAssigned: string | null;
   assigneeProfileUrl: string | null;
@@ -52,6 +53,12 @@ interface CestProject {
   categories: string[] | null;
   emails: string[] | null;
   contactNumbers: string[] | null;
+}
+
+interface DropdownOption {
+  id: string;
+  type: string;
+  value: string;
 }
 
 function formatCurrency(value: number | null): string {
@@ -124,8 +131,14 @@ export default function CestPage() {
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [showAddFunding, setShowAddFunding] = useState(false);
   const [newFundingName, setNewFundingName] = useState('');
-  const [extraFundingOptions, setExtraFundingOptions] = useState<string[]>([]);
+  const [showAddBeneficiaryType, setShowAddBeneficiaryType] = useState(false);
+  const [newBeneficiaryTypeName, setNewBeneficiaryTypeName] = useState('');
   const [mapFlyTarget, setMapFlyTarget] = useState<[number, number] | null>(null);
+
+  // Confirmation modal state
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationMessage, setConfirmationMessage] = useState('');
+  const [savingOption, setSavingOption] = useState(false);
 
   // ── Dual scrollbar refs (same pattern as SETUP) ──
   const tableScrollRef = useRef<HTMLDivElement>(null);
@@ -140,6 +153,7 @@ export default function CestPage() {
     province: '',
     municipality: '',
     barangay: '',
+    villaPurok: '',
     coordinates: '',
     beneficiaries: '',
     typeOfBeneficiary: '',
@@ -148,6 +162,7 @@ export default function CestPage() {
     status: '',
     approvedAmount: '',
     releasedAmount: '',
+    counterpartAmount: '',
     projectDuration: '',
     dateOfRelease: '',
     companyLogo: null as File | null,
@@ -159,7 +174,142 @@ export default function CestPage() {
   const [partnerLGUs, setPartnerLGUs] = useState<Array<{ name: string; logoFile: File | null; logoUrl: string | null }>>([{ name: '', logoFile: null, logoUrl: null }]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-  const categoryOptions = ['Food Processing', 'Metals and Engineering', 'Furniture', 'Gifts and Housewares', 'Agriculture', 'Aquaculture', 'ICT', 'Health Products', 'Packaging', 'Other'];
+  // Dropdown options from database
+  const [entryPointOptions, setEntryPointOptions] = useState<DropdownOption[]>([]);
+  const [typeOfBeneficiaryOptions, setTypeOfBeneficiaryOptions] = useState<DropdownOption[]>([]);
+  const [programFundingOptions, setProgramFundingOptions] = useState<DropdownOption[]>([]);
+
+  // Entry Point input state
+  const [newEntryPointInput, setNewEntryPointInput] = useState('');
+  const [showEntryPointInput, setShowEntryPointInput] = useState(false);
+
+  // Load dropdown options from database on mount
+  useEffect(() => {
+    const loadDropdownOptions = async () => {
+      try {
+        const res = await fetch('/api/cest-dropdown-options');
+        if (res.ok) {
+          const options: DropdownOption[] = await res.json();
+          setEntryPointOptions(options.filter(o => o.type === 'entryPoint'));
+          setTypeOfBeneficiaryOptions(options.filter(o => o.type === 'typeOfBeneficiary'));
+          setProgramFundingOptions(options.filter(o => o.type === 'programFunding'));
+        }
+      } catch (err) {
+        console.error('Failed to load dropdown options:', err);
+      }
+    };
+    loadDropdownOptions();
+  }, []);
+
+  // Add new entry point to database
+  const addNewEntryPoint = async () => {
+    const trimmed = newEntryPointInput.trim();
+    if (trimmed && !entryPointOptions.some(o => o.value === trimmed)) {
+      try {
+        const res = await fetch('/api/cest-dropdown-options', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'entryPoint', value: trimmed }),
+        });
+        if (res.ok) {
+          const newOption = await res.json();
+          setEntryPointOptions(prev => [...prev, newOption]);
+          setSelectedCategories(prev => [...prev, trimmed]);
+        }
+      } catch (err) {
+        console.error('Failed to add entry point:', err);
+      }
+    }
+    setNewEntryPointInput('');
+    setShowEntryPointInput(false);
+  };
+
+  // Remove entry point from database
+  const removeEntryPoint = async (option: DropdownOption) => {
+    try {
+      await fetch(`/api/cest-dropdown-options?id=${option.id}`, { method: 'DELETE' });
+      setEntryPointOptions(prev => prev.filter(o => o.id !== option.id));
+      setSelectedCategories(prev => prev.filter(c => c !== option.value));
+    } catch (err) {
+      console.error('Failed to remove entry point:', err);
+    }
+  };
+
+  // Add new type of beneficiary to database
+  const addNewBeneficiaryType = async (value: string): Promise<boolean> => {
+    const trimmed = value.trim();
+    if (!trimmed) return false;
+
+    if (typeOfBeneficiaryOptions.some(o => o.value === trimmed)) {
+      // Already exists, just select it
+      handleFormChange('typeOfBeneficiary', trimmed);
+      return true;
+    }
+
+    setSavingOption(true);
+    try {
+      const res = await fetch('/api/cest-dropdown-options', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'typeOfBeneficiary', value: trimmed }),
+      });
+      if (res.ok) {
+        const newOption = await res.json();
+        setTypeOfBeneficiaryOptions(prev => [...prev, newOption]);
+        handleFormChange('typeOfBeneficiary', trimmed);
+        setConfirmationMessage(`"${trimmed}" has been added to Type of Beneficiary options.`);
+        setShowConfirmation(true);
+        return true;
+      } else {
+        const error = await res.json().catch(() => null);
+        console.error('Failed to add type of beneficiary:', error);
+        return false;
+      }
+    } catch (err) {
+      console.error('Failed to add type of beneficiary:', err);
+      return false;
+    } finally {
+      setSavingOption(false);
+    }
+  };
+
+  // Add new program funding to database
+  const addNewProgramFunding = async (value: string): Promise<boolean> => {
+    const trimmed = value.trim();
+    if (!trimmed) return false;
+
+    if (programFundingOptions.some(o => o.value === trimmed)) {
+      // Already exists, just select it
+      handleFormChange('programFunding', trimmed);
+      return true;
+    }
+
+    setSavingOption(true);
+    try {
+      const res = await fetch('/api/cest-dropdown-options', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'programFunding', value: trimmed }),
+      });
+      if (res.ok) {
+        const newOption = await res.json();
+        setProgramFundingOptions(prev => [...prev, newOption]);
+        handleFormChange('programFunding', trimmed);
+        setConfirmationMessage(`"${trimmed}" has been added to Program/Funding options.`);
+        setShowConfirmation(true);
+        return true;
+      } else {
+        const error = await res.json().catch(() => null);
+        console.error('Failed to add program funding:', error);
+        return false;
+      }
+    } catch (err) {
+      console.error('Failed to add program funding:', err);
+      return false;
+    } finally {
+      setSavingOption(false);
+    }
+  };
 
   const [existingLogoUrl, setExistingLogoUrl] = useState<string | null>(null);
   const existingLogoUrlRef = useRef<string | null>(null);
@@ -170,16 +320,18 @@ export default function CestPage() {
 
   const resetForm = () => {
     setFormData({
-      projectCode: '', projectTitle: '', projectDate: '', province: '', municipality: '', barangay: '', coordinates: '',
+      projectCode: '', projectTitle: '', projectDate: '', province: '', municipality: '', barangay: '', villaPurok: '', coordinates: '',
       beneficiaries: '', typeOfBeneficiary: '', cooperatorName: '',
       programFunding: '', status: '',
-      approvedAmount: '', releasedAmount: '', projectDuration: '', dateOfRelease: '',
+      approvedAmount: '', releasedAmount: '', counterpartAmount: '', projectDuration: '', dateOfRelease: '',
       companyLogo: null,
     });
     setEmails(['']);
     setContactNumbers(['']);
     setPartnerLGUs([{ name: '', logoFile: null, logoUrl: null }]);
     setSelectedCategories([]);
+    setShowEntryPointInput(false);
+    setNewEntryPointInput('');
     setFormErrors({});
     setSaveError('');
     setEditingProjectId(null);
@@ -290,13 +442,9 @@ export default function CestPage() {
 
   const totalApproved = projects.reduce((sum, p) => sum + (p.approvedAmount ?? 0), 0);
   const totalReleased = projects.reduce((sum, p) => sum + (p.releasedAmount ?? 0), 0);
-  const standardPrograms = ['CEST', 'LGIA', 'SSCP'];
-  const customPrograms = [...new Set(
-    projects.map(p => p.programFunding).filter((f): f is string => !!f && !standardPrograms.includes(f))
-  )];
 
   const cestCount = projects.filter(p => p.programFunding === 'CEST').length;
-  const otherCount = projects.filter(p => p.programFunding && !standardPrograms.includes(p.programFunding)).length;
+  const otherCount = projects.filter(p => p.programFunding && p.programFunding !== 'CEST').length;
 
   const filterCards = [
     { id: 'approved-amount', label: 'Total Approved Amount', value: formatCurrency(totalApproved), isAmount: true },
@@ -358,14 +506,26 @@ export default function CestPage() {
 
   const openEditModal = (project: CestProject) => {
     const parts = project.location?.split(', ') ?? [];
-    const barangay = parts[0] ?? '';
-    const municipality = parts[1] ?? '';
-    const province = parts[2] ?? '';
+    // Location format: "VillaPurok, Barangay, Municipality, Province" or "Barangay, Municipality, Province"
+    let villaPurok = '';
+    let barangay = '';
+    let municipality = '';
+    let province = '';
+    if (parts.length >= 4) {
+      villaPurok = parts[0] ?? '';
+      barangay = parts[1] ?? '';
+      municipality = parts[2] ?? '';
+      province = parts[3] ?? '';
+    } else {
+      barangay = parts[0] ?? '';
+      municipality = parts[1] ?? '';
+      province = parts[2] ?? '';
+    }
     setFormData({
       projectCode: project.code ?? '',
       projectTitle: project.projectTitle,
       projectDate: project.dateOfApproval ? project.dateOfApproval.slice(0, 10) : '',
-      province, municipality, barangay,
+      province, municipality, barangay, villaPurok,
       coordinates: project.coordinates ?? '',
       beneficiaries: project.beneficiaries ?? '',
       typeOfBeneficiary: project.typeOfBeneficiary ?? '',
@@ -374,6 +534,7 @@ export default function CestPage() {
       status: project.status ?? '',
       approvedAmount: project.approvedAmount != null ? String(project.approvedAmount) : '',
       releasedAmount: project.releasedAmount != null ? String(project.releasedAmount) : '',
+      counterpartAmount: project.counterpartAmount != null ? String(project.counterpartAmount) : '',
       projectDuration: project.projectDuration ?? '',
       dateOfRelease: project.dateOfApproval ? project.dateOfApproval.slice(0, 10) : '',
       companyLogo: null,
@@ -416,7 +577,8 @@ export default function CestPage() {
         .filter(p => p.name.trim())
         .map(p => ({ name: p.name, logoUrl: p.logoUrl }));
 
-      const locationParts = [formData.barangay, formData.municipality, formData.province].filter(Boolean);
+      // Location format: "VillaPurok, Barangay, Municipality, Province" if villaPurok is provided
+      const locationParts = [formData.villaPurok, formData.barangay, formData.municipality, formData.province].filter(Boolean);
       const location = locationParts.length > 0 ? locationParts.join(', ') : null;
       const payload: Record<string, unknown> = {
         projectTitle: formData.projectTitle,
@@ -428,6 +590,7 @@ export default function CestPage() {
         status: formData.status || null,
         approvedAmount: formData.approvedAmount ? parseFloat(formData.approvedAmount) : null,
         releasedAmount: formData.releasedAmount ? parseFloat(formData.releasedAmount) : null,
+        counterpartAmount: formData.counterpartAmount ? parseFloat(formData.counterpartAmount) : null,
         projectDuration: formData.projectDuration || null,
         staffAssigned: formData.cooperatorName || null,
         year: formData.projectDate ? new Date(formData.projectDate).getFullYear().toString() : null,
@@ -548,12 +711,13 @@ export default function CestPage() {
                   <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[180px] align-middle">Location</th>
                   <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[200px] align-middle">Beneficiaries</th>
                   <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[100px] align-middle">Program/<br/>Funding</th>
-                  <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[250px] align-middle">Partner LGU</th>
+                  <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[250px] align-middle">Stakeholder</th>
                   <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[80px] align-middle">Status</th>
                   <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[120px] align-middle">Type of<br/>Beneficiary</th>
-                  <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[160px] align-middle">Category</th>
+                  <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[160px] align-middle">Entry Point</th>
                   <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[100px] align-middle">Approved<br/>Amount</th>
                   <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[100px] align-middle">Released Amount</th>
+                  <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[100px] align-middle">Counterpart<br/>Amount</th>
                   <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[120px] align-middle">Project Duration</th>
                   <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[50px] align-middle">Year</th>
                   <th className="py-3 px-1.5 text-left border-b border-[#e0e0e0] bg-[#f9f9f9] font-semibold text-[#333] whitespace-normal min-w-[120px] align-middle">Date of Approval (Ref.<br/>Approval Letter)</th>
@@ -562,9 +726,9 @@ export default function CestPage() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={16} className="text-center py-8 text-[#999]">Loading projects...</td></tr>
+                  <tr><td colSpan={17} className="text-center py-8 text-[#999]">Loading projects...</td></tr>
                 ) : filteredProjects.length === 0 ? (
-                  <tr><td colSpan={16} className="text-center py-8 text-[#999]">No projects found</td></tr>
+                  <tr><td colSpan={17} className="text-center py-8 text-[#999]">No projects found</td></tr>
                 ) : filteredProjects.map((project) => (
                   <tr key={project.id}>
                     <td className="py-3 px-2 text-center border-b border-[#e0e0e0]">
@@ -579,7 +743,7 @@ export default function CestPage() {
                         {project.programFunding ?? '—'}
                       </span>
                     </td>
-                    {/* Partner LGU with Logo */}
+                    {/* Stakeholder with Logo */}
                     <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">
                       {project.partnerLGUs && project.partnerLGUs.length > 0 ? (
                         <div className="flex flex-col gap-1">
@@ -635,6 +799,7 @@ export default function CestPage() {
 
                     <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{formatCurrency(project.approvedAmount)}</td>
                     <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{formatCurrency(project.releasedAmount)}</td>
+                    <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{formatCurrency(project.counterpartAmount)}</td>
                     <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0] whitespace-normal break-words">{project.projectDuration ?? '—'}</td>
                     <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.year ?? '—'}</td>
                     <td className="py-3 px-1.5 text-left border-b border-[#e0e0e0]">{project.dateOfApproval ?? '—'}</td>
@@ -710,7 +875,7 @@ export default function CestPage() {
 
               <div className="flex flex-col gap-1">
                 <label className="text-[13px] font-semibold text-[#333]">Address</label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-4 gap-3">
                   <select value={formData.province} onChange={(e) => handleFormChange('province', e.target.value)} className={modalSelectCls}>
                     <option value="">Select Province</option>
                     {Object.keys(addressData).map(prov => (<option key={prov} value={prov}>{prov}</option>))}
@@ -720,9 +885,10 @@ export default function CestPage() {
                     {municipalities.map(mun => (<option key={mun} value={mun}>{mun}</option>))}
                   </select>
                   <select value={formData.barangay} onChange={(e) => handleFormChange('barangay', e.target.value)} disabled={!formData.municipality} className={modalSelectCls}>
-                    <option value="">Barangay / Village / Purok</option>
+                    <option value="">Select Barangay</option>
                     {barangays.map(brgy => (<option key={brgy} value={brgy}>{brgy}</option>))}
                   </select>
+                  <input type="text" placeholder="Villa / Purok" value={formData.villaPurok} onChange={(e) => handleFormChange('villaPurok', e.target.value)} className={modalInputCls} />
                 </div>
               </div>
 
@@ -736,53 +902,101 @@ export default function CestPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[13px] font-semibold text-[#333]">Beneficiaries</label>
-                  <input type="text" placeholder="Enter beneficiaries" value={formData.beneficiaries} onChange={(e) => handleFormChange('beneficiaries', e.target.value)} className={modalInputCls} />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[13px] font-semibold text-[#333]">Type of Beneficiary</label>
-                  <select value={formData.typeOfBeneficiary} onChange={(e) => handleFormChange('typeOfBeneficiary', e.target.value)} className={modalSelectCls}>
-                    <option value="">Select Type</option>
-                    <option value="Individual">Individual</option>
-                    <option value="Organization">Organization</option>
-                    <option value="Community">Community</option>
-                    <option value="LGU">LGU</option>
-                    <option value="Cooperative">Cooperative</option>
-                    <option value="Association">Association</option>
-                  </select>
-                </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[13px] font-semibold text-[#333]">Beneficiaries</label>
+                <input type="text" placeholder="Enter beneficiaries" value={formData.beneficiaries} onChange={(e) => handleFormChange('beneficiaries', e.target.value)} className={modalInputCls} />
               </div>
 
-              {/* Category Multi-Select */}
+              {/* Type of Beneficiary - Dropdown */}
               <div className="flex flex-col gap-1">
-                <label className="text-[13px] font-semibold text-[#333]">Category</label>
-                <div className="flex flex-wrap gap-2 p-3 border border-[#d0d0d0] rounded-lg bg-[#f9f9f9]">
-                  {categoryOptions.map(cat => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => toggleCategory(cat)}
-                      className={`py-1.5 px-3 rounded-full text-[11px] font-medium border transition-all duration-200 cursor-pointer ${
-                        selectedCategories.includes(cat)
-                          ? 'bg-primary text-white border-primary'
-                          : 'bg-white text-[#555] border-[#d0d0d0] hover:border-primary hover:text-primary'
-                      }`}
-                    >
-                      {selectedCategories.includes(cat) && <Icon icon="mdi:check" width={12} height={12} className="inline mr-1" />}
-                      {cat}
-                    </button>
+                <label className="text-[13px] font-semibold text-[#333]">Type of Beneficiary</label>
+                <select
+                  value={formData.typeOfBeneficiary}
+                  onChange={(e) => {
+                    if (e.target.value === '__add_new__') {
+                      setShowAddBeneficiaryType(true);
+                    } else {
+                      handleFormChange('typeOfBeneficiary', e.target.value);
+                    }
+                  }}
+                  className={modalSelectCls}
+                >
+                  <option value="">Select Type</option>
+                  {typeOfBeneficiaryOptions.map(option => (
+                    <option key={option.id} value={option.value}>{option.value}</option>
                   ))}
+                  <option value="__add_new__" style={{ color: '#146184', fontWeight: 'bold' }}>+ Add New Type</option>
+                </select>
+              </div>
+
+              {/* Entry Point Multi-Select */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[13px] font-semibold text-[#333]">Entry Point</label>
+                <div className="flex flex-wrap gap-2 p-3 border border-[#d0d0d0] rounded-lg bg-[#f9f9f9] min-h-[48px]">
+                  {entryPointOptions.length === 0 && !showEntryPointInput && (
+                    <span className="text-[11px] text-[#999]">No entry points yet. Click &quot;Add Entry Point&quot; to create one.</span>
+                  )}
+                  {entryPointOptions.map(option => (
+                    <div key={option.id} className="relative group">
+                      <button
+                        type="button"
+                        onClick={() => toggleCategory(option.value)}
+                        className={`py-1.5 px-3 pr-6 rounded-full text-[11px] font-medium border transition-all duration-200 cursor-pointer ${
+                          selectedCategories.includes(option.value)
+                            ? 'bg-primary text-white border-primary'
+                            : 'bg-white text-[#555] border-[#d0d0d0] hover:border-primary hover:text-primary'
+                        }`}
+                      >
+                        {selectedCategories.includes(option.value) && <Icon icon="mdi:check" width={12} height={12} className="inline mr-1" />}
+                        {option.value}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); removeEntryPoint(option); }}
+                        className="absolute -top-1 -right-1 w-4 h-4 bg-[#dc3545] text-white rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer border-none"
+                        title="Remove entry point"
+                      >
+                        <Icon icon="mdi:close" width={10} height={10} />
+                      </button>
+                    </div>
+                  ))}
+                  {showEntryPointInput ? (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        value={newEntryPointInput}
+                        onChange={(e) => setNewEntryPointInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addNewEntryPoint(); } if (e.key === 'Escape') { setShowEntryPointInput(false); setNewEntryPointInput(''); } }}
+                        placeholder="Type entry point name..."
+                        className="py-1 px-2 border border-primary rounded text-[11px] w-[140px] focus:outline-none"
+                        autoFocus
+                      />
+                      <button type="button" onClick={addNewEntryPoint} className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center border-none cursor-pointer hover:bg-accent">
+                        <Icon icon="mdi:check" width={14} height={14} />
+                      </button>
+                      <button type="button" onClick={() => { setShowEntryPointInput(false); setNewEntryPointInput(''); }} className="w-6 h-6 bg-[#f0f0f0] text-[#666] rounded flex items-center justify-center border-none cursor-pointer hover:bg-[#e0e0e0]">
+                        <Icon icon="mdi:close" width={14} height={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowEntryPointInput(true)}
+                      className="py-1.5 px-3 rounded-full text-[11px] font-medium border border-dashed border-[#999] text-[#666] bg-transparent hover:border-primary hover:text-primary transition-all duration-200 cursor-pointer flex items-center gap-1"
+                    >
+                      <Icon icon="mdi:plus" width={12} height={12} />
+                      Add Entry Point
+                    </button>
+                  )}
                 </div>
                 {selectedCategories.length > 0 && (
                   <span className="text-[11px] text-[#666]">Selected: {selectedCategories.join(', ')}</span>
                 )}
               </div>
 
-              {/* Partner LGU - Multiple with Logo Upload */}
+              {/* Stakeholder - Multiple with Logo Upload */}
               <div className="flex flex-col gap-1">
-                <label className="text-[13px] font-semibold text-[#333]">Partner LGU</label>
+                <label className="text-[13px] font-semibold text-[#333]">Stakeholder</label>
                 {partnerLGUs.map((lgu, idx) => (
                   <div key={idx} className={`flex items-center gap-2 ${idx > 0 ? 'mt-2' : ''}`}>
                     <div className="w-10 h-10 rounded-full bg-[#f0f0f0] border border-[#d0d0d0] flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -794,7 +1008,7 @@ export default function CestPage() {
                     </div>
                     <input
                       type="text"
-                      placeholder="Enter partner LGU name"
+                      placeholder="Enter stakeholder name"
                       value={lgu.name}
                       onChange={(e) => handlePartnerLGUNameChange(idx, e.target.value)}
                       className={`${modalInputCls} flex-1`}
@@ -820,7 +1034,7 @@ export default function CestPage() {
                   </div>
                 ))}
                 <button type="button" onClick={addPartnerLGU} className="inline-flex items-center gap-1 bg-transparent border-none text-accent text-xs font-semibold cursor-pointer p-0 py-1 mt-1 hover:text-accent-hover hover:underline">
-                  <Icon icon="mdi:plus" width={14} height={14} /> Add More Partner LGU
+                  <Icon icon="mdi:plus" width={14} height={14} /> Add More Stakeholder
                 </button>
               </div>
 
@@ -893,11 +1107,8 @@ export default function CestPage() {
                     className={`${modalSelectCls} ${formErrors.programFunding ? errCls : ''}`}
                   >
                     <option value="">Select Program</option>
-                    <option value="CEST">CEST</option>
-                    <option value="LGIA">LGIA</option>
-                    <option value="SSCP">SSCP</option>
-                    {[...customPrograms, ...extraFundingOptions].map(prog => (
-                      <option key={prog} value={prog}>{prog}</option>
+                    {programFundingOptions.map(option => (
+                      <option key={option.id} value={option.value}>{option.value}</option>
                     ))}
                     <option value="__add_new__" style={{ color: '#146184', fontWeight: 'bold' }}>+ Add Other Funding</option>
                   </select>
@@ -919,10 +1130,14 @@ export default function CestPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-[13px] font-semibold text-[#333]">Released Amount</label>
                   <input type="text" placeholder="e.g. 150000" value={formData.releasedAmount} onChange={(e) => handleFormChange('releasedAmount', e.target.value.replace(/[^\d.]/g, ''))} className={modalInputCls} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-semibold text-[#333]">Counterpart Amount</label>
+                  <input type="text" placeholder="e.g. 50000" value={formData.counterpartAmount} onChange={(e) => handleFormChange('counterpartAmount', e.target.value.replace(/[^\d.]/g, ''))} className={modalInputCls} />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[13px] font-semibold text-[#333]">Project Duration</label>
@@ -953,26 +1168,77 @@ export default function CestPage() {
               type="text"
               value={newFundingName}
               onChange={(e) => setNewFundingName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { if (newFundingName.trim()) { setExtraFundingOptions(prev => prev.includes(newFundingName.trim()) ? prev : [...prev, newFundingName.trim()]); handleFormChange('programFunding', newFundingName.trim()); } setShowAddFunding(false); setNewFundingName(''); } }}
+              onKeyDown={async (e) => {
+                if (e.key === 'Enter' && newFundingName.trim() && !savingOption) {
+                  e.preventDefault();
+                  await addNewProgramFunding(newFundingName.trim());
+                  setShowAddFunding(false);
+                  setNewFundingName('');
+                }
+              }}
               placeholder="Enter funding source name"
               className="w-full px-3 py-2 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary mb-4"
               autoFocus
+              disabled={savingOption}
             />
             <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => { setShowAddFunding(false); setNewFundingName(''); }} className="px-4 py-2 bg-gray-200 text-gray-600 rounded text-sm font-medium hover:bg-gray-300">Cancel</button>
+              <button type="button" onClick={() => { setShowAddFunding(false); setNewFundingName(''); }} disabled={savingOption} className="px-4 py-2 bg-gray-200 text-gray-600 rounded text-sm font-medium hover:bg-gray-300 disabled:opacity-50">Cancel</button>
               <button
                 type="button"
-                onClick={() => {
+                disabled={!newFundingName.trim() || savingOption}
+                onClick={async () => {
                   if (newFundingName.trim()) {
-                    setExtraFundingOptions(prev => prev.includes(newFundingName.trim()) ? prev : [...prev, newFundingName.trim()]);
-                    handleFormChange('programFunding', newFundingName.trim());
+                    await addNewProgramFunding(newFundingName.trim());
+                    setShowAddFunding(false);
+                    setNewFundingName('');
                   }
-                  setShowAddFunding(false);
-                  setNewFundingName('');
                 }}
-                className="px-4 py-2 bg-primary text-white rounded text-sm font-medium hover:bg-accent"
+                className="px-4 py-2 bg-primary text-white rounded text-sm font-medium hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Add
+                {savingOption ? 'Saving...' : 'Add'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Type of Beneficiary Modal */}
+      {showAddBeneficiaryType && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1200]">
+          <div className="bg-white rounded-lg w-full max-w-[300px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+            <h3 className="text-base font-bold text-primary mb-3">Add Type of Beneficiary</h3>
+            <input
+              type="text"
+              value={newBeneficiaryTypeName}
+              onChange={(e) => setNewBeneficiaryTypeName(e.target.value)}
+              onKeyDown={async (e) => {
+                if (e.key === 'Enter' && newBeneficiaryTypeName.trim() && !savingOption) {
+                  e.preventDefault();
+                  await addNewBeneficiaryType(newBeneficiaryTypeName.trim());
+                  setShowAddBeneficiaryType(false);
+                  setNewBeneficiaryTypeName('');
+                }
+              }}
+              placeholder="Enter type name"
+              className="w-full px-3 py-2 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary mb-4"
+              autoFocus
+              disabled={savingOption}
+            />
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => { setShowAddBeneficiaryType(false); setNewBeneficiaryTypeName(''); }} disabled={savingOption} className="px-4 py-2 bg-gray-200 text-gray-600 rounded text-sm font-medium hover:bg-gray-300 disabled:opacity-50">Cancel</button>
+              <button
+                type="button"
+                disabled={!newBeneficiaryTypeName.trim() || savingOption}
+                onClick={async () => {
+                  if (newBeneficiaryTypeName.trim()) {
+                    await addNewBeneficiaryType(newBeneficiaryTypeName.trim());
+                    setShowAddBeneficiaryType(false);
+                    setNewBeneficiaryTypeName('');
+                  }
+                }}
+                className="px-4 py-2 bg-primary text-white rounded text-sm font-medium hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {savingOption ? 'Saving...' : 'Add'}
               </button>
             </div>
           </div>
@@ -1010,6 +1276,26 @@ export default function CestPage() {
                 Confirm Location
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirmation && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1300]">
+          <div className="bg-white rounded-lg w-full max-w-[350px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.2)] text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-[#e8f5e9] rounded-full flex items-center justify-center">
+              <Icon icon="mdi:check-circle" width={40} height={40} className="text-[#2e7d32]" />
+            </div>
+            <h3 className="text-lg font-bold text-[#333] mb-2">Option Added Successfully</h3>
+            <p className="text-sm text-[#666] mb-5">{confirmationMessage}</p>
+            <button
+              type="button"
+              onClick={() => setShowConfirmation(false)}
+              className="px-6 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-accent transition-colors"
+            >
+              OK
+            </button>
           </div>
         </div>
       )}

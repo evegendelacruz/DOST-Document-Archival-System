@@ -129,6 +129,7 @@ model CestProject {
   status             String?
   approvedAmount     Float?
   releasedAmount     Float?
+  counterpartAmount  Float?
   projectDuration    String?
   staffAssigned      String?
   assigneeProfileUrl String?
@@ -144,6 +145,17 @@ model CestProject {
   documents          CestProjectDocument[]
 
   @@map("cest_projects")
+}
+
+model CestDropdownOption {
+  id        String   @id @default(uuid()) @db.Uuid
+  type      String   // 'programFunding' or 'typeOfBeneficiary' or 'entryPoint'
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([type, value])
+  @@map("cest_dropdown_options")
 }
 
 model CestProjectDocument {
