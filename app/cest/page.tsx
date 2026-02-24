@@ -113,6 +113,7 @@ export default function CestPage() {
   const [showAddFunding, setShowAddFunding] = useState(false);
   const [newFundingName, setNewFundingName] = useState('');
   const [extraFundingOptions, setExtraFundingOptions] = useState<string[]>([]);
+  const [mapFlyTarget, setMapFlyTarget] = useState<[number, number] | null>(null);
 
   // ── Dual scrollbar refs (same pattern as SETUP) ──
   const tableScrollRef = useRef<HTMLDivElement>(null);
@@ -278,6 +279,16 @@ export default function CestPage() {
     }
   };
 
+  // Auto-geocode municipality for map picker
+  useEffect(() => {
+    if (!formData.municipality) return;
+    const query = `${formData.municipality}${formData.province ? ', ' + formData.province : ''}, Philippines`;
+    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`)
+      .then(r => r.json())
+      .then(data => { if (data[0]) setMapFlyTarget([parseFloat(data[0].lat), parseFloat(data[0].lon)]); })
+      .catch(() => {});
+  }, [formData.municipality, formData.province]);
+
   const openEditModal = (project: CestProject) => {
     const parts = project.location?.split(', ') ?? [];
     const barangay = parts[0] ?? '';
@@ -379,7 +390,7 @@ export default function CestPage() {
         <div className="flex justify-between items-center bg-white py-[15px] px-[25px] rounded-[15px] mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.05)] gap-[30px]">
           <div className="flex items-center gap-0">
             <div className="w-[100px] h-[100px] flex items-center justify-center -mr-2">
-              <img src="/cest-logo.png" alt="CEST Logo" className="w-[100px] h-[100px] object-contain" />
+              <img src="/cest-sidebar-logo.png" alt="CEST Logo" className="w-[100px] h-[100px] object-contain" />
             </div>
             <div className="flex flex-col">
               <h1 className="text-[28px] font-bold text-[#2e7d32] m-0 leading-none">CEST</h1>
@@ -742,7 +753,7 @@ export default function CestPage() {
       {/* Map Picker Modal */}
       {showMapPicker && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1100]" onClick={() => setShowMapPicker(false)}>
-          <div className="bg-white rounded-2xl w-[700px] max-w-[95vw] max-h-[90vh] overflow-hidden flex flex-col shadow-[0_12px_40px_rgba(0,0,0,0.25)]" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl w-[700px] max-w-[95vw] max-h-[90vh] flex flex-col shadow-[0_12px_40px_rgba(0,0,0,0.25)]" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between py-4 px-6 border-b border-[#eee]">
               <h3 className="m-0 text-base text-primary font-bold">Pick Location on Map</h3>
               <button className="bg-transparent border-none cursor-pointer text-[#999] p-[5px] flex items-center justify-center rounded-full transition-all duration-200 hover:bg-[#f0f0f0] hover:text-[#333]" onClick={() => setShowMapPicker(false)}>
@@ -750,14 +761,19 @@ export default function CestPage() {
               </button>
             </div>
             <p className="m-0 py-2 px-6 text-xs text-[#888]">Click on the map to place a pin and auto-generate coordinates</p>
-            <div className="flex gap-6 px-6 pb-3 text-[13px] text-[#555]">
-              <span>Coordinates: <strong className="text-primary">{formData.coordinates || '—'}</strong></span>
+            <div className="flex items-center justify-between px-6 pb-2">
+              <span className="text-[13px] text-[#555]">Coordinates: <strong className="text-primary">{formData.coordinates || '—'}</strong></span>
             </div>
-            <div className="w-full h-[400px] relative">
+            {/* Real-time search bar */}
+            <div className="px-6 pb-3">
+              <MapSearchBar onSelect={(coords) => setMapFlyTarget(coords)} initialQuery={formData.municipality} />
+            </div>
+            <div className="w-full h-[400px]">
               <MapPickerInner
                 lat={formData.coordinates ? parseFloat(formData.coordinates.split(',')[0]) : null}
                 lng={formData.coordinates ? parseFloat(formData.coordinates.split(',')[1]) : null}
                 onPick={(lat, lng) => { setFormData(prev => ({ ...prev, coordinates: `${lat.toFixed(6)},${lng.toFixed(6)}` })); }}
+                flyTo={mapFlyTarget}
               />
             </div>
             <div className="flex justify-center py-4 px-6 border-t border-[#eee]">
@@ -772,22 +788,131 @@ export default function CestPage() {
   );
 }
 
+// ── Nominatim result type ──
+interface NominatimResult {
+  place_id: number;
+  display_name: string;
+  lat: string;
+  lon: string;
+}
+
+// ── Real-time search bar with autocomplete suggestions ──
+function MapSearchBar({ onSelect, initialQuery }: { onSelect: (coords: [number, number]) => void; initialQuery?: string }) {
+  const [query, setQuery] = useState(initialQuery || '');
+  const [results, setResults] = useState<NominatimResult[]>([]);
+
+  useEffect(() => { setQuery(initialQuery || ''); }, [initialQuery]);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const search = useCallback((q: string) => {
+    if (q.trim().length < 3) { setResults([]); setOpen(false); return; }
+    setLoading(true);
+    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=6&countrycodes=ph`, { headers: { 'Accept-Language': 'en' } })
+      .then(r => r.json())
+      .then((data: NominatimResult[]) => { setResults(data); setOpen(data.length > 0); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setQuery(val);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => search(val), 400);
+  };
+
+  const handleSelect = (result: NominatimResult) => {
+    setQuery(result.display_name);
+    setOpen(false);
+    setResults([]);
+    onSelect([parseFloat(result.lat), parseFloat(result.lon)]);
+  };
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <div className="flex items-center border border-[#e0e0e0] rounded-lg bg-[#f9f9f9] overflow-hidden focus-within:border-primary focus-within:bg-white transition-all">
+        {loading ? (
+          <svg className="ml-3 w-4 h-4 text-primary animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
+        ) : (
+          <Icon icon="mdi:magnify" className="ml-3 text-[#999] flex-shrink-0" width={16} height={16} />
+        )}
+        <input
+          type="text"
+          value={query}
+          onChange={handleChange}
+          onFocus={() => results.length > 0 && setOpen(true)}
+          placeholder="Search location..."
+          className="flex-1 py-2 px-2 border-none outline-none text-[13px] bg-transparent placeholder:text-[#aaa] text-[#333]"
+        />
+        {query && (
+          <button onClick={() => { setQuery(''); setResults([]); setOpen(false); }} className="mr-2 text-[#bbb] hover:text-[#999] border-none bg-transparent cursor-pointer flex items-center p-0">
+            <Icon icon="mdi:close" width={14} height={14} />
+          </button>
+        )}
+      </div>
+      {open && (
+        <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.18)] overflow-hidden z-[9999]">
+          {results.map((result, idx) => (
+            <button
+              key={result.place_id}
+              onMouseDown={() => handleSelect(result)}
+              className={`w-full text-left px-4 py-2.5 text-[12px] text-[#333] hover:bg-[#f0f8ff] transition-colors flex items-start gap-2 cursor-pointer border-none bg-transparent ${idx !== results.length - 1 ? 'border-b border-[#f5f5f5]' : ''}`}
+            >
+              <Icon icon="mdi:map-marker-outline" width={14} height={14} className="text-primary flex-shrink-0 mt-0.5" />
+              <span className="leading-snug line-clamp-2">{result.display_name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Map Picker Component ──
-function MapPickerInner({ lat, lng, onPick }: { lat: number | null; lng: number | null; onPick: (lat: number, lng: number) => void }) {
+function MapPickerInner({
+  lat, lng, onPick, flyTo,
+}: {
+  lat: number | null;
+  lng: number | null;
+  onPick: (lat: number, lng: number) => void;
+  flyTo?: [number, number] | null;
+}) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [comps, setComps] = useState<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [L, setL] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapRef = useRef<any>(null);
 
   useEffect(() => {
-    Promise.all([
-      import('react-leaflet'),
-      import('leaflet'),
-    ]).then(([rl, leaflet]) => {
+    Promise.all([import('react-leaflet'), import('leaflet')]).then(([rl, leaflet]) => {
       setComps(rl);
       setL(leaflet.default || leaflet);
     });
   }, []);
+
+  // Fly to target with a short delay so user sees the map before it zooms
+  useEffect(() => {
+    if (!flyTo) return;
+    const timer = setTimeout(() => {
+      if (mapRef.current) mapRef.current.flyTo(flyTo, 13, { duration: 1.5 });
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [flyTo, comps]);
 
   if (!comps || !L) {
     return <div className="w-full h-full flex items-center justify-center text-base text-[#666] bg-[#f5f5f5]">Loading map...</div>;
@@ -808,16 +933,16 @@ function MapPickerInner({ lat, lng, onPick }: { lat: number | null; lng: number 
   });
 
   function ClickHandler() {
-    useMapEvents({
-      click(e: { latlng: { lat: number; lng: number } }) {
-        onPick(e.latlng.lat, e.latlng.lng);
-      },
-    });
+    useMapEvents({ click(e: { latlng: { lat: number; lng: number } }) { onPick(e.latlng.lat, e.latlng.lng); } });
     return null;
   }
 
+  const center: [number, number] = lat !== null && lng !== null
+    ? [lat, lng]
+    : flyTo ?? [8.4542, 124.6319];
+
   return (
-    <MapContainer center={[lat || 8.477, lng || 124.646]} zoom={12} style={{ width: '100%', height: '100%' }} zoomControl={true}>
+    <MapContainer ref={mapRef} center={center} zoom={12} style={{ width: '100%', height: '100%' }} zoomControl={true}>
       <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
       <ClickHandler />
       {lat !== null && lng !== null && (<Marker position={[lat, lng]} icon={markerIcon} />)}
