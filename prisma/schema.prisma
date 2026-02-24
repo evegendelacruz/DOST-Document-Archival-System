@@ -8,23 +8,25 @@ datasource db {
 }
 
 model User {
-  id                String          @id @default(uuid()) @db.Uuid
-  email             String          @unique
-  passwordHash      String
-  fullName          String
-  role              Role            @default(STAFF)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  birthday          DateTime?       @db.Date
-  contactNo         String?
-  resetOtp          String?
-  resetOtpExpiresAt DateTime?
-  profileImageUrl   String?
-  isApproved        Boolean         @default(false)
-  logs              UserLog[]
-  permissions       UserPermission?
-  timeRecords       TimeRecord[]
-  notifications     Notification[]
+  id                        String                    @id @default(uuid()) @db.Uuid
+  email                     String                    @unique
+  passwordHash              String
+  fullName                  String
+  role                      Role                      @default(STAFF)
+  createdAt                 DateTime                  @default(now())
+  updatedAt                 DateTime                  @updatedAt
+  birthday                  DateTime?                 @db.Date
+  contactNo                 String?
+  resetOtp                  String?
+  resetOtpExpiresAt         DateTime?
+  profileImageUrl           String?
+  isApproved                Boolean                   @default(false)
+  logs                      UserLog[]
+  permissions               UserPermission?
+  timeRecords               TimeRecord[]
+  notifications             Notification[]
+  conversationsParticipated ConversationParticipant[]
+  sentMessages              Message[]
 
   @@map("users")
 }
@@ -269,6 +271,43 @@ model Barangay {
 
   @@unique([name, municipalityId])
   @@map("barangays")
+}
+
+model Conversation {
+  id           String                    @id @default(uuid()) @db.Uuid
+  name         String?
+  isGroup      Boolean                   @default(false)
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @db.Uuid
+  userId         String       @db.Uuid
+  lastReadAt     DateTime?
+  joinedAt       DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @db.Uuid
+  senderId       String       @db.Uuid
+  content        String
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
 }
 
 enum Role {

@@ -2,6 +2,7 @@
 
 import Header from './Header';
 import Sidebar, { NavItem } from './Sidebar';
+import Messenger from './Messenger';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -19,6 +20,7 @@ export default function DashboardLayout({ children, activePath, sidebarItems }: 
           {children}
         </div>
       </div>
+      <Messenger />
     </div>
   );
 }
