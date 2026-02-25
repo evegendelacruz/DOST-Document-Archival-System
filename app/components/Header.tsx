@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import NotificationDropdown from './notification';
+import MessengerDropdown from './MessengerDropdown';
 
 
 interface UserPermissions {
@@ -132,6 +133,8 @@ export default function Header() {
             <Icon icon="mdi:compass-outline" width={24} height={24} />
           </Link>
         )}
+
+        <MessengerDropdown />
         <NotificationDropdown />
        
         {/* User Profile Dropdown */}
