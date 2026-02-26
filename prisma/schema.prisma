@@ -140,6 +140,7 @@ model CestProject {
   categories         Json?
   emails             Json?
   contactNumbers     Json?
+  dropdownData       Json?
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
   documents          CestProjectDocument[]
