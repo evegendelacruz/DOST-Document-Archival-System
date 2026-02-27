@@ -2,32 +2,32 @@ import { NextRequest, NextResponse } from 'next/server';
 import os from 'os';
 
 export async function GET(req: NextRequest) {
-  const port = new URL(req.url).port || '3000';
+  const host = req.headers.get('host') ?? '';
+  const hostName = host.split(':')[0];
 
-  // Find local network IP (prefer WiFi/Ethernet, skip loopback and virtual adapters)
+  // If running on a public/cloud host (Vercel or any non-LAN host), return the public HTTPS origin
+  const isLocal = hostName === 'localhost' || hostName === '127.0.0.1' || /^192\.168\.|^10\.|^172\.(1[6-9]|2\d|3[01])\./.test(hostName);
+  if (!isLocal) {
+    return NextResponse.json({ ip: hostName, origin: `https://${hostName}` });
+  }
+
+  // Local dev: find LAN IP so QR codes work on the same network
+  const port = new URL(req.url).port || '3000';
   const nets = os.networkInterfaces();
   let localIp: string | null = null;
 
   for (const name of Object.keys(nets)) {
-    // Skip loopback, virtual, docker, WSL virtual adapters
     if (/loopback|lo|docker|veth|vmnet|vbox|wsl|virbr/i.test(name)) continue;
-
     for (const iface of nets[name] ?? []) {
       if (iface.family !== 'IPv4' || iface.internal) continue;
-      // Prefer 192.168.x.x, then 10.x.x.x, then 172.x.x.x
       if (!localIp || iface.address.startsWith('192.168')) {
         localIp = iface.address;
       }
     }
   }
 
-  // Fallback: try to extract from request host header (works when accessed via IP already)
-  if (!localIp) {
-    const host = req.headers.get('host') ?? '';
-    const hostIp = host.split(':')[0];
-    if (hostIp && hostIp !== 'localhost' && hostIp !== '127.0.0.1') {
-      localIp = hostIp;
-    }
+  if (!localIp && hostName !== 'localhost' && hostName !== '127.0.0.1') {
+    localIp = hostName;
   }
 
   const ip = localIp ?? 'localhost';
