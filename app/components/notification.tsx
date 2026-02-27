@@ -7,7 +7,7 @@ import { Cake, FileEdit, Clock, Tag, X, CalendarPlus } from 'lucide-react';
 
 interface Notification {
   id: string;
-  type: 'birthday' | 'edit-request' | 'edit_request' | 'liquidation' | 'untagging' | 'event-mention' | 'event-invite';
+  type: 'birthday' | 'edit-request' | 'edit_request' | 'cest_edit_request' | 'liquidation' | 'untagging' | 'event-mention' | 'event-invite';
   title: string;
   message: string;
   time: string;
@@ -44,6 +44,8 @@ const getNotificationIcon = (type: Notification['type'], size: 'sm' | 'md' = 'sm
       return <FileEdit className={`${className} text-blue-500`} />;
     case 'edit_request':
       return <FileEdit className={`${className} text-orange-500`} />;
+    case 'cest_edit_request':
+      return <FileEdit className={`${className} text-amber-600`} />;
     case 'liquidation':
       return <Clock className={`${className} text-orange-500`} />;
     case 'untagging':
@@ -65,6 +67,8 @@ const getNotificationBgColor = (type: Notification['type']) => {
       return 'bg-blue-50';
     case 'edit_request':
       return 'bg-orange-50';
+    case 'cest_edit_request':
+      return 'bg-amber-50';
     case 'liquidation':
       return 'bg-orange-50';
     case 'untagging':
@@ -86,6 +90,8 @@ const getNotificationBorderColor = (type: Notification['type']) => {
       return 'border-l-blue-500';
     case 'edit_request':
       return 'border-l-orange-500';
+    case 'cest_edit_request':
+      return 'border-l-amber-600';
     case 'liquidation':
       return 'border-l-orange-500';
     case 'untagging':
@@ -99,7 +105,7 @@ const getNotificationBorderColor = (type: Notification['type']) => {
   }
 };
 
-// Render toast icon - profile picture for event-mention and edit_request, otherwise standard icon
+// Render toast icon - profile picture for event-mention, edit_request, and cest_edit_request, otherwise standard icon
 const renderToastIcon = (notification: ToastNotification) => {
   if (notification.type === 'event-mention' || notification.type === 'event-invite' || notification.type === 'edit_request') {
     const borderColor = notification.type === 'edit_request' ? 'border-[#f57c00]' : notification.type === 'event-invite' ? 'border-green-500' : 'border-[#00AEEF]';
@@ -435,7 +441,7 @@ export default function NotificationDropdown() {
       }
     }
 
-    // Handle edit_request notification
+    // Handle edit_request notification (SETUP projects)
     if (notification.type === 'edit_request' && notification.eventId) {
       setIsOpen(false);
       const projectPath = `/setup/${notification.eventId}`;
@@ -452,6 +458,36 @@ export default function NotificationDropdown() {
           router.push(projectPath);
         } else {
           const event = new CustomEvent('openEditRequestModal', {
+            detail: {
+              projectId: notification.eventId,
+              requesterId: notification.bookedByUserId
+            }
+          });
+          window.dispatchEvent(event);
+        }
+      } else {
+        // This is a response notification sent to the requestor - just navigate to project
+        router.push(projectPath);
+      }
+    }
+
+    // Handle cest_edit_request notification (CEST projects)
+    if (notification.type === 'cest_edit_request' && notification.eventId) {
+      setIsOpen(false);
+      const projectPath = `/cest/${notification.eventId}`;
+
+      // Only open Edit Permission Modal for "Edit Access Request" (sent to owner)
+      // For "Edit Access Approved/Declined/Revoked" (sent to requestor), just navigate to project
+      const isRequestToOwner = notification.title === 'Edit Access Request';
+
+      if (isRequestToOwner) {
+        // This is a request notification sent to the owner - open the modal
+        if (pathname !== projectPath) {
+          sessionStorage.setItem('pendingCestEditRequestModal', notification.eventId);
+          sessionStorage.setItem('pendingCestEditRequestUserId', notification.bookedByUserId || '');
+          router.push(projectPath);
+        } else {
+          const event = new CustomEvent('openCestEditRequestModal', {
             detail: {
               projectId: notification.eventId,
               requesterId: notification.bookedByUserId
@@ -495,7 +531,7 @@ export default function NotificationDropdown() {
       }
     }
 
-    // Handle edit_request notification
+    // Handle edit_request notification (SETUP projects)
     if (notification.type === 'edit_request' && notification.eventId) {
       const projectPath = `/setup/${notification.eventId}`;
 
@@ -523,9 +559,38 @@ export default function NotificationDropdown() {
         router.push(projectPath);
       }
     }
+
+    // Handle cest_edit_request notification (CEST projects)
+    if (notification.type === 'cest_edit_request' && notification.eventId) {
+      const projectPath = `/cest/${notification.eventId}`;
+
+      // Only open Edit Permission Modal for "Edit Access Request" (sent to owner)
+      // For "Edit Access Approved/Declined/Revoked" (sent to requestor), just navigate to project
+      const isRequestToOwner = notification.title === 'Edit Access Request';
+
+      if (isRequestToOwner) {
+        // This is a request notification sent to the owner - open the modal
+        if (pathname !== projectPath) {
+          sessionStorage.setItem('pendingCestEditRequestModal', notification.eventId);
+          sessionStorage.setItem('pendingCestEditRequestUserId', notification.bookedByUserId || '');
+          router.push(projectPath);
+        } else {
+          const event = new CustomEvent('openCestEditRequestModal', {
+            detail: {
+              projectId: notification.eventId,
+              requesterId: notification.bookedByUserId
+            }
+          });
+          window.dispatchEvent(event);
+        }
+      } else {
+        // This is a response notification sent to the requestor - just navigate to project
+        router.push(projectPath);
+      }
+    }
   }, [pathname, router, closeToast]);
 
-  // Render notification icon - profile picture for event-mention and edit_request, otherwise standard icon
+  // Render notification icon - profile picture for event-mention, edit_request, and cest_edit_request, otherwise standard icon
   const renderNotificationIcon = (notification: Notification, size: 'sm' | 'md' = 'sm') => {
     if (notification.type === 'event-mention' || notification.type === 'event-invite' || notification.type === 'edit_request') {
       const imgSize = size === 'sm' ? 'w-10 h-10' : 'w-10 h-10';
