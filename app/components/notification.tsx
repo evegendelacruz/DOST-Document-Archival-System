@@ -7,7 +7,7 @@ import { Cake, FileEdit, Clock, Tag, X, CalendarPlus } from 'lucide-react';
 
 interface Notification {
   id: string;
-  type: 'birthday' | 'edit-request' | 'edit_request' | 'liquidation' | 'untagging' | 'event-mention' | 'event-invite';
+  type: 'birthday' | 'edit-request' | 'edit_request' | 'cest_edit_request' | 'liquidation' | 'untagging' | 'event-mention' | 'event-invite';
   title: string;
   message: string;
   time: string;
