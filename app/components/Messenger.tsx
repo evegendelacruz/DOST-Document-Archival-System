@@ -173,10 +173,10 @@ function ChatWindow({
   };
 
   return (
-    <div className="flex flex-col bg-white rounded-t-xl shadow-[0_-4px_24px_rgba(0,0,0,0.12)] border border-b-0 border-gray-200 w-[300px] overflow-hidden">
+    <div className="flex flex-col bg-white rounded-t-xl shadow-[0_-4px_24px_rgba(0,0,0,0.12)] border border-b-0 border-gray-200 w-[300px] overflow-hidden max-h-[calc(100vh-4rem)]">
       {/* Header */}
       <div
-        className={`flex items-center gap-2 px-3 py-2.5 border-b border-gray-100 cursor-pointer select-none transition-colors ${
+        className={`flex items-center gap-2 px-3 py-2.5 border-b border-gray-100 cursor-pointer select-none transition-colors flex-shrink-0 ${
           tabUnread > 0 ? 'bg-cyan-50 hover:bg-cyan-100' : 'bg-white hover:bg-gray-50'
         }`}
         onClick={onMinimize}
@@ -211,7 +211,7 @@ function ChatWindow({
       {/* Body */}
       {!minimized && (
         <>
-          <div className="flex-1 overflow-y-auto p-3 space-y-1 h-[280px]">
+          <div className="overflow-y-auto p-3 space-y-1 h-[280px] flex-shrink-0">
             {messages.length === 0 ? (
               <p className="text-center text-gray-400 text-xs mt-10">No messages yet. Say hi! 👋</p>
             ) : (
@@ -242,7 +242,7 @@ function ChatWindow({
           </div>
 
           {/* Input */}
-          <div className="flex items-center gap-2 px-3 py-2 border-t border-gray-100">
+          <div className="flex items-center gap-2 px-3 py-2 border-t border-gray-100 flex-shrink-0">
             <input
               ref={inputRef}
               value={input}

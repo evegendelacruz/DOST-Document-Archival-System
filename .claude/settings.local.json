@@ -11,8 +11,10 @@
       "Bash(grep:*)",
       "Bash(npx next build:*)",
       "Bash(npm run build:*)",
-      "Bash(npm run lint:*)",
-      "Bash(git checkout:*)"
+      "Bash(tail:*)",
+      "Bash(npm view:*)",
+      "Bash(git add:*)",
+      "Bash(npm install:*)"
     ]
   }
 }
