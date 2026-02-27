@@ -38,6 +38,7 @@ interface UserPermissions {
 interface BookingFormData {
   eventTitle: string;
   eventDate: string;
+  eventTime: string;
   location: string;
   bookedBy: string;
   bookedById: string;
@@ -61,10 +62,16 @@ interface StaffUser {
   profileImageUrl: string | null;
 }
 
+interface InviteStatus {
+  userId: string;
+  status: 'pending' | 'accepted' | 'declined';
+}
+
 interface CalendarEvent {
   id: string;
   title: string;
   date: string;
+  time?: string | null;
   location: string;
   bookedBy: string;
   bookedById: string | null;
@@ -78,6 +85,7 @@ interface CalendarEvent {
   staffInvolvedIds: string[];
   staffInvolvedNames?: string;
   staffInvolvedUsers?: StaffUser[];
+  inviteStatuses?: InviteStatus[];
   createdAt?: string;
 }
 
@@ -137,10 +145,11 @@ export default function DashboardPage() {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [permissions, setPermissions] = useState<UserPermissions | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
-  const [allUsers, setAllUsers] = useState<{id: string; fullName: string; profileImageUrl: string | null}[]>([]);
+  const [allUsers, setAllUsers] = useState<{id: string; fullName: string; profileImageUrl: string | null; birthday: string | null}[]>([]);
   const [bookingForm, setBookingForm] = useState<BookingFormData>({
     eventTitle: '',
     eventDate: '',
+    eventTime: '',
     location: '',
     bookedBy: '',
     bookedById: '',
@@ -364,6 +373,7 @@ export default function DashboardPage() {
       body: JSON.stringify({
         title: bookingForm.eventTitle,
         date: bookingForm.eventDate,
+        time: bookingForm.eventTime || undefined,
         location: bookingForm.location,
         bookedBy: currentUser?.fullName || bookingForm.bookedBy || 'N/A',
         bookedById: currentUser?.id || undefined,
@@ -390,6 +400,7 @@ export default function DashboardPage() {
     setBookingForm({
       eventTitle: '',
       eventDate: '',
+      eventTime: '',
       location: '',
       bookedBy: '',
       bookedById: '',
@@ -453,6 +464,24 @@ export default function DashboardPage() {
     const dateB = new Date(b.date);
     return dateA.getTime() - dateB.getTime();
   });
+
+  // Birthday helpers — birthday is now a plain "YYYY-MM-DD" string from the API
+  // (formatted server-side in Asia/Manila time), so no Date object needed.
+  const parseBirthday = (birthday: string) => {
+    const [, m, d] = birthday.split('-').map(Number);
+    return { month: m - 1, day: d }; // month is 0-indexed to match currentMonth
+  };
+
+  const getBirthdaysForDate = (month: number, day: number) =>
+    allUsers.filter(u => {
+      if (!u.birthday) return false;
+      const b = parseBirthday(u.birthday);
+      return b.month === month && b.day === day;
+    });
+
+  const birthdaysThisMonth = allUsers
+    .filter(u => u.birthday && parseBirthday(u.birthday).month === currentMonth)
+    .sort((a, b) => parseBirthday(a.birthday!).day - parseBirthday(b.birthday!).day);
 
   const handleServiceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (e.target.value === '__add_new__') {
@@ -520,6 +549,7 @@ export default function DashboardPage() {
           body: JSON.stringify({
             title: editingEvent.title,
             date: editingEvent.date,
+            time: editingEvent.time || undefined,
             location: editingEvent.location,
             bookedBy: editingEvent.bookedBy,
             bookedById: editingEvent.bookedById || undefined,
@@ -633,6 +663,10 @@ export default function DashboardPage() {
                   <div className="w-3 h-3 rounded-sm bg-[#00AEEF]"></div>
                   <span className="text-xs text-[#666]">Today</span>
                 </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm bg-pink-200"></div>
+                  <span className="text-xs text-[#666]">Birthday</span>
+                </div>
               </div>
               <div className="w-full">
                 <div className="grid grid-cols-7 mb-2.5">
@@ -643,6 +677,10 @@ export default function DashboardPage() {
                <div className="grid grid-cols-7 border border-[#e0e0e0] border-r-0 border-b-0">
                 {calendarDays.map((day, index) => {
                   const dayEvents = day.currentMonth ? getEventsForDate(currentYear, currentMonth, day.day, events) : [];
+                  const dayBirthdays = day.currentMonth ? getBirthdaysForDate(currentMonth, day.day) : [];
+                  const totalItems = dayEvents.length + dayBirthdays.length;
+                  const eventSlots = Math.min(dayEvents.length, 2);
+                  const bdaySlots = Math.min(dayBirthdays.length, 2 - eventSlots);
                   const isTodayDate = day.currentMonth && isToday(currentYear, currentMonth, day.day);
                   return (
                     <div
@@ -659,7 +697,7 @@ export default function DashboardPage() {
                         </span>
                       )}
                       <div className="mt-1 flex flex-col gap-0.5">
-                        {dayEvents.slice(0, 2).map((event) => (
+                        {dayEvents.slice(0, eventSlots).map((event) => (
                           <div
                             key={event.id}
                             onClick={() => handleEventClick(event)}
@@ -692,8 +730,18 @@ export default function DashboardPage() {
                             </div>
                           </div>
                         ))}
-                        {dayEvents.length > 2 && (
-                          <span className="text-[9px] text-[#999] pl-1">+{dayEvents.length - 2} more</span>
+                        {dayBirthdays.slice(0, bdaySlots).map((u) => (
+                          <div
+                            key={`bday-${u.id}`}
+                            className="flex items-center gap-1 px-1 py-0.5 rounded text-[10px] truncate bg-pink-100"
+                            title={`🎂 ${u.fullName}'s Birthday`}
+                          >
+                            <span className="shrink-0">🎂</span>
+                            <span className="truncate text-pink-700 font-medium">{u.fullName.split(' ')[0]}</span>
+                          </div>
+                        ))}
+                        {totalItems > 2 && (
+                          <span className="text-[9px] text-[#999] pl-1">+{totalItems - 2} more</span>
                         )}
                       </div>
                     </div>
@@ -713,6 +761,30 @@ export default function DashboardPage() {
               <div className="bg-white rounded-[15px] p-5 shadow-[0_2px_10px_rgba(0,0,0,0.05)] flex flex-col overflow-hidden h-[580px]">
                 <h3 className="text-xl font-bold text-primary mb-4 text-center shrink-0">Upcoming Events</h3>
                 <div className="flex flex-col gap-3 overflow-y-auto flex-1 pr-1">
+                {birthdaysThisMonth.length > 0 && (
+                  <div className="mb-1">
+                    <p className="text-xs font-semibold text-pink-500 mb-1.5 flex items-center gap-1">
+                      🎂 Birthdays in {monthNames[currentMonth]}
+                    </p>
+                    <div className="flex flex-col gap-1.5">
+                      {birthdaysThisMonth.map(u => (
+                        <div key={u.id} className="flex items-center gap-2 bg-pink-50 border-l-4 border-pink-400 rounded-r-lg px-3 py-2">
+                          {u.profileImageUrl ? (
+                            <img src={u.profileImageUrl} alt={u.fullName} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                          ) : (
+                            <Icon icon="mdi:account-circle" width={28} className="text-pink-400 shrink-0" />
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-pink-700 truncate">{u.fullName}</p>
+                            <p className="text-[10px] text-pink-400">
+                              {(() => { const b = parseBirthday(u.birthday!); return new Date(2000, b.month, b.day).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }); })()}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {sortedEvents.length === 0 ? (
                   <p className="text-sm text-[#999] italic">No upcoming events yet...</p>
                 ) : (
@@ -728,7 +800,7 @@ export default function DashboardPage() {
                         </span>
                       </div>
                       <div className="text-[11px] text-[#666] leading-relaxed space-y-0.5">
-                        <p><span className="font-semibold text-[#333]">Event Date:</span> {new Date(event.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                        <p><span className="font-semibold text-[#333]">Event Date:</span> {new Date(event.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}{event.time && <span className="text-gray-500"> · {event.time}</span>}</p>
                         <p><span className="font-semibold text-[#333]">Location:</span> {event.location}</p>
                         <div className="flex items-center gap-1">
                           <span className="font-semibold text-[#333]">Booked by:</span>
@@ -993,16 +1065,29 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-[#333] mb-1">
-                    Location<span className="text-red-500">*</span>
+                    Event Time (optional)
                   </label>
                   <input
-                    type="text"
-                    name="location"
-                    value={bookingForm.location}
+                    type="time"
+                    name="eventTime"
+                    value={bookingForm.eventTime}
                     onChange={handleBookingInputChange}
                     className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#333] mb-1">
+                  Location<span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="location"
+                  value={bookingForm.location}
+                  onChange={handleBookingInputChange}
+                  className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -1122,6 +1207,12 @@ export default function DashboardPage() {
                 <div>
                   <p className="font-semibold text-[#333]">Event Date</p>
                   <p className="text-[#666]">{new Date(selectedEvent.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                  {selectedEvent.time && (
+                    <p className="text-[#666] text-xs mt-0.5 flex items-center gap-1">
+                      <Icon icon="mdi:clock-outline" width={12} height={12} className="text-primary" />
+                      {selectedEvent.time}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -1163,7 +1254,7 @@ export default function DashboardPage() {
                 <div>
                   <p className="font-semibold text-[#333]">Booked Personnel</p>
                   {selectedEvent.bookedPersonnelUser ? (
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-1.5 mt-1">
                       <div className="flex items-center gap-1.5 bg-gray-100 rounded-full px-2 py-1">
                         {selectedEvent.bookedPersonnelUser.profileImageUrl ? (
                           <img src={selectedEvent.bookedPersonnelUser.profileImageUrl} alt={selectedEvent.bookedPersonnelUser.fullName} className="w-5 h-5 rounded-full object-cover" />
@@ -1172,6 +1263,12 @@ export default function DashboardPage() {
                         )}
                         <span className="text-xs text-[#333]">{selectedEvent.bookedPersonnelUser.fullName}</span>
                       </div>
+                      {(() => {
+                        const personnelStatus = selectedEvent.inviteStatuses?.find(s => s.userId === selectedEvent.bookedPersonnelId)?.status;
+                        if (personnelStatus === 'accepted') return <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">accepted</span>;
+                        if (personnelStatus === 'declined') return <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">declined</span>;
+                        return null;
+                      })()}
                     </div>
                   ) : (
                     <p className="text-[#666]">{selectedEvent.bookedPersonnel}</p>
@@ -1183,17 +1280,24 @@ export default function DashboardPage() {
                 <div>
                   <p className="font-semibold text-[#333]">Staff Involved</p>
                   {selectedEvent.staffInvolvedUsers && selectedEvent.staffInvolvedUsers.length > 0 ? (
-                    <div className="flex items-center gap-2 flex-wrap mt-1">
-                      {selectedEvent.staffInvolvedUsers.map((staff) => (
-                        <div key={staff.id} className="flex items-center gap-1.5 bg-gray-100 rounded-full px-2 py-1">
-                          {staff.profileImageUrl ? (
-                            <img src={staff.profileImageUrl} alt={staff.fullName} className="w-5 h-5 rounded-full object-cover" />
-                          ) : (
-                            <Icon icon="mdi:account-circle" width={20} height={20} className="text-gray-400" />
-                          )}
-                          <span className="text-xs text-[#333]">{staff.fullName}</span>
-                        </div>
-                      ))}
+                    <div className="flex flex-col gap-1.5 mt-1">
+                      {selectedEvent.staffInvolvedUsers.map((staff) => {
+                        const inviteStatus = selectedEvent.inviteStatuses?.find(s => s.userId === staff.id)?.status;
+                        return (
+                          <div key={staff.id} className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 bg-gray-100 rounded-full px-2 py-1">
+                              {staff.profileImageUrl ? (
+                                <img src={staff.profileImageUrl} alt={staff.fullName} className="w-5 h-5 rounded-full object-cover" />
+                              ) : (
+                                <Icon icon="mdi:account-circle" width={20} height={20} className="text-gray-400" />
+                              )}
+                              <span className="text-xs text-[#333]">{staff.fullName}</span>
+                            </div>
+                            {inviteStatus === 'accepted' && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">accepted</span>}
+                            {inviteStatus === 'declined' && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">declined</span>}
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <p className="text-[#666]">{selectedEvent.staffInvolvedNames || selectedEvent.staffInvolved}</p>
@@ -1256,14 +1360,24 @@ export default function DashboardPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#333] mb-1">Location</label>
+                  <label className="block text-xs font-medium text-[#333] mb-1">Event Time (optional)</label>
                   <input
-                    type="text"
-                    value={editingEvent.location}
-                    onChange={(e) => setEditingEvent({ ...editingEvent, location: e.target.value })}
+                    type="time"
+                    value={editingEvent.time || ''}
+                    onChange={(e) => setEditingEvent({ ...editingEvent, time: e.target.value || null })}
                     className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#333] mb-1">Location</label>
+                <input
+                  type="text"
+                  value={editingEvent.location}
+                  onChange={(e) => setEditingEvent({ ...editingEvent, location: e.target.value })}
+                  className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">

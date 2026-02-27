@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Icon } from '@iconify/react';
+import { QRCodeSVG } from 'qrcode.react';
 import DashboardLayout from '../../components/DashboardLayout';
 
 interface CestProject {
@@ -96,8 +97,19 @@ function CestDocumentTable({
     date: string;
   } | null>(null);
   const [fileListModal, setFileListModal] = useState<string | null>(null);
+  const [qrPickModal, setQrPickModal] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const targetItemIdRef = useRef<string | null>(null);
+
+  // QR modal state
+  const [qrDoc, setQrDoc] = useState<ProjectDocument | null>(null);
+  const [qrPinInput, setQrPinInput] = useState('');
+  const [qrPinSaved, setQrPinSaved] = useState(false);
+  const [qrPinError, setQrPinError] = useState('');
+  const [qrSaving, setQrSaving] = useState(false);
+  const [qrViewUrl, setQrViewUrl] = useState('');
+  const [qrCopied, setQrCopied] = useState(false);
+  const [qrDocHasPin, setQrDocHasPin] = useState(false);
 
   const getDocsForItem = (templateItemId: string): ProjectDocument[] => {
     return documents.filter(d => d.templateItemId === templateItemId);
@@ -212,6 +224,66 @@ function CestDocumentTable({
     }
   };
 
+  const openQrModal = async (doc: ProjectDocument) => {
+    setQrDoc(doc);
+    setQrViewUrl('');
+    setQrPinInput('');
+    setQrPinSaved(false);
+    setQrPinError('');
+    setQrCopied(false);
+
+    // Auto-detect local network IP from server, fall back to current origin
+    try {
+      const ipRes = await fetch('/api/local-ip');
+      if (ipRes.ok) {
+        const { origin } = await ipRes.json();
+        setQrViewUrl(`${origin}/view-doc/${doc.id}`);
+      } else {
+        setQrViewUrl(`${window.location.origin}/view-doc/${doc.id}`);
+      }
+    } catch {
+      setQrViewUrl(`${window.location.origin}/view-doc/${doc.id}`);
+    }
+
+    // Check if doc already has a PIN
+    try {
+      const res = await fetch(`/api/view-doc/${doc.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setQrDocHasPin(data.hasPin);
+      }
+    } catch { /* ignore */ }
+  };
+
+  const handleSavePin = async () => {
+    if (!qrDoc) return;
+    if (qrPinInput && (!/^\d+$/.test(qrPinInput) || qrPinInput.length !== 4)) {
+      setQrPinError('PIN must be exactly 4 digits');
+      return;
+    }
+    setQrSaving(true);
+    setQrPinError('');
+    try {
+      const res = await fetch(`/api/view-doc/${qrDoc.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: qrPinInput || null }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        setQrPinError(err.error || 'Failed to save PIN');
+        return;
+      }
+      setQrDocHasPin(!!qrPinInput);
+      setQrPinSaved(true);
+      setTimeout(() => setQrPinSaved(false), 2500);
+    } catch {
+      setQrPinError('Failed to save PIN');
+    } finally {
+      setQrSaving(false);
+    }
+  };
+
   return (
     <>
     <div className="bg-white rounded-xl mb-8 shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
@@ -317,6 +389,23 @@ function CestDocumentTable({
                       </button>
                       <button
                         className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                          hasFile ? 'bg-[#00AEEF] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                        }`}
+                        title="Generate QR Code"
+                        onClick={() => {
+                          if (!hasFile) return;
+                          if (allDocsForItem.length === 1) {
+                            openQrModal(allDocsForItem[0]);
+                          } else {
+                            setQrPickModal(templateItemId);
+                          }
+                        }}
+                        disabled={!hasFile}
+                      >
+                        <Icon icon="mdi:qrcode" width={14} height={14} />
+                      </button>
+                      <button
+                        className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
                           hasFile ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
                         }`}
                         title="Delete"
@@ -396,6 +485,73 @@ function CestDocumentTable({
                 onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    })()}
+
+    {/* QR Pick File Modal — shown when multiple files exist and user clicks QR */}
+    {qrPickModal && (() => {
+      const pickDocs = getDocsForItem(qrPickModal);
+      return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]" onClick={() => setQrPickModal(null)}>
+          <div className="bg-white rounded-xl w-full max-w-[420px] shadow-[0_12px_40px_rgba(0,0,0,0.25)] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div style={{ background: 'linear-gradient(135deg, #00AEEF, #0077b6)', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Icon icon="mdi:qrcode" width={20} height={20} color="white" />
+                <div>
+                  <p style={{ color: 'white', fontSize: '13px', fontWeight: 700, margin: 0 }}>Select File for QR Code</p>
+                  <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '11px', margin: 0 }}>Choose which file to generate a QR for</p>
+                </div>
+              </div>
+              <button onClick={() => setQrPickModal(null)} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '6px', color: 'white', width: '28px', height: '28px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon icon="mdi:close" width={16} height={16} />
+              </button>
+            </div>
+            {/* File list */}
+            <div style={{ padding: '12px 16px', maxHeight: '360px', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {pickDocs.map((d) => {
+                  const ext = d.fileName.split('.').pop()?.toUpperCase() || 'FILE';
+                  const extColor = ext === 'PDF' ? '#e53935' : ext === 'DOCX' || ext === 'DOC' ? '#1565c0' : ext === 'XLSX' || ext === 'XLS' ? '#2e7d32' : ext === 'PNG' || ext === 'JPG' || ext === 'JPEG' ? '#f57c00' : '#607d8b';
+                  return (
+                    <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#f9fafb', border: '1px solid #eee', borderRadius: '8px', padding: '10px 12px' }}>
+                      <div style={{ flexShrink: 0, width: '36px', height: '42px', borderRadius: '4px', backgroundColor: extColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ color: '#fff', fontSize: '10px', fontWeight: 700 }}>{ext}</span>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: '13px', fontWeight: 500, color: '#333', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.fileName}>{d.fileName}</p>
+                        <span style={{ fontSize: '11px', color: '#999' }}>
+                          {new Date(d.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => { setQrPickModal(null); openQrModal(d); }}
+                        title="Generate QR for this file"
+                        style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '5px', background: '#00AEEF', border: 'none', borderRadius: '7px', color: 'white', padding: '6px 10px', cursor: 'pointer', fontSize: '11px', fontWeight: 600, transition: 'opacity 0.15s' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.82')}
+                        onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+                      >
+                        <Icon icon="mdi:qrcode" width={14} height={14} />
+                        QR
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            {/* Footer */}
+            <div style={{ padding: '12px 16px', borderTop: '1px solid #eee', textAlign: 'right' }}>
+              <button
+                onClick={() => setQrPickModal(null)}
+                style={{ background: '#fff', color: '#333', border: '1px solid #d0d0d0', borderRadius: '6px', padding: '8px 24px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#f5f5f5')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
+              >
+                Cancel
               </button>
             </div>
           </div>
@@ -578,6 +734,136 @@ function CestDocumentTable({
                 Delete
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* QR Code Modal */}
+    {qrDoc && (
+      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[1300]" onClick={() => setQrDoc(null)}>
+        <div className="bg-white rounded-2xl w-full max-w-[440px] shadow-[0_16px_48px_rgba(0,0,0,0.3)] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          {/* Header */}
+          <div style={{ background: 'linear-gradient(135deg, #00AEEF, #0077b6)', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon icon="mdi:qrcode" width={20} height={20} color="white" />
+              </div>
+              <div>
+                <p style={{ color: 'white', fontSize: '14px', fontWeight: 700, margin: 0 }}>QR Code Share</p>
+                <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '11px', margin: 0 }}>Scan to view this document</p>
+              </div>
+            </div>
+            <button onClick={() => setQrDoc(null)} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '6px', color: 'white', width: '28px', height: '28px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>
+              <Icon icon="mdi:close" width={16} height={16} />
+            </button>
+          </div>
+
+          <div style={{ padding: '20px 24px' }}>
+            {/* File name */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#f5f7fa', borderRadius: '10px', padding: '10px 12px', marginBottom: '16px' }}>
+              <Icon icon="mdi:file-document-outline" width={18} height={18} color="#00AEEF" />
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#333', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{qrDoc.fileName}</span>
+              {qrDocHasPin && (
+                <span style={{ fontSize: '10px', fontWeight: 700, background: '#e8f5e9', color: '#2e7d32', borderRadius: '20px', padding: '2px 8px', flexShrink: 0 }}>
+                  PIN SET
+                </span>
+              )}
+            </div>
+
+            {/* QR Code */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
+              <div style={{ padding: '14px', background: 'white', borderRadius: '12px', border: '1px solid #e0e0e0', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', width: '208px', height: '208px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {qrViewUrl ? (
+                  <QRCodeSVG
+                    value={qrViewUrl}
+                    size={180}
+                    level="M"
+                    bgColor="#ffffff"
+                    fgColor="#0f172a"
+                  />
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <Icon icon="mdi:loading" width={28} height={28} color="#00AEEF" className="animate-spin" />
+                    <span style={{ fontSize: '11px', color: '#aaa' }}>Detecting IP...</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* URL row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '8px 12px', marginBottom: '16px' }}>
+              <Icon icon="mdi:link-variant" width={14} height={14} color="#0284c7" />
+              <span style={{ flex: 1, fontSize: '11px', color: '#0284c7', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{qrViewUrl}</span>
+              <button
+                onClick={() => { navigator.clipboard.writeText(qrViewUrl); setQrCopied(true); setTimeout(() => setQrCopied(false), 2000); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: qrCopied ? '#2e7d32' : '#0284c7', display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', fontWeight: 600, flexShrink: 0 }}
+              >
+                <Icon icon={qrCopied ? 'mdi:check' : 'mdi:content-copy'} width={14} height={14} />
+                {qrCopied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+
+            {/* PIN setup */}
+            <div style={{ background: '#fafafa', border: '1px solid #eee', borderRadius: '10px', padding: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+                <Icon icon="mdi:lock-outline" width={15} height={15} color="#555" />
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#333' }}>PIN Protection</span>
+                <span style={{ fontSize: '10px', color: '#888', marginLeft: 'auto' }}>4 digits Pin</span>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  value={qrPinInput}
+                  onChange={(e) => { setQrPinInput(e.target.value.replace(/\D/g, '').slice(0, 4)); setQrPinError(''); setQrPinSaved(false); }}
+                  placeholder={qrDocHasPin ? '••••  (change PIN)' : 'Set a 4-digit PIN'}
+                  maxLength={4}
+                  style={{ flex: 1, padding: '9px 12px', border: `1px solid ${qrPinError ? '#e53935' : '#ddd'}`, borderRadius: '8px', fontSize: '13px', outline: 'none', background: 'white', color: '#333' }}
+                />
+                <button
+                  onClick={handleSavePin}
+                  disabled={qrSaving}
+                  style={{ padding: '9px 14px', background: qrPinSaved ? '#2e7d32' : '#00AEEF', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px', transition: 'background 0.2s', opacity: qrSaving ? 0.6 : 1 }}
+                >
+                  {qrSaving ? <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" /> : qrPinSaved ? <Icon icon="mdi:check" width={14} height={14} /> : <Icon icon="mdi:content-save-outline" width={14} height={14} />}
+                  {qrPinSaved ? 'Saved!' : 'Save'}
+                </button>
+              </div>
+              {qrPinError && (
+                <p style={{ fontSize: '11px', color: '#e53935', margin: '6px 0 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Icon icon="mdi:alert-circle-outline" width={12} height={12} />
+                  {qrPinError}
+                </p>
+              )}
+              {qrDocHasPin && !qrPinInput && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px' }}>
+                  <Icon icon="mdi:shield-check" width={12} height={12} color="#2e7d32" />
+                  <span style={{ fontSize: '11px', color: '#2e7d32' }}>This document is PIN protected</span>
+                  <button
+                    onClick={async () => { setQrPinInput(''); await fetch(`/api/view-doc/${qrDoc.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: null }) }); setQrDocHasPin(false); }}
+                    style={{ marginLeft: 'auto', fontSize: '10px', color: '#e53935', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    Remove PIN
+                  </button>
+                </div>
+              )}
+              {!qrDocHasPin && (
+                <p style={{ fontSize: '11px', color: '#aaa', margin: '6px 0 0' }}>Leave empty to share without a PIN</p>
+              )}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div style={{ padding: '12px 24px', borderTop: '1px solid #eee', display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              onClick={() => setQrDoc(null)}
+              style={{ background: '#fff', color: '#333', border: '1px solid #d0d0d0', borderRadius: '8px', padding: '8px 24px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = '#f5f5f5')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = '#fff')}
+            >
+              Done
+            </button>
           </div>
         </div>
       </div>

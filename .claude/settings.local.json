@@ -12,7 +12,8 @@
       "Bash(npx next build:*)",
       "Bash(npm run build:*)",
       "Bash(tail:*)",
-      "Bash(npm view:*)"
+      "Bash(npm view:*)",
+      "Bash(git add:*)"
     ]
   }
 }
