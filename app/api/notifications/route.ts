@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
       title: data.title,
       message: data.message,
       eventId: data.eventId || null,
+      inviteStatus: data.inviteStatus || null,
       bookedByUserId: data.bookedByUserId || null,
       bookedByName: data.bookedByName || null,
       bookedByProfileUrl: data.bookedByProfileUrl || null,

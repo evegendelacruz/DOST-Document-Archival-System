@@ -14,6 +14,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const updateData: Record<string, unknown> = {};
   if (data.title !== undefined) updateData.title = data.title;
   if (data.date !== undefined) updateData.date = data.date;
+  if (data.time !== undefined) updateData.time = data.time;
   if (data.location !== undefined) updateData.location = data.location;
   if (data.bookedBy !== undefined) updateData.bookedBy = data.bookedBy;
   if (data.bookedById) updateData.bookedById = data.bookedById;
@@ -90,16 +91,24 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           bookerInfo = booker;
         }
 
-        const notifications = Array.from(usersToNotify).map((recipientId: string) => ({
-          userId: recipientId,
-          type: 'event-mention',
-          title: 'Event Involved',
-          message: `${bookerInfo?.fullName || 'Someone'} added you to event: ${event.title}`,
-          eventId: event.id,
-          bookedByUserId: bookerInfo?.id,
-          bookedByName: bookerInfo?.fullName,
-          bookedByProfileUrl: bookerInfo?.profileImageUrl,
-        }));
+        const timeStr = event.time ? ` at ${event.time}` : '';
+        const dateStr = event.date ? ` on ${new Date(event.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : '';
+        const notifications = Array.from(usersToNotify).map((recipientId: string) => {
+          const isPersonnel = recipientId === newPersonnelId && !addedStaffIds.includes(recipientId);
+          return {
+            userId: recipientId,
+            type: 'event-invite',
+            title: 'Event Invitation',
+            message: isPersonnel
+              ? `${bookerInfo?.fullName || 'Someone'} assigned you to: ${event.title}${dateStr}${timeStr}`
+              : `${bookerInfo?.fullName || 'Someone'} invited you to: ${event.title}${dateStr}${timeStr}`,
+            eventId: event.id,
+            inviteStatus: 'pending',
+            bookedByUserId: bookerInfo?.id,
+            bookedByName: bookerInfo?.fullName,
+            bookedByProfileUrl: bookerInfo?.profileImageUrl,
+          };
+        });
 
         await prisma.notification.createMany({
           data: notifications,

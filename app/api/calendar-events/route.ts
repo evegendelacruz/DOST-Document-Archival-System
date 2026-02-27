@@ -22,19 +22,44 @@ export async function GET() {
 
   const userMap = new Map(allUsers.map(u => [u.id, u]));
 
-  // Add user details to each event
-  const eventsWithUsers = events.map(event => ({
-    ...event,
-    staffInvolvedNames: (event.staffInvolvedIds || [])
-      .map(id => userMap.get(id)?.fullName)
-      .filter(Boolean)
-      .join(', ') || event.staffInvolved || 'N/A',
-    staffInvolvedUsers: (event.staffInvolvedIds || [])
-      .map(id => userMap.get(id))
-      .filter(Boolean),
-    bookedByUser: event.bookedById ? userMap.get(event.bookedById) || null : null,
-    bookedPersonnelUser: event.bookedPersonnelId ? userMap.get(event.bookedPersonnelId) || null : null,
-  }));
+  // Fetch invite statuses for all events from notifications
+  const eventIds = events.map(e => e.id);
+  const inviteNotifs = eventIds.length > 0
+    ? await prisma.notification.findMany({
+        where: { eventId: { in: eventIds }, type: 'event-invite' },
+        select: { eventId: true, userId: true, inviteStatus: true },
+      })
+    : [];
+
+  // Build a map: eventId -> { userId -> inviteStatus }
+  const inviteStatusMap = new Map<string, Map<string, string>>();
+  for (const n of inviteNotifs) {
+    if (!n.eventId) continue;
+    if (!inviteStatusMap.has(n.eventId)) inviteStatusMap.set(n.eventId, new Map());
+    inviteStatusMap.get(n.eventId)!.set(n.userId, n.inviteStatus || 'pending');
+  }
+
+  // Add user details and attendee statuses to each event
+  const eventsWithUsers = events.map(event => {
+    const statusMap = inviteStatusMap.get(event.id) || new Map<string, string>();
+    return {
+      ...event,
+      staffInvolvedNames: (event.staffInvolvedIds || [])
+        .map(id => userMap.get(id)?.fullName)
+        .filter(Boolean)
+        .join(', ') || event.staffInvolved || 'N/A',
+      staffInvolvedUsers: (event.staffInvolvedIds || [])
+        .map(id => userMap.get(id))
+        .filter(Boolean),
+      bookedByUser: event.bookedById ? userMap.get(event.bookedById) || null : null,
+      bookedPersonnelUser: event.bookedPersonnelId ? userMap.get(event.bookedPersonnelId) || null : null,
+      // inviteStatuses: array of { userId, status } for all invited staff
+      inviteStatuses: (event.staffInvolvedIds || []).map(id => ({
+        userId: id,
+        status: statusMap.get(id) || 'pending',
+      })),
+    };
+  });
 
   return NextResponse.json(eventsWithUsers);
 }
@@ -44,27 +69,26 @@ export async function POST(req: NextRequest) {
     const data = await req.json();
     const userId = getUserIdFromRequest(req);
 
-    // Extract staffInvolvedIds before creating
     const staffInvolvedIds: string[] = data.staffInvolvedIds || [];
 
-    // Build event data
     const eventData = {
       title: data.title as string,
       date: data.date as string,
+      time: data.time as string | undefined,
       location: data.location as string,
       bookedBy: data.bookedBy as string | undefined,
       bookedService: data.bookedService as string | undefined,
       bookedPersonnel: data.bookedPersonnel as string | undefined,
       priority: data.priority as string | undefined,
       staffInvolved: data.staffInvolved as string | undefined,
-      staffInvolvedIds: (data.staffInvolvedIds || []) as string[],
+      staffInvolvedIds: staffInvolvedIds,
       bookedById: data.bookedById ? (data.bookedById as string) : undefined,
       bookedPersonnelId: data.bookedPersonnelId ? (data.bookedPersonnelId as string) : undefined,
     };
 
     const event = await prisma.calendarEvent.create({ data: eventData });
 
-    // Get user details for response (staff + bookedBy + bookedPersonnel)
+    // Fetch user details
     const userIdsToFetch = new Set<string>(staffInvolvedIds);
     if (data.bookedById) userIdsToFetch.add(data.bookedById);
     if (data.bookedPersonnelId) userIdsToFetch.add(data.bookedPersonnelId);
@@ -80,57 +104,68 @@ export async function POST(req: NextRequest) {
         select: { id: true, fullName: true, profileImageUrl: true },
       });
       const userMap = new Map(users.map(u => [u.id, u]));
-
       staffInvolvedUsers = staffInvolvedIds.map(id => userMap.get(id)).filter(Boolean) as typeof staffInvolvedUsers;
       staffInvolvedNames = staffInvolvedUsers.map(u => u.fullName).join(', ') || 'N/A';
-
-      if (data.bookedById) {
-        bookedByUser = userMap.get(data.bookedById) || null;
-      }
-      if (data.bookedPersonnelId) {
-        bookedPersonnelUser = userMap.get(data.bookedPersonnelId) || null;
-      }
+      if (data.bookedById) bookedByUser = userMap.get(data.bookedById) || null;
+      if (data.bookedPersonnelId) bookedPersonnelUser = userMap.get(data.bookedPersonnelId) || null;
     }
 
-    // Create notifications for mentioned users (non-blocking)
+    // Send event-invite notifications (non-blocking)
     try {
-      // Collect all user IDs to notify (staff involved + booked personnel)
-      const usersToNotify = new Set<string>(staffInvolvedIds);
-      if (data.bookedPersonnelId) {
-        usersToNotify.add(data.bookedPersonnelId);
+      // Both staff involved and booked personnel get invite notifications with RSVP
+      const inviteRecipients = new Set<string>(staffInvolvedIds);
+      if (data.bookedPersonnelId && !inviteRecipients.has(data.bookedPersonnelId)) {
+        inviteRecipients.add(data.bookedPersonnelId);
       }
 
-      if (usersToNotify.size > 0) {
-        let bookerInfo: { id: string; fullName: string; profileImageUrl: string | null } | null = null;
-        if (data.bookedById) {
-          const booker = await prisma.user.findUnique({
-            where: { id: data.bookedById },
-            select: { id: true, fullName: true, profileImageUrl: true },
-          });
-          bookerInfo = booker;
-        }
+      let bookerInfo: { id: string; fullName: string; profileImageUrl: string | null } | null = null;
+      if (data.bookedById) {
+        bookerInfo = await prisma.user.findUnique({
+          where: { id: data.bookedById },
+          select: { id: true, fullName: true, profileImageUrl: true },
+        });
+      }
 
-        const notifications = Array.from(usersToNotify).map((recipientId: string) => ({
+      const timeStr = data.time ? ` at ${data.time}` : '';
+      const dateStr = data.date ? ` on ${new Date(data.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : '';
+
+      const notifications: {
+        userId: string;
+        type: string;
+        title: string;
+        message: string;
+        eventId: string;
+        inviteStatus?: string;
+        bookedByUserId?: string;
+        bookedByName?: string;
+        bookedByProfileUrl?: string;
+      }[] = [];
+
+      // Invite notifications for all recipients (staff + booked personnel)
+      for (const recipientId of inviteRecipients) {
+        const isPersonnel = data.bookedPersonnelId === recipientId && !staffInvolvedIds.includes(recipientId);
+        notifications.push({
           userId: recipientId,
-          type: 'event-mention',
-          title: 'Event Involved',
-          message: `${bookerInfo?.fullName || 'Someone'} added you to event: ${event.title}`,
+          type: 'event-invite',
+          title: 'Event Invitation',
+          message: isPersonnel
+            ? `${bookerInfo?.fullName || 'Someone'} assigned you to: ${event.title}${dateStr}${timeStr}`
+            : `${bookerInfo?.fullName || 'Someone'} invited you to: ${event.title}${dateStr}${timeStr}`,
           eventId: event.id,
+          inviteStatus: 'pending',
           bookedByUserId: bookerInfo?.id,
           bookedByName: bookerInfo?.fullName,
           bookedByProfileUrl: bookerInfo?.profileImageUrl,
-        }));
-
-        await prisma.notification.createMany({
-          data: notifications,
         });
+      }
+
+      if (notifications.length > 0) {
+        await prisma.notification.createMany({ data: notifications });
       }
     } catch (notifError) {
       console.error('Failed to create notifications:', notifError);
-      // Don't fail the request if notifications fail
     }
 
-    // Log activity
     if (userId) {
       await logActivity({
         userId,
@@ -138,11 +173,23 @@ export async function POST(req: NextRequest) {
         resourceType: 'CALENDAR_EVENT',
         resourceId: event.id,
         resourceTitle: event.title,
-        details: { date: event.date, location: event.location, priority: event.priority },
+        details: { date: event.date, time: event.time, location: event.location, priority: event.priority },
       });
     }
 
-    return NextResponse.json({ ...event, staffInvolvedNames, staffInvolvedUsers, bookedByUser, bookedPersonnelUser }, { status: 201 });
+    return NextResponse.json({
+      ...event,
+      staffInvolvedNames,
+      staffInvolvedUsers,
+      bookedByUser,
+      bookedPersonnelUser,
+      inviteStatuses: [
+        ...staffInvolvedIds.map(id => ({ userId: id, status: 'pending' })),
+        ...(data.bookedPersonnelId && !staffInvolvedIds.includes(data.bookedPersonnelId)
+          ? [{ userId: data.bookedPersonnelId, status: 'pending' }]
+          : []),
+      ],
+    }, { status: 201 });
   } catch (error) {
     console.error('Failed to create calendar event:', error);
     return NextResponse.json({ error: 'Failed to create event' }, { status: 500 });

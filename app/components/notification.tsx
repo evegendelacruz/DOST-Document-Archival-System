@@ -7,12 +7,13 @@ import { Cake, FileEdit, Clock, Tag, X, CalendarPlus } from 'lucide-react';
 
 interface Notification {
   id: string;
-  type: 'birthday' | 'edit-request' | 'edit_request' | 'liquidation' | 'untagging' | 'event-mention';
+  type: 'birthday' | 'edit-request' | 'edit_request' | 'liquidation' | 'untagging' | 'event-mention' | 'event-invite';
   title: string;
   message: string;
   time: string;
   read: boolean;
   eventId?: string;
+  inviteStatus?: string;
   bookedByUserId?: string;
   bookedByName?: string;
   bookedByProfileUrl?: string;
@@ -49,6 +50,8 @@ const getNotificationIcon = (type: Notification['type'], size: 'sm' | 'md' = 'sm
       return <Tag className={`${className} text-purple-500`} />;
     case 'event-mention':
       return <CalendarPlus className={`${className} text-cyan-500`} />;
+    case 'event-invite':
+      return <CalendarPlus className={`${className} text-green-500`} />;
     default:
       return <Icon icon="mdi:bell" className={`${className} text-gray-500 transition-all duration-300 hover:text-accent hover:scale-110 active:scale-90 active:transition-all active:duration-100`} />;
   }
@@ -68,6 +71,8 @@ const getNotificationBgColor = (type: Notification['type']) => {
       return 'bg-purple-50';
     case 'event-mention':
       return 'bg-cyan-50';
+    case 'event-invite':
+      return 'bg-green-50';
     default:
       return 'bg-gray-50';
   }
@@ -87,6 +92,8 @@ const getNotificationBorderColor = (type: Notification['type']) => {
       return 'border-l-purple-500';
     case 'event-mention':
       return 'border-l-cyan-500';
+    case 'event-invite':
+      return 'border-l-green-500';
     default:
       return 'border-l-gray-500';
   }
@@ -94,8 +101,8 @@ const getNotificationBorderColor = (type: Notification['type']) => {
 
 // Render toast icon - profile picture for event-mention and edit_request, otherwise standard icon
 const renderToastIcon = (notification: ToastNotification) => {
-  if (notification.type === 'event-mention' || notification.type === 'edit_request') {
-    const borderColor = notification.type === 'edit_request' ? 'border-[#f57c00]' : 'border-[#00AEEF]';
+  if (notification.type === 'event-mention' || notification.type === 'event-invite' || notification.type === 'edit_request') {
+    const borderColor = notification.type === 'edit_request' ? 'border-[#f57c00]' : notification.type === 'event-invite' ? 'border-green-500' : 'border-[#00AEEF]';
     if (notification.bookedByProfileUrl) {
       return (
         <img
@@ -173,6 +180,8 @@ export default function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
+  const [inviteModal, setInviteModal] = useState<Notification | null>(null);
+  const [inviteResponding, setInviteResponding] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isInitialLoad = useRef(true);
   const previousNotificationIdsRef = useRef<Set<string>>(new Set());
@@ -374,8 +383,37 @@ export default function NotificationDropdown() {
     setNotifications(notifications.map((n) => ({ ...n, read: true })));
   };
 
+  // Handle invite accept/decline
+  const handleInviteResponse = async (status: 'accepted' | 'declined') => {
+    if (!inviteModal) return;
+    setInviteResponding(true);
+    try {
+      await fetch(`/api/notifications/${inviteModal.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteStatus: status, read: true }),
+      });
+      setNotifications((prev) => prev.map((n) =>
+        n.id === inviteModal.id ? { ...n, inviteStatus: status, read: true } : n
+      ));
+    } catch {
+      // Silently fail
+    }
+    setInviteResponding(false);
+    setInviteModal(null);
+  };
+
   // Handle notification click - navigate to event for event-mention or edit_request
   const handleNotificationClick = useCallback((notification: Notification) => {
+    // For event-invite, open the Accept/Decline modal
+    if (notification.type === 'event-invite') {
+      setIsOpen(false);
+      setInviteModal(notification);
+      markAsReadApi(notification.id);
+      setNotifications((prev) => prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n)));
+      return;
+    }
+
     // Mark as read
     markAsReadApi(notification.id);
     setNotifications((prev) => prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n)));
@@ -437,6 +475,12 @@ export default function NotificationDropdown() {
     // Close the toast
     closeToast(notification.id);
 
+    // For event-invite, open the Accept/Decline modal
+    if (notification.type === 'event-invite') {
+      setInviteModal(notification);
+      return;
+    }
+
     if (notification.type === 'event-mention' && notification.eventId) {
       // If not on dashboard, navigate there first
       if (pathname !== '/dashboard') {
@@ -483,9 +527,9 @@ export default function NotificationDropdown() {
 
   // Render notification icon - profile picture for event-mention and edit_request, otherwise standard icon
   const renderNotificationIcon = (notification: Notification, size: 'sm' | 'md' = 'sm') => {
-    if (notification.type === 'event-mention' || notification.type === 'edit_request') {
+    if (notification.type === 'event-mention' || notification.type === 'event-invite' || notification.type === 'edit_request') {
       const imgSize = size === 'sm' ? 'w-10 h-10' : 'w-10 h-10';
-      const borderColor = notification.type === 'edit_request' ? 'border-[#f57c00]' : 'border-[#00AEEF]';
+      const borderColor = notification.type === 'edit_request' ? 'border-[#f57c00]' : notification.type === 'event-invite' ? 'border-green-500' : 'border-[#00AEEF]';
       if (notification.bookedByProfileUrl) {
         return (
           <img
@@ -574,6 +618,12 @@ export default function NotificationDropdown() {
                       <p className="text-xs text-gray-600 mt-0.5 line-clamp-2">
                         {notification.message}
                       </p>
+                      {notification.type === 'event-invite' && notification.inviteStatus === 'accepted' && (
+                        <span className="inline-block mt-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">accepted</span>
+                      )}
+                      {notification.type === 'event-invite' && notification.inviteStatus === 'declined' && (
+                        <span className="inline-block mt-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">declined</span>
+                      )}
                       <p className="text-xs text-gray-400 mt-1">{notification.time}</p>
                     </div>
                   </div>
@@ -602,6 +652,74 @@ export default function NotificationDropdown() {
           />
         ))}
       </div>
+
+      {/* Event Invite Accept/Decline Modal */}
+      {inviteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[99999]">
+          <div className="bg-white rounded-[10px] w-full max-w-[360px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+            {/* Sender avatar */}
+            <div className="flex items-center justify-center mb-4">
+              {inviteModal.bookedByProfileUrl ? (
+                <img src={inviteModal.bookedByProfileUrl} alt={inviteModal.bookedByName || 'User'} className="w-14 h-14 rounded-full object-cover border-2 border-green-400" />
+              ) : (
+                <div className="w-14 h-14 rounded-full bg-gray-100 border-2 border-green-400 flex items-center justify-center">
+                  <Icon icon="mdi:account" className="w-8 h-8 text-gray-400" />
+                </div>
+              )}
+            </div>
+            <h3 className="text-lg font-bold text-center text-primary mb-1">Event Invitation</h3>
+            <p className="text-sm text-center text-gray-600 mb-2">{inviteModal.message}</p>
+            {inviteModal.inviteStatus && inviteModal.inviteStatus !== 'pending' ? (
+              <div className="text-center mb-4">
+                <span className={`inline-block text-sm font-semibold px-3 py-1 rounded-full capitalize ${
+                  inviteModal.inviteStatus === 'accepted' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                }`}>
+                  You {inviteModal.inviteStatus} this invitation
+                </span>
+              </div>
+            ) : (
+              <p className="text-xs text-center text-gray-400 mb-4">Will you attend?</p>
+            )}
+            {(!inviteModal.inviteStatus || inviteModal.inviteStatus === 'pending') ? (
+              <div className="flex justify-center gap-3">
+                <button
+                  onClick={() => handleInviteResponse('declined')}
+                  disabled={inviteResponding}
+                  className="px-5 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
+                >
+                  Decline
+                </button>
+                <button
+                  onClick={() => handleInviteResponse('accepted')}
+                  disabled={inviteResponding}
+                  className="px-5 py-2 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50"
+                >
+                  Accept
+                </button>
+              </div>
+            ) : (
+              <div className="flex justify-center">
+                <button
+                  onClick={() => setInviteModal(null)}
+                  className="px-5 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            )}
+            {(!inviteModal.inviteStatus || inviteModal.inviteStatus === 'pending') && (
+              <div className="flex justify-center mt-3">
+                <button
+                  onClick={() => setInviteModal(null)}
+                  className="text-xs text-gray-400 hover:text-gray-600"
+                >
+                  Decide later
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }

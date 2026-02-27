@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { logActivity, getUserIdFromRequest } from '@/lib/activity-log';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -25,6 +26,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const userId = getUserIdFromRequest(req);
   const formData = await req.formData();
 
   const file = formData.get('file') as File | null;
@@ -59,6 +61,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       updatedAt: true,
     },
   });
+
+  if (userId) {
+    const project = await prisma.cestProject.findUnique({ where: { id }, select: { projectTitle: true, code: true } });
+    await logActivity({
+      userId,
+      action: 'UPLOAD',
+      resourceType: 'CEST_DOCUMENT',
+      resourceId: document.id,
+      resourceTitle: file.name,
+      details: { projectTitle: project?.projectTitle, projectCode: project?.code, phase },
+    });
+  }
 
   return NextResponse.json(document, { status: 201 });
 }

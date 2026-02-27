@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import NotificationDropdown from './notification';
 import MessengerDropdown from './MessengerDropdown';
+import SnakeGame from './SnakeGame';
 
 
 interface UserPermissions {
@@ -24,6 +25,7 @@ export default function Header() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [permissions, setPermissions] = useState<UserPermissions | null>(null);
+  const [showSnake, setShowSnake] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -128,11 +130,21 @@ export default function Header() {
         </div>
       </div>
       <div className="flex items-center gap-2.5">
+        <button
+          onClick={() => setShowSnake(true)}
+          className="flex items-center justify-center w-8 h-8 rounded-full text-gray-500 transition-all duration-300 hover:bg-accent hover:text-white hover:scale-115 hover:shadow-[0_4px_14px_rgba(0,174,239,0.4)] active:scale-90 active:transition-all active:duration-100"
+          title="Snake Game"
+        >
+          <Icon icon="mdi:gamepad-variant" width={24} height={24} />
+        </button>
+
         {(!permissions || permissions.canAccessMaps) && (
           <Link href="/maps" className="flex items-center justify-center no-underline w-8 h-8 rounded-full color-#666 text-gray-500 transition-all duration-300 hover:bg-accent hover:text-white hover:scale-115 hover:rotate-[15deg] hover:shadow-[0_4px_14px_rgba(0,174,239,0.4)] hover:[animation:none] active:scale-90 active:-rotate-[10deg] active:transition-all active:duration-100" title="Maps">
             <Icon icon="mdi:compass-outline" width={24} height={24} />
           </Link>
         )}
+
+        {showSnake && <SnakeGame onClose={() => setShowSnake(false)} />}
 
         <MessengerDropdown />
         <NotificationDropdown />

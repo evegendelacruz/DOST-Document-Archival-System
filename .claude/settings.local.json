@@ -11,7 +11,13 @@
       "Bash(grep:*)",
       "Bash(npx next build:*)",
       "Bash(npm run build:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "WebFetch(domain:dost-document-archival-system-ria9ifmpk.vercel.app)",
+      "Bash(cat:*)",
+      "Bash(npm install:*)",
+      "Bash(node:*)",
+      "Bash(echo:*)",
+      "Bash(npx tsx:*)"
     ]
   }
 }
