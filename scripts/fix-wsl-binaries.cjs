@@ -39,6 +39,12 @@ const binaries = [
     file: 'lightningcss.win32-x64-msvc.node',
     dest: path.join(projectRoot, 'node_modules', 'lightningcss'),
   },
+  {
+    pkg: '@tailwindcss/oxide-win32-x64-msvc',
+    version: '4.1.18',
+    file: 'tailwindcss-oxide.win32-x64-msvc.node',
+    dest: path.join(projectRoot, 'node_modules', '@tailwindcss', 'oxide'),
+  },
 ];
 
 // Clean up tmp dir
@@ -65,7 +71,11 @@ for (const bin of binaries) {
   console.log(`[fix-wsl-binaries] Downloading ${bin.pkg}@${bin.version}...`);
   try {
     execSync(`npm pack ${bin.pkg}@${bin.version}`, { cwd: tmpDir, stdio: 'pipe' });
-    const tgz = path.join(tmpDir, `${bin.pkg}-${bin.version}.tgz`);
+    // Handle scoped packages: @scope/name -> scope-name
+    const tgzName = bin.pkg.startsWith('@')
+      ? bin.pkg.slice(1).replace('/', '-') + `-${bin.version}.tgz`
+      : `${bin.pkg}-${bin.version}.tgz`;
+    const tgz = path.join(tmpDir, tgzName);
     execSync(`tar xzf "${tgz}"`, { cwd: tmpDir, stdio: 'pipe' });
     const srcFile = path.join(tmpDir, 'package', bin.file);
     if (fs.existsSync(srcFile)) {

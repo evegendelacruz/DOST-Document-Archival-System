@@ -5,28 +5,34 @@ import prisma from '@/lib/prisma';
 type RouteParams = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, { params }: RouteParams) {
-  const { id } = await params;
+  try {
+    const { id } = await params;
 
-  const user = await prisma.user.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      email: true,
-      fullName: true,
-      contactNo: true,
-      birthday: true,
-      role: true,
-      isApproved: true,
-      profileImageUrl: true,
-      createdAt: true,
-    },
-  });
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        contactNo: true,
+        birthday: true,
+        role: true,
+        isApproved: true,
+        isBlocked: true,
+        profileImageUrl: true,
+        createdAt: true,
+      },
+    });
 
-  if (!user) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(user);
+  } catch (error) {
+    console.error('Get user error:', error);
+    return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
   }
-
-  return NextResponse.json(user);
 }
 
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
@@ -47,6 +53,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     }
   }
   if (body.isApproved !== undefined) updateData.isApproved = body.isApproved;
+  if (body.isBlocked !== undefined) updateData.isBlocked = body.isBlocked;
   if (body.profileImageUrl !== undefined) updateData.profileImageUrl = body.profileImageUrl;
 
   if (body.password && body.password.trim() !== '') {
@@ -64,6 +71,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       birthday: true,
       role: true,
       isApproved: true,
+      isBlocked: true,
       profileImageUrl: true,
       createdAt: true,
     },

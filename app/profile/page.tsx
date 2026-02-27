@@ -1,7 +1,7 @@
 'use client'
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
-import { Eye, EyeOff, UserRoundMinus, Check, X } from 'lucide-react';
+import { Eye, EyeOff, Check, X, Ban, UserRoundCheck } from 'lucide-react';
 
 // Helper to get userId for activity logging
 function getUserId(): string | null {
@@ -31,6 +31,7 @@ interface UserData {
   birthday: string | null;
   role: string;
   isApproved: boolean;
+  isBlocked: boolean;
   profileImageUrl: string | null;
   createdAt: string;
 }
@@ -502,9 +503,10 @@ interface UserPermissions {
 const UserManagement = ({ currentUserId }: { currentUserId: string }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [users, setUsers] = useState<UserData[]>([]);
-  const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'active' | 'blocked'>('active');
+  const [showBlockModal, setShowBlockModal] = useState<string | null>(null);
+  const [showUnblockModal, setShowUnblockModal] = useState<string | null>(null);
   const [showApproveModal, setShowApproveModal] = useState<string | null>(null);
-  const [showRevokeModal, setShowRevokeModal] = useState<string | null>(null);
   const [showRejectModal, setShowRejectModal] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [showAccessModal, setShowAccessModal] = useState(false);
@@ -543,12 +545,30 @@ const UserManagement = ({ currentUserId }: { currentUserId: string }) => {
     }
   };
 
-  const handleDelete = async (userId: string) => {
-    const res = await fetch(`/api/users/${userId}`, { method: 'DELETE', headers: getAuthHeaders() });
+  const handleBlock = async (userId: string) => {
+    const res = await fetch(`/api/users/${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify({ isBlocked: true }),
+    });
     if (res.ok) {
-      setUsers(users.filter(u => u.id !== userId));
-      setShowDeleteModal(null);
-      setSuccessMessage('User deleted successfully!');
+      setUsers(users.map(u => u.id === userId ? { ...u, isBlocked: true } : u));
+      setShowBlockModal(null);
+      setSuccessMessage('User has been blocked successfully!');
+      setShowSuccessModal(true);
+    }
+  };
+
+  const handleUnblock = async (userId: string) => {
+    const res = await fetch(`/api/users/${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify({ isBlocked: false }),
+    });
+    if (res.ok) {
+      setUsers(users.map(u => u.id === userId ? { ...u, isBlocked: false } : u));
+      setShowUnblockModal(null);
+      setSuccessMessage('User has been unblocked successfully!');
       setShowSuccessModal(true);
     }
   };
@@ -567,26 +587,16 @@ const UserManagement = ({ currentUserId }: { currentUserId: string }) => {
     }
   };
 
-  const handleRevoke = async (userId: string) => {
+  const handleReject = async (userId: string) => {
     const res = await fetch(`/api/users/${userId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-      body: JSON.stringify({ isApproved: false }),
+      body: JSON.stringify({ isBlocked: true }),
     });
     if (res.ok) {
-      setUsers(users.map(u => u.id === userId ? { ...u, isApproved: false } : u));
-      setShowRevokeModal(null);
-      setSuccessMessage('User access revoked successfully!');
-      setShowSuccessModal(true);
-    }
-  };
-
-  const handleReject = async (userId: string) => {
-    const res = await fetch(`/api/users/${userId}`, { method: 'DELETE', headers: getAuthHeaders() });
-    if (res.ok) {
-      setUsers(users.filter(u => u.id !== userId));
+      setUsers(users.map(u => u.id === userId ? { ...u, isBlocked: true } : u));
       setShowRejectModal(null);
-      setSuccessMessage('User registration rejected!');
+      setSuccessMessage('User registration rejected and account blocked!');
       setShowSuccessModal(true);
     }
   };
@@ -635,17 +645,47 @@ const UserManagement = ({ currentUserId }: { currentUserId: string }) => {
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesViewMode = viewMode === 'blocked' ? user.isBlocked : !user.isBlocked;
+    return matchesSearch && matchesViewMode;
+  });
+
+  const blockedCount = users.filter(u => u.isBlocked).length;
+  const activeCount = users.filter(u => !u.isBlocked).length;
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
       <h2 className="text-xl font-semibold text-cyan-600 mb-4">User Management</h2>
 
-      {/* Search Bar */}
-      <div className="mb-6">
+      {/* View Mode Toggle and Search Bar */}
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+            <button
+              onClick={() => setViewMode('active')}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                viewMode === 'active'
+                  ? 'bg-cyan-500 text-white'
+                  : 'bg-white text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              Active Users ({activeCount})
+            </button>
+            <button
+              onClick={() => setViewMode('blocked')}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                viewMode === 'blocked'
+                  ? 'bg-red-500 text-white'
+                  : 'bg-white text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <Ban className="w-4 h-4 inline mr-1" />
+              Blocked ({blockedCount})
+            </button>
+          </div>
+        </div>
         <div className="relative w-72">
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
@@ -703,14 +743,24 @@ const UserManagement = ({ currentUserId }: { currentUserId: string }) => {
                     <div className="flex items-center justify-center">
                       <span className="text-xs text-gray-400 italic">You</span>
                     </div>
+                  ) : viewMode === 'blocked' ? (
+                    <div className="flex items-center justify-center">
+                      <button
+                        onClick={() => setShowUnblockModal(user.id)}
+                        className="p-1.5 hover:bg-green-50 rounded-full transition-colors group"
+                        title="Unblock user"
+                      >
+                        <UserRoundCheck className="w-5 h-5 text-gray-500 group-hover:text-green-500 transition-colors" />
+                      </button>
+                    </div>
                   ) : user.isApproved ? (
                     <div className="flex items-center justify-center">
                       <button
-                        onClick={() => setShowRevokeModal(user.id)}
+                        onClick={() => setShowBlockModal(user.id)}
                         className="p-1.5 hover:bg-red-50 rounded-full transition-colors group"
-                        title="Revoke user access"
+                        title="Block user"
                       >
-                        <UserRoundMinus className="w-5 h-5 text-cyan-500 group-hover:text-red-500 transition-colors" />
+                        <Ban className="w-5 h-5 text-gray-400 group-hover:text-red-500 transition-colors" />
                       </button>
                     </div>
                   ) : (
@@ -739,28 +789,66 @@ const UserManagement = ({ currentUserId }: { currentUserId: string }) => {
 
         {filteredUsers.length === 0 && (
           <div className="text-center py-8 text-gray-500">
-            No users found matching your search.
+            {viewMode === 'blocked'
+              ? 'No blocked users found.'
+              : 'No users found matching your search.'}
           </div>
         )}
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
+      {/* Block Confirmation Modal */}
+      {showBlockModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-sm mx-4 p-6">
-            <h2 className="text-lg font-bold text-gray-800 text-center mb-2">Delete User</h2>
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <Ban className="w-6 h-6 text-red-600" />
+              </div>
+            </div>
+            <h2 className="text-lg font-bold text-gray-800 text-center mb-2">Block User</h2>
             <p className="text-sm text-gray-600 text-center mb-6">
-              Are you sure you want to delete this user? This action cannot be undone.
+              Are you sure you want to block this user? They will no longer be able to log in to the system.
             </p>
             <div className="flex gap-3 justify-center">
               <button
-                onClick={() => handleDelete(showDeleteModal)}
+                onClick={() => handleBlock(showBlockModal)}
                 className="px-5 py-2 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
               >
-                Delete
+                Block User
               </button>
               <button
-                onClick={() => setShowDeleteModal(null)}
+                onClick={() => setShowBlockModal(null)}
+                className="px-5 py-2 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Unblock Confirmation Modal */}
+      {showUnblockModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm mx-4 p-6">
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                <UserRoundCheck className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+            <h2 className="text-lg font-bold text-gray-800 text-center mb-2">Unblock User</h2>
+            <p className="text-sm text-gray-600 text-center mb-6">
+              Are you sure you want to unblock this user? They will be able to log in to the system again.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => handleUnblock(showUnblockModal)}
+                className="px-5 py-2 text-sm bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+              >
+                Unblock User
+              </button>
+              <button
+                onClick={() => setShowUnblockModal(null)}
                 className="px-5 py-2 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
               >
                 Cancel
@@ -792,37 +880,6 @@ const UserManagement = ({ currentUserId }: { currentUserId: string }) => {
               </button>
               <button
                 onClick={() => setShowApproveModal(null)}
-                className="px-5 py-2 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Revoke Access Confirmation Modal */}
-      {showRevokeModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-sm mx-4 p-6">
-            <div className="flex justify-center mb-4">
-              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                <UserRoundMinus className="w-6 h-6 text-orange-600" />
-              </div>
-            </div>
-            <h2 className="text-lg font-bold text-gray-800 text-center mb-2">Revoke Access</h2>
-            <p className="text-sm text-gray-600 text-center mb-6">
-              Are you sure you want to revoke this user's access? They will no longer be able to log in.
-            </p>
-            <div className="flex gap-3 justify-center">
-              <button
-                onClick={() => handleRevoke(showRevokeModal)}
-                className="px-5 py-2 text-sm bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
-              >
-                Revoke Access
-              </button>
-              <button
-                onClick={() => setShowRevokeModal(null)}
                 className="px-5 py-2 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
               >
                 Cancel

@@ -21,6 +21,7 @@ model User {
   resetOtpExpiresAt         DateTime?
   profileImageUrl           String?
   isApproved                Boolean                   @default(false)
+  isBlocked                 Boolean                   @default(false)
   logs                      UserLog[]
   permissions               UserPermission?
   timeRecords               TimeRecord[]
