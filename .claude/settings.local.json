@@ -12,7 +12,15 @@
       "Bash(npx next build:*)",
       "Bash(npm run build:*)",
       "Bash(npm run lint:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(timeout 10 npx next dev:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npm rebuild:*)",
+      "Bash(ls:*)",
+      "Bash(wc -l:*)",
+      "Bash(npm install:*)",
+      "Bash(node:*)",
+      "Bash(cmd.exe /c \"npm install @tailwindcss/oxide-win32-x64-msvc@4.1.18 --save-optional\")"
     ]
   }
 }

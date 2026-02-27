@@ -10,6 +10,7 @@ export async function GET() {
       contactNo: true,
       role: true,
       isApproved: true,
+      isBlocked: true,
       createdAt: true,
       profileImageUrl: true,
     },
