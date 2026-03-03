@@ -11,6 +11,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   // Get original event for logging and notification comparison
   const originalEvent = await prisma.calendarEvent.findUnique({ where: { id } });
 
+  // Ownership check: only the creator or an admin can edit
+  if (userId && originalEvent?.bookedById) {
+    if (userId !== originalEvent.bookedById) {
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+      if (!user || user.role !== 'ADMIN') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
+  }
+
   // Build update data, filtering out undefined values
   const updateData: Record<string, unknown> = {};
   if (data.title !== undefined) updateData.title = data.title;
@@ -91,16 +101,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           bookerInfo = booker;
         }
 
-        const notifications = Array.from(usersToNotify).map((recipientId: string) => ({
-          userId: recipientId,
-          type: 'event-mention',
-          title: 'Event Involved',
-          message: `${bookerInfo?.fullName || 'Someone'} added you to event: ${event.title}`,
-          eventId: event.id,
-          bookedByUserId: bookerInfo?.id,
-          bookedByName: bookerInfo?.fullName,
-          bookedByProfileUrl: bookerInfo?.profileImageUrl,
-        }));
+        const notifications = Array.from(usersToNotify).map((recipientId: string) => {
+          const isBookedPersonnel = recipientId === newPersonnelId;
+          return {
+            userId: recipientId,
+            type: isBookedPersonnel ? 'event-invite' : 'event-mention',
+            title: isBookedPersonnel ? 'Event Invitation' : 'Event Involved',
+            message: isBookedPersonnel
+              ? `${bookerInfo?.fullName || 'Someone'} booked you for event: ${event.title}`
+              : `${bookerInfo?.fullName || 'Someone'} added you to event: ${event.title}`,
+            eventId: event.id,
+            inviteStatus: isBookedPersonnel ? 'pending' : undefined,
+            bookedByUserId: bookerInfo?.id,
+            bookedByName: bookerInfo?.fullName,
+            bookedByProfileUrl: bookerInfo?.profileImageUrl,
+          };
+        });
 
         await prisma.notification.createMany({
           data: notifications,
@@ -135,6 +151,16 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   // Get event before deletion for logging
   const event = await prisma.calendarEvent.findUnique({ where: { id } });
+
+  // Ownership check: only the creator or an admin can delete
+  if (userId && event?.bookedById) {
+    if (userId !== event.bookedById) {
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+      if (!user || user.role !== 'ADMIN') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
+  }
 
   await prisma.calendarEvent.delete({ where: { id } });
 

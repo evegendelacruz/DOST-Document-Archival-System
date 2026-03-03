@@ -14,7 +14,11 @@
       "Bash(tail:*)",
       "Bash(npm view:*)",
       "Bash(git add:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(ls:*)",
+      "Bash(wc:*)",
+      "Bash(curl:*)",
+      "Bash(git diff:*)"
     ]
   }
 }

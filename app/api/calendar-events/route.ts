@@ -37,7 +37,28 @@ export async function GET() {
     bookedPersonnelUser: event.bookedPersonnelId ? userMap.get(event.bookedPersonnelId) || null : null,
   }));
 
-  return NextResponse.json(eventsWithUsers);
+  // Fetch invite statuses from notifications for all events
+  const eventIds = eventsWithUsers.map(e => e.id);
+  const inviteNotifications = eventIds.length > 0
+    ? await prisma.notification.findMany({
+        where: { eventId: { in: eventIds }, type: 'event-invite' },
+        select: { eventId: true, userId: true, inviteStatus: true },
+      })
+    : [];
+
+  const inviteStatusMap = new Map<string, { userId: string; status: string }[]>();
+  for (const n of inviteNotifications) {
+    if (!n.eventId) continue;
+    if (!inviteStatusMap.has(n.eventId)) inviteStatusMap.set(n.eventId, []);
+    inviteStatusMap.get(n.eventId)!.push({ userId: n.userId, status: n.inviteStatus || 'pending' });
+  }
+
+  const eventsWithStatuses = eventsWithUsers.map(event => ({
+    ...event,
+    inviteStatuses: inviteStatusMap.get(event.id) || [],
+  }));
+
+  return NextResponse.json(eventsWithStatuses);
 }
 
 export async function POST(req: NextRequest) {
@@ -111,16 +132,22 @@ export async function POST(req: NextRequest) {
           bookerInfo = booker;
         }
 
-        const notifications = Array.from(usersToNotify).map((recipientId: string) => ({
-          userId: recipientId,
-          type: 'event-mention',
-          title: 'Event Involved',
-          message: `${bookerInfo?.fullName || 'Someone'} added you to event: ${event.title}`,
-          eventId: event.id,
-          bookedByUserId: bookerInfo?.id,
-          bookedByName: bookerInfo?.fullName,
-          bookedByProfileUrl: bookerInfo?.profileImageUrl,
-        }));
+        const notifications = Array.from(usersToNotify).map((recipientId: string) => {
+          const isBookedPersonnel = recipientId === data.bookedPersonnelId;
+          return {
+            userId: recipientId,
+            type: isBookedPersonnel ? 'event-invite' : 'event-mention',
+            title: isBookedPersonnel ? 'Event Invitation' : 'Event Involved',
+            message: isBookedPersonnel
+              ? `${bookerInfo?.fullName || 'Someone'} booked you for event: ${event.title}`
+              : `${bookerInfo?.fullName || 'Someone'} added you to event: ${event.title}`,
+            eventId: event.id,
+            inviteStatus: isBookedPersonnel ? 'pending' : undefined,
+            bookedByUserId: bookerInfo?.id,
+            bookedByName: bookerInfo?.fullName,
+            bookedByProfileUrl: bookerInfo?.profileImageUrl,
+          };
+        });
 
         await prisma.notification.createMany({
           data: notifications,

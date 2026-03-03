@@ -449,7 +449,7 @@ function UnifiedSidePanel({
 
   return (
     <div
-      className="absolute top-0 right-0 h-full z-[1000] pointer-events-auto flex"
+      className="absolute top-0 right-0 h-full z-[1001] pointer-events-auto flex"
       style={{ transform: open ? 'translateX(0)' : 'translateX(100%)', transition: 'transform 0.35s cubic-bezier(0.4,0,0.2,1)', willChange: 'transform' }}
     >
       {/* Collapse/expand tab */}
@@ -693,8 +693,8 @@ export default function MapsPage() {
           <AddressSearchBar onSelect={handleAddressSelect} />
         </div>
 
-        {/* Program Filter Sidebar - left */}
-        <div className="absolute top-[15px] left-[15px] flex flex-col gap-2 z-[1000] pointer-events-auto">
+        {/* Program Filter Sidebar - bottom left */}
+        <div className={`absolute bottom-[80px] left-[15px] flex flex-col gap-2 z-[1000] pointer-events-auto ${sidePanelOpen ? 'max-md:hidden' : ''}`}>
           {programFilters.map(prog => (
             <button
               key={prog.id}

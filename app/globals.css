@@ -6,6 +6,39 @@
   --color-accent-hover: #0095d0;
 }
 
+/* ── Mobile baseline fixes ─────────────────────────────────────────── */
+
+/* Prevent iOS from resizing text on orientation change (landscape→portrait zoom bug) */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overflow-x: hidden;   /* stop any element wider than viewport from forcing a zoom-out */
+}
+
+body {
+  overflow-x: hidden;
+  /* Use dynamic viewport height so the address bar doesn't cut off content */
+  min-height: 100dvh;
+}
+
+/*
+  iOS Safari auto-zooms when focusing any input with font-size < 16px.
+  Force 16px on mobile so it never zooms in — the zoom-in is what causes
+  the need to manually zoom out afterwards.
+*/
+@media screen and (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Prevent tap double-click zoom on interactive elements */
+button, a, [role="button"] {
+  touch-action: manipulation;
+}
+
 /* Hide scrollbar utility */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
