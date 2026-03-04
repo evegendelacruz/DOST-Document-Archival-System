@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Icon } from '@iconify/react';
@@ -113,12 +114,11 @@ const initiationDocs: DocRow[] = [
   },
   { id: 17, label: 'Hazard Hunter PH Assessment', type: 'item' },
   { id: 18, label: 'GAD Assessment', type: 'item' },
-  { id: 19, label: 'Executive Summary (word template for input)', type: 'item' },
   { id: 0, label: 'List of Intervention', type: 'dropdown' },
+  { id: 999, label: 'Others', type: 'dropdown', options: [] },
 ];
 
 const implementationDocs: DocRow[] = [
-  { id: 0, label: 'IMPLEMENTATION RECORDS (F1)', type: 'section' },
   { id: 1, label: 'Approval Letter', type: 'item' },
   { id: 2, label: 'Memorandum of Agreement', type: 'dropdown', options: ['Main MOA', 'Supplemental MOA'] },
   { 
@@ -127,43 +127,37 @@ const implementationDocs: DocRow[] = [
     type: 'dropdown',
     options: ['DV', 'ORS']
   },
+  { id: 18, label: 'Approved Amount for Release', type: 'dropdown' },
+  { id: 27, label: 'Untagging Amount & Documentary Requirements', type: 'dropdown' },
+  { id: 21, label: 'Clearance to Untag', type: 'dropdown' },
   { id: 4, label: 'Official Receipt of Technology Assistance', type: 'item' },
-  { id: 0, label: 'ALL AMENDMENTS TO THE MOA', type: 'section' },
-  { id: 5, label: 'Tagging Letters', type: 'item' },
-  { id: 6, label: 'Purchase Orders', type: 'item' },
-  { id: 7, label: 'Untagging Letters', type: 'item' },
   { id: 9, label: 'Amendments to the MOA', type: 'dropdown', options: ['Change in Project Duration - Annex C', 'Extension of Project Duration - Annex C', 'Change in LIB or LIB-realignment - Annex B', 'Refund Restructuring - Annex D'] },
-  { id: 8, label: 'Others', type: 'dropdown', options: ['Withdrawal Request', 'Approval'] },
-  { id: 0, label: 'MANAGEMENT REPORTS (F2)', type: 'section' },
-  { id: 12, label: 'Withdrawal Report', type: 'item' },
-  { id: 11, label: 'Liquidation Report', type: 'dropdown', options: ['Liquidation Report', 'Audited Financial Report', 'List of Equipment Purchased'] },
-  { id: 12, label: 'Completion Report', type: 'dropdown', options: ['Completion Report', 'Financial Report', 'Acknowledgement Receipt of Equipment', 'Inventory of Equipment'] },
-  { id: 13, label: 'Terminal or Graduation Report', type: 'dropdown', options: ['Terminal Report', 'Copy of Issued Report of Ownership (if applicable)', 'Certificate of Full Refund from Accountant'] },
-  { id: 14, label: 'Termination Report', type: 'dropdown', options: ['Letter Recommending Termination by the PSTD', 'Latest Status Report', 'Audited (by CPA) Financial Report', 'Computation of Financial Accountability', 'Proofs',  'Documents to Support Majeure (if requested for relief from accountability upon approval of termination', 'Termination Report', 'Proof of conforme by proponent of final accountability and mechanism for refund of remaining accounts'] },
-  { id: 0, label: 'MONITORING REPORTS (F3)', type: 'section' },
+  { id: 8, label: 'Others', type: 'dropdown', options: ['Withdrawal Request', 'Withdrawal Approval', 'Photo(s) During Implementation'] },
+];
+
+const managementDocs: DocRow[] = [
+  { id: 100, label: 'Management Reports', type: 'dropdown', options: [] }, // Single dropdown for all management reports
+];
+
+const monitoringDocs: DocRow[] = [
   { id: 15, label: 'Pre-Project Information Sheet (PIS)',type: 'dropdown', options: ['Withdrawal Request', 'Approval']},
   { id: 25, label: 'Annual PIS', type: 'dropdown', options: ['2024', '2025', '2026', '2027', '2028'] },
-  { id: 26, label: 'Quarterly Project Status Reports', type: 'dropdown', options: ['Q1', 'Q2', 'Q3', 'Q4'] },
-  { id: 17, label: 'Project Profile with pictures from that start of project and every semester thereafter to document project improvement', type: 'item' },
-  { id: 0, label: 'REFUND RECORDS (F4)', type: 'section' },
-  { id: 22, label: 'Letter in acknowledgement of PDCs', type: 'item' },
-  { id: 23, label: 'Receipt of PDC form', type: 'item' },
-  { id: 24, label: 'Photocopy of Official Receipt (ORs)', type: 'item' },
-  { id: 25, label: 'Letter of Endorsement of ORs', type: 'item' },
-  { id: 26, label: 'Notice of Dishonor', type: 'item' },
-  { id: 0, label: 'COMMUNICATION RECORDS', type: 'section' },
-  { id: 20, label: 'Incoming', type: 'item' },
-  { id: 21, label: 'Outgoing', type: 'item' },
-  { id: 0, label: 'UNTAGGING REQUIREMENTS', type: 'section' },
-  { id: 18, label: 'Approved Amount for Release', type: 'dropdown' },
-  { id: 20, label: 'Untagging Amount', type: 'dropdown' },
-  { id: 21, label: 'Clearance to Untag', type: 'dropdown' },
-  { id: 0, label: '2ND', type: 'section' },
-  { id: 24, label: 'List of Inventory of Equipment', type: 'item' },
-  { id: 19, label: 'Accepted Liquidation', type: 'item' },
-  { id: 20, label: 'Annex E', type: 'item' },
-  
-  { id: 23, label: 'Property Acknowledgement Receipt', type: 'item' },
+  { id: 26, label: 'Quarterly Project Status Reports', type: 'dropdown', options: ['Q1', 'Q2', 'Q3', 'Q4'] }, // Single dropdown for all monitoring reports
+  { id: 998, label: 'Others', type: 'dropdown', options: [] },
+];
+
+const refundDocs: DocRow[] = [
+  { id: 300, label: 'Refund Documents', type: 'dropdown', options: [
+    'Letter in acknowledgement of PDCs',
+    'Receipt of PDC form',
+    'Photocopy of Official Receipt (ORs)',
+    'Letter of Endorsement of ORs',
+    'Notice of Dishonor'
+  ] },
+];
+
+const communicationsDocs: DocRow[] = [
+  { id: 400, label: 'Communications', type: 'dropdown', options: [] }, // Single dropdown for all communications
 ];
 
 // ── Shared upload/delete button pair ───────────────────────────────────────
@@ -221,7 +215,7 @@ function DocumentTable({
   title: string;
   docs: DocRow[];
   projectId: string;
-  phase: 'INITIATION' | 'IMPLEMENTATION';
+  phase: 'INITIATION' | 'IMPLEMENTATION' | 'MANAGEMENT' | 'MONITORING' | 'REFUND' | 'COMMUNICATIONS';
   onProgressUpdate?: (progress: number, uploaded: number, total: number) => void;
   initialDropdownData?: Record<string, unknown> | null;
   isEditMode?: boolean;
@@ -271,6 +265,102 @@ function DocumentTable({
   const [interventionStatusOptions, setInterventionStatusOptions] = useState<string[]>(['Procured', 'Pulled Out']);
   const [showAddStatusModal, setShowAddStatusModal] = useState(false);
   const [newStatusName, setNewStatusName] = useState<string>('');
+  const [othersOptions, setOthersOptions] = useState<string[]>(['Withdrawal Request', 'Withdrawal Approval', 'Photo(s) During Implementation']);
+  const [showAddOthersModal, setShowAddOthersModal] = useState(false);
+  const [newOthersName, setNewOthersName] = useState<string>('');
+  const [othersDropdownOpen, setOthersDropdownOpen] = useState(false);
+  const othersDropdownRef = useRef<HTMLDivElement>(null);
+  const [showRemoveOthersModal, setShowRemoveOthersModal] = useState(false);
+  const [othersOptionToRemove, setOthersOptionToRemove] = useState<string>('');
+
+  // Initiation Others options
+  const [initiationOthersOptions, setInitiationOthersOptions] = useState<string[]>(['Media Documentation']);
+  const [showAddInitiationOthersModal, setShowAddInitiationOthersModal] = useState(false);
+  const [newInitiationOthersName, setNewInitiationOthersName] = useState<string>('');
+  const [initiationOthersDropdownOpen, setInitiationOthersDropdownOpen] = useState(false);
+  const initiationOthersDropdownRef = useRef<HTMLDivElement>(null);
+  const [showRemoveInitiationOthersModal, setShowRemoveInitiationOthersModal] = useState(false);
+  const [initiationOthersOptionToRemove, setInitiationOthersOptionToRemove] = useState<string>('');
+
+  // Monitoring Others options
+  const [monitoringOthersOptions, setMonitoringOthersOptions] = useState<string[]>(['Media Documentation']);
+  const [showAddMonitoringOthersModal, setShowAddMonitoringOthersModal] = useState(false);
+  const [newMonitoringOthersName, setNewMonitoringOthersName] = useState<string>('');
+  const [monitoringOthersDropdownOpen, setMonitoringOthersDropdownOpen] = useState(false);
+  const monitoringOthersDropdownRef = useRef<HTMLDivElement>(null);
+  const [showRemoveMonitoringOthersModal, setShowRemoveMonitoringOthersModal] = useState(false);
+  const [monitoringOthersOptionToRemove, setMonitoringOthersOptionToRemove] = useState<string>('');
+
+  // Refund Documents dropdown
+  const [refundDropdownOpen, setRefundDropdownOpen] = useState(false);
+  const refundDropdownRef = useRef<HTMLDivElement>(null);
+  const refundDropdownButtonRef = useRef<HTMLButtonElement>(null);
+  const [refundDropdownPos, setRefundDropdownPos] = useState({ top: 0, left: 0, width: 0 });
+  const [refundDocumentsOptions, setRefundDocumentsOptions] = useState<string[]>([
+    'Letter in acknowledgement of PDCs',
+    'Receipt of PDC form',
+    'Photocopy of Official Receipt (ORs)',
+    'Letter of Endorsement of ORs',
+    'Notice of Dishonor'
+  ]);
+  const [showAddRefundDocModal, setShowAddRefundDocModal] = useState(false);
+  const [newRefundDocName, setNewRefundDocName] = useState<string>('');
+  const [showRemoveRefundDocModal, setShowRemoveRefundDocModal] = useState(false);
+  const [refundDocOptionToRemove, setRefundDocOptionToRemove] = useState<string>('');
+  const [refundDocumentRows, setRefundDocumentRows] = useState<Array<{
+    id: string;
+    type: string;
+    date: string;
+  }>>([]);
+  const [removeRefundDocConfirmModal, setRemoveRefundDocConfirmModal] = useState<{
+    show: boolean;
+    refundDocId: string;
+    refundDocName: string;
+  } | null>(null);
+
+  // Communications - Single dropdown system
+  const [communicationTypes, setCommunicationTypes] = useState<string[]>(['Incoming', 'Outgoing']);
+  const [communicationRows, setCommunicationRows] = useState<Array<{
+    id: string;
+    type: string;
+    date: string;
+  }>>([]);
+  const [communicationDropdownOpen, setCommunicationDropdownOpen] = useState(false);
+  const communicationDropdownRef = useRef<HTMLDivElement>(null);
+  const [removeCommunicationConfirmModal, setRemoveCommunicationConfirmModal] = useState<{
+    show: boolean;
+    communicationId: string;
+    communicationName: string;
+  } | null>(null);
+  const [showAddCommunicationTypeModal, setShowAddCommunicationTypeModal] = useState(false);
+  const [newCommunicationType, setNewCommunicationType] = useState<string>('');
+  const communicationDropdownButtonRef = useRef<HTMLButtonElement>(null);
+  const [communicationDropdownPos, setCommunicationDropdownPos] = useState({ top: 0, left: 0, width: 0 });
+
+  // Management Reports - Single dropdown system
+  const [managementReportTypes, setManagementReportTypes] = useState<string[]>([
+    'Liquidation Report & Attachments',
+    'Completion Report & Attachments',
+    'Graduation Report & Attachments',
+    'Termination Report & Attachments',
+    'Demand Letters & Attachments',
+    'Media Documentation'
+  ]);
+  const [managementReportRows, setManagementReportRows] = useState<Array<{
+    id: string;
+    type: string;
+    date: string;
+  }>>([]);
+  const [showAddManagementReportTypeModal, setShowAddManagementReportTypeModal] = useState(false);
+  const [newManagementReportType, setNewManagementReportType] = useState<string>('');
+  const [managementReportDropdownOpen, setManagementReportDropdownOpen] = useState(false);
+  const managementReportDropdownRef = useRef<HTMLDivElement>(null);
+  const [removeReportConfirmModal, setRemoveReportConfirmModal] = useState<{
+    show: boolean;
+    reportId: string;
+    reportName: string;
+  } | null>(null);
+  const [saveReportsConfirmModal, setSaveReportsConfirmModal] = useState(false);
   const [interventionInputs, setInterventionInputs] = useState<Array<{
     type: 'equipment' | 'non-equipment';
     name?: string;
@@ -285,6 +375,19 @@ function DocumentTable({
     supplier: string;
     date: string;
   }>>([]);
+  const [clearanceUntaggingRows, setClearanceUntaggingRows] = useState<Array<{
+    label: string;
+    amount: string;
+    date: string;
+  }>>([{ label: '1st Untagging', amount: '', date: '' }]);
+  const [pdeRows, setPdeRows] = useState<Array<{
+    months: string;
+    date: string;
+  }>>([{ months: '', date: '' }]);
+  const [libRows, setLibRows] = useState<Array<{
+    date: string;
+  }>>([{ date: '' }]);
+  const [annexCSelection, setAnnexCSelection] = useState<string>('');
   const [untaggingAmountRows, setUntaggingAmountRows] = useState<Array<{
     amount: string;
     date: string;
@@ -386,6 +489,45 @@ function DocumentTable({
         setInterventionStatusOptions(data.interventionStatusOptions as string[]);
       }
 
+      // Restore custom others options
+      if (data.othersOptions) {
+        setOthersOptions(data.othersOptions as string[]);
+      }
+
+      // Restore initiation others options
+      if (data.initiationOthersOptions) {
+        setInitiationOthersOptions(data.initiationOthersOptions as string[]);
+      }
+
+      // Restore monitoring others options
+      if (data.monitoringOthersOptions) {
+        setMonitoringOthersOptions(data.monitoringOthersOptions as string[]);
+      }
+
+      // Restore refund documents options
+      if (data.refundDocumentsOptions) {
+        setRefundDocumentsOptions(data.refundDocumentsOptions as string[]);
+      }
+      if (data.refundDocumentRows) {
+        setRefundDocumentRows(data.refundDocumentRows as Array<{ id: string; type: string; date: string }>);
+      }
+
+      // Restore management report types and rows
+      if (data.managementReportTypes) {
+        setManagementReportTypes(data.managementReportTypes as string[]);
+      }
+      if (data.managementReportRows) {
+        setManagementReportRows(data.managementReportRows as Array<{ id: string; type: string; date: string }>);
+      }
+
+      // Restore communication types and rows
+      if (data.communicationTypes) {
+        setCommunicationTypes(data.communicationTypes as string[]);
+      }
+      if (data.communicationRows) {
+        setCommunicationRows(data.communicationRows as Array<{ id: string; type: string; date: string }>);
+      }
+
       // Restore intervention items
       if (data.interventionItems) {
         setInterventionInputs(data.interventionItems as Array<{
@@ -405,6 +547,30 @@ function DocumentTable({
           supplier: string;
           date: string;
         }>);
+      }
+
+      // Restore clearance untagging rows (1st Untagging, 2nd Untagging, etc.)
+      if (data.clearanceUntaggingRows) {
+        setClearanceUntaggingRows(data.clearanceUntaggingRows as Array<{
+          label: string;
+          amount: string;
+          date: string;
+        }>);
+      }
+
+      // Restore PDE rows (Project Duration Extension)
+      if (data.pdeRows) {
+        setPdeRows(data.pdeRows as Array<{ months: string; date: string }>);
+      }
+
+      // Restore LIB rows (Line-Item Budget)
+      if (data.libRows) {
+        setLibRows(data.libRows as Array<{ date: string }>);
+      }
+
+      // Restore Annex C selection
+      if (data.annexCSelection) {
+        setAnnexCSelection(data.annexCSelection as string);
       }
 
       // Restore untagging amount rows
@@ -536,6 +702,72 @@ function DocumentTable({
   }, [projectId, phase]);
 
   useEffect(() => { fetchDocuments(); }, [fetchDocuments]);
+
+  // Close Others dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (othersDropdownRef.current && !othersDropdownRef.current.contains(event.target as Node)) {
+        setOthersDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close Initiation Others dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (initiationOthersDropdownRef.current && !initiationOthersDropdownRef.current.contains(event.target as Node)) {
+        setInitiationOthersDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close Monitoring Others dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (monitoringOthersDropdownRef.current && !monitoringOthersDropdownRef.current.contains(event.target as Node)) {
+        setMonitoringOthersDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close Refund Documents dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (refundDropdownRef.current && !refundDropdownRef.current.contains(event.target as Node)) {
+        setRefundDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close Management Report dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (managementReportDropdownRef.current && !managementReportDropdownRef.current.contains(event.target as Node)) {
+        setManagementReportDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close Communication dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (communicationDropdownRef.current && !communicationDropdownRef.current.contains(event.target as Node)) {
+        setCommunicationDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const toggleDropdown = (key: string) => setExpandedDropdowns(prev => ({ ...prev, [key]: !prev[key] }));
 
@@ -788,7 +1020,7 @@ function DocumentTable({
 
   return (
     <>
-    <div className="bg-white rounded-xl mb-8 shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+    <div className="bg-white rounded-xl mb-8 shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-visible">
       <h2 className="text-base font-bold text-primary pt-5 px-7 m-0 mb-3">{title}</h2>
 
       {/* View Mode Banner */}
@@ -809,7 +1041,9 @@ function DocumentTable({
           <thead>
             <tr className="bg-primary text-white">
               <th className="w-9 py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">#</th>
-              <th className="min-w-[240px] py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">Documentary Requirements</th>
+              <th className="min-w-[240px] py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">
+                {title === 'Project Implementation' ? 'Implementation Records (F1)' : title === 'Project Management' ? 'Management Report (F2)' : title === 'Project Monitoring' ? 'Monitoring Reports (F3)' : title === 'Project Refund' ? 'Refund Records (F4)' : title === 'Communications' ? 'Communcation Records (F5)' :'Documentary Requirements'}
+              </th>
               <th className="w-40 py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">File</th>
               <th className="w-[120px] py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">Date Uploaded</th>
               <th className="w-[120px] py-2.5 px-3 text-left font-semibold text-xs whitespace-nowrap">Action</th>
@@ -1068,7 +1302,7 @@ function DocumentTable({
                       <tr>
                         <td colSpan={5} className="p-0 border-b border-[#eee]">
                           <button
-                            className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                            className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
                             onClick={() => toggleDropdown(key)}
                           >
                             <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
@@ -1144,7 +1378,7 @@ function DocumentTable({
                       <tr>
                         <td colSpan={5} className="p-0 border-b border-[#eee]">
                           <button
-                            className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                            className="flex items-center gap-1.5 bg-[#ffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
                             onClick={() => toggleDropdown(key)}
                           >
                             <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
@@ -1302,7 +1536,7 @@ function DocumentTable({
                       <tr>
                         <td colSpan={5} className="p-0 border-b border-[#eee]">
                           <button 
-                            className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
+                            className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
                             onClick={() => toggleDropdown(key)}
                           >
                             <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
@@ -1452,7 +1686,7 @@ function DocumentTable({
                       <tr>
                         <td colSpan={5} className="p-0 border-b border-[#eee]">
                           <button
-                            className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                            className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
                             onClick={() => toggleDropdown(key)}
                           >
                             <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
@@ -1609,7 +1843,7 @@ function DocumentTable({
                       <tr>
                         <td colSpan={5} className="p-0 border-b border-[#eee]">
                           <button 
-                            className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
+                            className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
                             onClick={() => toggleDropdown(key)}
                           >
                             <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
@@ -1775,12 +2009,26 @@ function DocumentTable({
 
               // Fund Release Date dropdown handler
               if (doc.label === 'Fund Release Date' && doc.options) {
+                // Calculate total months extension from PDE rows
+                const totalPdeMonths = pdeRows.reduce((sum, row) => {
+                  const months = parseInt(row.months) || 0;
+                  return sum + months;
+                }, 0);
+
+                // Helper function to add months to a date
+                const addMonthsToDate = (dateStr: string, months: number): string => {
+                  if (!dateStr || months === 0) return '';
+                  const date = new Date(dateStr);
+                  date.setMonth(date.getMonth() + months);
+                  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                };
+
                 return (
                   <React.Fragment key={key}>
                     <tr>
                       <td colSpan={5} className="p-0 border-b border-[#eee]">
                         <button
-                          className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                          className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
                           onClick={() => toggleDropdown(key)}
                         >
                           <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
@@ -1861,6 +2109,36 @@ function DocumentTable({
                                       {savingData ? 'Saving...' : 'Save'}
                                     </button>
                                   </div>
+
+                                  {/* Extended Deadline Display (based on PDE months) */}
+                                  {row.releaseDate && totalPdeMonths > 0 && (
+                                    <div className="mb-3 p-3 bg-[#e3f2fd] border border-[#90caf9] rounded-lg">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <Icon icon="mdi:calendar-clock" width={16} height={16} className="text-[#1565c0]" />
+                                        <span className="text-xs font-semibold text-[#1565c0]">Project Duration Extension Applied</span>
+                                      </div>
+                                      <div className="grid grid-cols-3 gap-4 text-xs">
+                                        <div>
+                                          <span className="text-[#666]">Original Deadline:</span>
+                                          <div className="font-semibold text-[#333]">
+                                            {new Date(row.releaseDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <span className="text-[#666]">Total Extension:</span>
+                                          <div className="font-semibold text-[#f57c00]">
+                                            +{totalPdeMonths} month{totalPdeMonths > 1 ? 's' : ''}
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <span className="text-[#666]">Extended Deadline:</span>
+                                          <div className="font-semibold text-[#2e7d32]">
+                                            {addMonthsToDate(row.releaseDate, totalPdeMonths)}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
 
                                   <div className="space-y-2">
                                     {/* DV Upload */}
@@ -1979,7 +2257,7 @@ function DocumentTable({
                     <tr>
                       <td colSpan={5} className="p-0 border-b border-[#eee]">
                         <button 
-                          className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
+                          className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
                           onClick={() => toggleDropdown(key)}
                         >
                           <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
@@ -2045,33 +2323,60 @@ function DocumentTable({
                 );
               }
 
-              // Untagging Amount dropdown handler
-              if (doc.label === 'Untagging Amount' && doc.type === 'dropdown') {
+              // Untagging Amount & Documentary Requirements dropdown handler
+              if (doc.label === 'Untagging Amount & Documentary Requirements' && doc.type === 'dropdown') {
+                // Helper function to get ordinal suffix
+                const getOrdinal = (n: number) => {
+                  const s = ['th', 'st', 'nd', 'rd'];
+                  const v = n % 100;
+                  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+                };
+
                 // Get Approved Amount for Release
                 const approvedAmountValue = parseFloat(approvedAmount?.replace(/,/g, '') || '0') || 0;
 
-                // Calculate total deductions from Untagging Amount rows
-                const totalDeductions = untaggingAmountRows.reduce((sum, row) => {
+                // Calculate total deductions from clearanceUntaggingRows
+                const totalUntaggingDeductions = clearanceUntaggingRows.reduce((sum, row) => {
                   const amount = parseFloat(row.amount?.replace(/,/g, '') || '0') || 0;
                   return sum + amount;
                 }, 0);
 
                 // Calculate remaining balance
-                const remainingBalance = approvedAmountValue - totalDeductions;
+                const remainingBalance = approvedAmountValue - totalUntaggingDeductions;
+
+                // Add new untagging row
+                const addUntaggingRow = () => {
+                  const newIndex = clearanceUntaggingRows.length + 1;
+                  setClearanceUntaggingRows([
+                    ...clearanceUntaggingRows,
+                    { label: `${getOrdinal(newIndex)} Untagging`, amount: '', date: '' }
+                  ]);
+                };
+
+                // Delete untagging row
+                const deleteUntaggingRow = (idx: number) => {
+                  const updated = clearanceUntaggingRows.filter((_, i) => i !== idx);
+                  // Re-label remaining rows
+                  const relabeled = updated.map((row, i) => ({
+                    ...row,
+                    label: `${getOrdinal(i + 1)} Untagging`
+                  }));
+                  setClearanceUntaggingRows(relabeled.length > 0 ? relabeled : [{ label: '1st Untagging', amount: '', date: '' }]);
+                };
 
                 return (
                   <React.Fragment key={key}>
                     <tr>
                       <td colSpan={5} className="p-0 border-b border-[#eee]">
                         <button
-                          className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                          className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
                           onClick={() => toggleDropdown(key)}
                         >
                           <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
                           <span>{doc.label}</span>
-                          {totalDeductions > 0 && (
-                            <span className="ml-2 text-[10px] bg-[#c62828] text-white px-2 py-0.5 rounded-full">
-                              -₱{totalDeductions.toLocaleString()}
+                          {totalUntaggingDeductions > 0 && (
+                            <span className="ml-2 text-[10px] bg-[#00AEEF] text-white px-2 py-0.5 rounded-full">
+                              ₱{totalUntaggingDeductions.toLocaleString()}
                             </span>
                           )}
                         </button>
@@ -2093,15 +2398,15 @@ function DocumentTable({
                                     ₱{approvedAmountValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                   </span>
                                 ) : (
-                                  <span className="text-xs text-[#e65100] italic">Not set - please set in PHASE 1</span>
+                                  <span className="text-xs text-[#e65100] italic">Not set - please set in Approved Amount for Release</span>
                                 )}
                               </div>
-                              {untaggingAmountRows.some(r => r.amount) && (
+                              {clearanceUntaggingRows.some(r => r.amount) && (
                                 <div className="mt-2 pt-2 border-t border-[#90caf9]">
                                   <div className="flex items-center justify-between text-xs">
-                                    <span className="text-[#1565c0]">Total Deductions (Untagging Amount):</span>
-                                    <span className="font-semibold text-[#c62828]">
-                                      -₱{totalDeductions.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    <span className="text-[#1565c0]">SETUP iFund:</span>
+                                    <span className="font-semibold text-[#1565c0]">
+                                      ₱{totalUntaggingDeductions.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
                                   </div>
                                   <div className="flex items-center justify-between text-xs mt-1">
@@ -2114,135 +2419,154 @@ function DocumentTable({
                               )}
                             </div>
 
+                            {/* Untagging Clearance & Documentary Requirements */}
                             <div className="bg-white border border-[#ddd] rounded p-3">
-                              <div className="text-xs font-semibold text-[#555] mb-2">Untagging Amount</div>
+                              <div className="text-xs font-semibold text-[#555] mb-3">Untagging Clearance & Documentary Requirements</div>
 
-                              {untaggingAmountRows.map((row, idx) => {
-                                // Calculate running total up to this row
-                                const runningDeduction = untaggingAmountRows.slice(0, idx + 1).reduce((sum, r) => {
-                                  const amount = parseFloat(r.amount?.replace(/,/g, '') || '0') || 0;
-                                  return sum + amount;
-                                }, 0);
-                                const runningBalance = approvedAmountValue - runningDeduction;
-                                const templateItemId = `${phase}-${doc.id}-untag-${idx}`;
-                                const uploadedDoc = getDocForItem(templateItemId);
-                                const isUploadingRow = uploadingItemId === templateItemId;
-                                const hasFile = !!uploadedDoc;
+                              {/* Table Header */}
+                              <div className="grid grid-cols-[minmax(120px,1fr)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(200px,2fr)_100px] gap-2 mb-2 px-2">
+                                <span className="text-xs font-semibold text-[#555]">Untagging</span>
+                                <span className="text-xs font-semibold text-[#555]">Amount</span>
+                                <span className="text-xs font-semibold text-[#555]">Date</span>
+                                <span className="text-xs font-semibold text-[#555]">File</span>
+                                <span className="text-xs font-semibold text-[#555]">Actions</span>
+                              </div>
 
-                                return (
-                                  <div key={idx} className="mb-3 pb-3 border-b border-[#eee] last:border-b-0 last:pb-0 last:mb-0">
-                                    <div className="flex items-center gap-3 mb-2">
-                                      <span className="text-xs font-semibold text-[#555] min-w-[50px]">#{idx + 1}</span>
-                                      <div className="flex-1 relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666] text-xs font-semibold">₱</span>
-                                        <input
-                                          type="text"
-                                          value={row.amount}
-                                          onChange={(e) => {
-                                            const value = e.target.value.replace(/[^0-9.]/g, '');
-                                            const updated = [...untaggingAmountRows];
-                                            updated[idx].amount = value;
-                                            setUntaggingAmountRows(updated);
-                                          }}
-                                          placeholder="Enter untagging amount"
-                                          disabled={!isEditMode}
-                                          className={`w-full border border-[#ddd] rounded px-2 py-1.5 pl-7 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                        />
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <label className="text-xs text-[#555]">Date:</label>
+                              <div className="space-y-2">
+                                {clearanceUntaggingRows.map((row, idx) => {
+                                  // Calculate running total up to this row
+                                  const runningDeduction = clearanceUntaggingRows.slice(0, idx + 1).reduce((sum, r) => {
+                                    const amount = parseFloat(r.amount?.replace(/,/g, '') || '0') || 0;
+                                    return sum + amount;
+                                  }, 0);
+                                  const runningBalance = approvedAmountValue - runningDeduction;
+
+                                  const templateItemId = `${phase}-${doc.id}-untagging-${idx}`;
+                                  const uploadedDoc = getDocForItem(templateItemId);
+                                  const isUploadingItem = uploadingItemId === templateItemId;
+                                  const hasFile = !!uploadedDoc;
+
+                                  return (
+                                    <div key={idx} className="border border-[#eee] rounded p-2 bg-[#fafafa]">
+                                      <div className="grid grid-cols-[minmax(120px,1fr)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(200px,2fr)_100px] gap-2 items-center">
+                                        {/* Untagging Label */}
+                                        <span className="text-xs font-semibold text-[#2e7d32]">{row.label}</span>
+
+                                        {/* Amount */}
+                                        <div className="relative">
+                                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[#666] text-xs">₱</span>
+                                          <input
+                                            type="text"
+                                            value={row.amount}
+                                            onChange={(e) => {
+                                              const value = e.target.value.replace(/[^0-9.,]/g, '');
+                                              const updated = [...clearanceUntaggingRows];
+                                              updated[idx].amount = value;
+                                              setClearanceUntaggingRows(updated);
+                                            }}
+                                            placeholder="0.00"
+                                            disabled={!isEditMode}
+                                            className={`w-full border border-[#ddd] rounded px-2 py-1.5 pl-5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                          />
+                                        </div>
+
+                                        {/* Date */}
                                         <input
                                           type="date"
-                                          value={row.date || ''}
+                                          value={row.date}
                                           onChange={(e) => {
-                                            const updated = [...untaggingAmountRows];
+                                            const updated = [...clearanceUntaggingRows];
                                             updated[idx].date = e.target.value;
-                                            setUntaggingAmountRows(updated);
+                                            setClearanceUntaggingRows(updated);
                                           }}
                                           disabled={!isEditMode}
-                                          className={`border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                          className={`w-full border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                         />
+
+                                        {/* File */}
+                                        <div className="flex-1 min-w-0">
+                                          {renderFileChips(templateItemId) ?? <span className="text-[#bbb] italic text-xs">No file</span>}
+                                        </div>
+
+                                        {/* Actions: Upload, View, Delete */}
+                                        <div className="flex gap-1">
+                                          {/* Upload */}
+                                          <button
+                                            className={`w-7 h-7 border-none rounded-md flex items-center justify-center text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                            title={isEditMode ? "Upload" : "View mode - editing disabled"}
+                                            onClick={() => handleUploadClick(templateItemId)}
+                                            disabled={!isEditMode || isUploadingItem}
+                                          >
+                                            {isUploadingItem
+                                              ? <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                              : <Icon icon="mdi:upload" width={14} height={14} />}
+                                          </button>
+
+                                          {/* View */}
+                                          <button
+                                            className={`w-7 h-7 border-none rounded-md flex items-center justify-center text-white ${hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
+                                            title="View"
+                                            onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
+                                            disabled={!hasFile}
+                                          >
+                                            <Icon icon="mdi:eye" width={14} height={14} />
+                                          </button>
+
+                                          {/* Delete File */}
+                                          <button
+                                            className={`w-7 h-7 border-none rounded-md flex items-center justify-center text-white ${hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
+                                            title="Delete file"
+                                            onClick={() => hasFile && handleDeleteAll(templateItemId)}
+                                            disabled={!hasFile || !isEditMode}
+                                          >
+                                            <Icon icon="mdi:delete" width={14} height={14} />
+                                          </button>
+
+                                          {/* Delete Row */}
+                                          <button
+                                            className={`w-7 h-7 border-none rounded-md flex items-center justify-center text-white ${isEditMode && clearanceUntaggingRows.length > 1 ? 'bg-[#757575] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
+                                            title="Delete row"
+                                            onClick={() => deleteUntaggingRow(idx)}
+                                            disabled={!isEditMode || clearanceUntaggingRows.length <= 1}
+                                          >
+                                            <Icon icon="mdi:close" width={14} height={14} />
+                                          </button>
+                                        </div>
                                       </div>
-                                      {hasFile && (
-                                        <span className="text-[10px] text-[#2e7d32] bg-[#e8f5e9] px-2 py-0.5 rounded">Uploaded</span>
+                                      {/* Running balance indicator */}
+                                      {row.amount && (
+                                        <div className="mt-1 pt-1 border-t border-[#eee] flex justify-end">
+                                          <span className={`text-[10px] ${runningBalance >= 0 ? 'text-[#2e7d32]' : 'text-[#c62828]'}`}>
+                                            Balance after this: ₱{runningBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                          </span>
+                                        </div>
                                       )}
-                                      <div className="flex gap-1.5">
-                                        <button
-                                          className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
-                                          title={isEditMode ? "Upload" : "View mode - editing disabled"}
-                                          onClick={() => handleUploadClick(templateItemId)}
-                                          disabled={isUploadingRow || !isEditMode}
-                                        >
-                                          {isUploadingRow ? (
-                                            <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
-                                          ) : (
-                                            <Icon icon="mdi:upload" width={14} height={14} />
-                                          )}
-                                        </button>
-                                        <button
-                                          className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
-                                            hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
-                                          }`}
-                                          title="View"
-                                          onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
-                                          disabled={!hasFile}
-                                        >
-                                          <Icon icon="mdi:eye-outline" width={14} height={14} />
-                                        </button>
-                                        <button
-                                          className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
-                                            hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
-                                          }`}
-                                          title={isEditMode ? "Delete file" : "View mode - editing disabled"}
-                                          onClick={() => hasFile && isEditMode && handleDeleteAll(templateItemId)}
-                                          disabled={!hasFile || !isEditMode}
-                                        >
-                                          <Icon icon="mdi:delete-outline" width={14} height={14} />
-                                        </button>
-                                        <button
-                                          onClick={() => {
-                                            if (untaggingAmountRows.length > 1) {
-                                              setUntaggingAmountRows(untaggingAmountRows.filter((_, i) => i !== idx));
-                                            }
-                                          }}
-                                          disabled={untaggingAmountRows.length === 1 || !isEditMode}
-                                          className="w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white bg-[#757575] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
-                                          title="Remove row"
-                                        >
-                                          <Icon icon="mdi:minus" width={14} height={14} />
-                                        </button>
-                                      </div>
                                     </div>
-                                    {row.amount && (
-                                      <div className="text-[10px] text-right">
-                                        <span className="text-[#666]">Balance after this row: </span>
-                                        <span className={`font-semibold ${runningBalance >= 0 ? 'text-[#2e7d32]' : 'text-[#c62828]'}`}>
-                                          ₱{runningBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
+                                  );
+                                })}
+                              </div>
+
+                              {/* Add Row Button */}
+                              {isEditMode && (
+                                <button
+                                  onClick={addUntaggingRow}
+                                  className="mt-3 flex items-center gap-1.5 text-xs text-[#1976d2] font-semibold hover:text-[#1565c0] transition-colors"
+                                >
+                                  <Icon icon="mdi:plus-circle" width={16} height={16} />
+                                  <span>Add Row</span>
+                                </button>
+                              )}
                             </div>
 
-                            <div className="flex items-center gap-3">
-                              <button
-                                onClick={() => {
-                                  setUntaggingAmountRows([...untaggingAmountRows, { amount: '', date: '' }]);
-                                }}
-                                disabled={!isEditMode}
-                                className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
-                              >
-                                + Add More Row
-                              </button>
+                            {/* Save Button */}
+                            <div className="flex justify-end">
                               <button
                                 onClick={() => saveDropdownData(
-                                  { untaggingAmountRows },
-                                  `${untaggingAmountRows.length} untagging amount row(s) saved successfully!`
+                                  { clearanceUntaggingRows },
+                                  `${clearanceUntaggingRows.length} untagging row(s) saved successfully!`
                                 )}
                                 disabled={savingData || !isEditMode}
-                                className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors ml-auto disabled:bg-[#ccc] disabled:cursor-not-allowed"
+                                className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
                               >
                                 {savingData ? 'Saving...' : 'Save All'}
                               </button>
@@ -2255,30 +2579,30 @@ function DocumentTable({
                 );
               }
 
-              // Clearance to Untag dropdown handler
+              // Clearance to Untag dropdown handler (original)
               if (doc.label === 'Clearance to Untag' && doc.type === 'dropdown') {
-                // Get Approved Amount for Release (for display only, no deduction)
-                const approvedAmountValue = parseFloat(approvedAmount?.replace(/,/g, '') || '0') || 0;
-
-                // Determine the item type label based on Abstract of Quotation selection
-                const itemTypeLabel = abstractQuotationType === 'Non-equipment' ? 'Non-Equipment' : 'Equipment';
-
-                // Get the template item ID for the Clearance to Untag file upload
-                const clearanceTemplateItemId = `${phase}-${doc.id}-clearance`;
-                const clearanceDoc = getDocForItem(clearanceTemplateItemId);
-                const isClearanceUploading = uploadingItemId === clearanceTemplateItemId;
-                const hasClearanceFile = !!clearanceDoc;
+                // Helper function to get ordinal suffix
+                const getOrdinal = (n: number) => {
+                  const s = ['th', 'st', 'nd', 'rd'];
+                  const v = n % 100;
+                  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+                };
 
                 return (
                   <React.Fragment key={key}>
                     <tr>
                       <td colSpan={5} className="p-0 border-b border-[#eee]">
                         <button
-                          className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                          className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
                           onClick={() => toggleDropdown(key)}
                         >
                           <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
                           <span>{doc.label}</span>
+                          {abstractQuotationRows.length > 0 && (
+                            <span className="ml-2 text-[10px] bg-[#2e7d32] text-white px-2 py-0.5 rounded-full">
+                              {abstractQuotationRows.length} item(s)
+                            </span>
+                          )}
                         </button>
                       </td>
                     </tr>
@@ -2286,33 +2610,15 @@ function DocumentTable({
                       <tr>
                         <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
                           <div className="space-y-3">
-                            {/* Info banner - no deduction */}
+                            {/* Info banner */}
                             <div className="flex items-start gap-2 bg-[#e3f2fd] border border-[#90caf9] rounded-lg py-2.5 px-4 text-xs text-[#1565c0] leading-[1.4]">
                               <Icon icon="mdi:information-outline" width={16} height={16} className="min-w-4 mt-px" />
-                              <span>This section is for tracking clearance documents. Amounts entered here are for reference only and do not affect the remaining balance.</span>
+                              <span>This section displays clearance details based on items from &quot;List of Intervention&quot;. Amounts entered here are for reference only.</span>
                             </div>
 
-                            {/* Clearance to Untag file upload row */}
+                            {/* Clearance Details */}
                             <div className="bg-white border border-[#ddd] rounded p-3">
-                              <div className="flex items-center gap-3">
-                                <span className="flex-1 text-xs font-semibold text-[#333]">Clearance to Untag</span>
-                                <div className="flex-1">
-                                  {renderFileChips(clearanceTemplateItemId) ?? <span className="text-[#bbb] italic text-xs">No file uploaded</span>}
-                                </div>
-                                <ActionButtons
-                                  templateItemId={clearanceTemplateItemId}
-                                  isUploading={isClearanceUploading}
-                                  hasFile={hasClearanceFile}
-                                  onUpload={() => handleUploadClick(clearanceTemplateItemId)}
-                                  onDelete={() => hasClearanceFile && handleDeleteAll(clearanceTemplateItemId)}
-                                  isEditMode={isEditMode}
-                                />
-                              </div>
-                            </div>
-
-                            {/* Input rows - synced with Abstract of Quotation */}
-                            <div className="bg-white border border-[#ddd] rounded p-3">
-                              <div className="text-xs font-semibold text-[#555] mb-3">Clearance Details (for reference)</div>
+                              <div className="text-xs font-semibold text-[#555] mb-3">Clearance Details</div>
 
                               {abstractQuotationRows.length === 0 ? (
                                 <p className="text-xs text-[#999] italic text-center py-4">
@@ -2324,45 +2630,53 @@ function DocumentTable({
                                     const clearanceData = clearanceUntagRows[idx] || { amount: '', supplier: '', date: '' };
                                     const typeLabel = aqRow.type || 'Type';
                                     const itemName = aqRow.name || 'No name';
+                                    const templateItemId = `${phase}-${doc.id}-clearance-${idx}`;
+                                    const uploadedDoc = getDocForItem(templateItemId);
+                                    const isUploadingItem = uploadingItemId === templateItemId;
+                                    const hasFile = !!uploadedDoc;
 
                                     return (
                                       <div key={idx} className="border border-[#eee] rounded p-3 bg-[#fafafa]">
-                                        <div className="flex items-center gap-2 mb-2">
-                                          <span className="text-xs font-semibold text-[#2e7d32]">#{idx + 1}</span>
-                                          <span className="text-xs font-semibold text-[#555]">{typeLabel}</span>
+                                        <div className="flex items-center gap-2 mb-3">
+                                          <span className="text-xs font-semibold text-[#2e7d32]">{getOrdinal(idx + 1)} Untagging &amp; Amount</span>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-3 mb-2">
-                                          <div>
-                                            <label className="block text-xs text-[#555] mb-1">{typeLabel} Name</label>
-                                            <input
-                                              type="text"
-                                              value={itemName}
-                                              disabled
-                                              className="w-full border border-[#ddd] rounded px-2 py-1.5 text-xs bg-gray-100 cursor-not-allowed"
-                                              title="Fetched from Abstract of Quotation"
-                                            />
-                                          </div>
+
+                                        {/* Item Name (read-only from List of Intervention) */}
+                                        <div className="mb-3">
+                                          <label className="block text-xs text-[#555] mb-1">{typeLabel} Name</label>
+                                          <input
+                                            type="text"
+                                            value={itemName}
+                                            disabled
+                                            className="w-full border border-[#ddd] rounded px-2 py-1.5 text-xs bg-gray-100 cursor-not-allowed"
+                                            title="Fetched from List of Intervention"
+                                          />
+                                        </div>
+
+                                        {/* Amount, Supplier, Date inputs */}
+                                        <div className="grid grid-cols-3 gap-3 mb-3">
                                           <div>
                                             <label className="block text-xs text-[#555] mb-1">Amount</label>
-                                            <input
-                                              type="text"
-                                              value={clearanceData.amount}
-                                              onChange={(e) => {
-                                                const value = e.target.value.replace(/[^0-9.]/g, '');
-                                                const updated = [...clearanceUntagRows];
-                                                if (!updated[idx]) {
-                                                  updated[idx] = { amount: '', supplier: '', date: '' };
-                                                }
-                                                updated[idx].amount = value;
-                                                setClearanceUntagRows(updated);
-                                              }}
-                                              placeholder="Enter amount"
-                                              disabled={!isEditMode}
-                                              className={`w-full border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                            />
+                                            <div className="relative">
+                                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[#666] text-xs">₱</span>
+                                              <input
+                                                type="text"
+                                                value={clearanceData.amount}
+                                                onChange={(e) => {
+                                                  const value = e.target.value.replace(/[^0-9.,]/g, '');
+                                                  const updated = [...clearanceUntagRows];
+                                                  if (!updated[idx]) {
+                                                    updated[idx] = { amount: '', supplier: '', date: '' };
+                                                  }
+                                                  updated[idx].amount = value;
+                                                  setClearanceUntagRows(updated);
+                                                }}
+                                                placeholder="0.00"
+                                                disabled={!isEditMode}
+                                                className={`w-full border border-[#ddd] rounded px-2 py-1.5 pl-5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                              />
+                                            </div>
                                           </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-3">
                                           <div>
                                             <label className="block text-xs text-[#555] mb-1">Supplier</label>
                                             <input
@@ -2397,6 +2711,47 @@ function DocumentTable({
                                               disabled={!isEditMode}
                                               className={`w-full border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                             />
+                                          </div>
+                                        </div>
+
+                                        {/* File upload section */}
+                                        <div className="flex items-center gap-3 pt-2 border-t border-[#eee]">
+                                          <span className="text-xs text-[#555]">File:</span>
+                                          <div className="flex-1">
+                                            {renderFileChips(templateItemId) ?? <span className="text-[#bbb] italic text-xs">No file uploaded</span>}
+                                          </div>
+                                          <div className="flex gap-1">
+                                            {/* Upload */}
+                                            <button
+                                              className={`w-7 h-7 border-none rounded-md flex items-center justify-center text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                              title={isEditMode ? "Upload" : "View mode - editing disabled"}
+                                              onClick={() => handleUploadClick(templateItemId)}
+                                              disabled={!isEditMode || isUploadingItem}
+                                            >
+                                              {isUploadingItem
+                                                ? <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                                : <Icon icon="mdi:upload" width={14} height={14} />}
+                                            </button>
+
+                                            {/* View */}
+                                            <button
+                                              className={`w-7 h-7 border-none rounded-md flex items-center justify-center text-white ${hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
+                                              title="View"
+                                              onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
+                                              disabled={!hasFile}
+                                            >
+                                              <Icon icon="mdi:eye" width={14} height={14} />
+                                            </button>
+
+                                            {/* Delete File */}
+                                            <button
+                                              className={`w-7 h-7 border-none rounded-md flex items-center justify-center text-white ${hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
+                                              title="Delete file"
+                                              onClick={() => hasFile && handleDeleteAll(templateItemId)}
+                                              disabled={!hasFile || !isEditMode}
+                                            >
+                                              <Icon icon="mdi:delete" width={14} height={14} />
+                                            </button>
                                           </div>
                                         </div>
                                       </div>
@@ -2441,7 +2796,7 @@ function DocumentTable({
                     <tr>
                       <td colSpan={5} className="p-0 border-b border-[#eee]">
                         <button
-                          className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                          className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
                           onClick={() => toggleDropdown(key)}
                         >
                           <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
@@ -2514,7 +2869,7 @@ function DocumentTable({
                                   </button>
                                 </div>
                                 {hasFile && (
-                                  <span className="text-[10px] text-[#2e7d32] bg-[#e8f5e9] px-2 py-0.5 rounded">Uploaded</span>
+                                  <span className="text-[10px] text-[#2e7d32] bg-[#fffff] px-2 py-0.5 rounded">Uploaded</span>
                                 )}
                               </div>
                             )}
@@ -2532,7 +2887,7 @@ function DocumentTable({
                   <tr>
                     <td colSpan={5} className="p-0 border-b border-[#eee]">
                       <button 
-                        className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
+                        className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
                         onClick={() => toggleDropdown(key)}
                       >
                         <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
@@ -2664,7 +3019,7 @@ function DocumentTable({
                   <tr>
                     <td colSpan={5} className="p-0 border-b border-[#eee]">
                       <button
-                        className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                        className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
                         onClick={() => toggleDropdown(key)}
                       >
                         <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
@@ -2801,7 +3156,7 @@ function DocumentTable({
                                     </button>
                                   </div>
                                   {hasFile && (
-                                    <span className="text-[10px] text-[#2e7d32] bg-[#e8f5e9] px-2 py-0.5 rounded">Uploaded</span>
+                                    <span className="text-[10px] text-[#2e7d32] bg-[#fffff] px-2 py-0.5 rounded">Uploaded</span>
                                   )}
                                 </div>
                                 {!row.quarter && (
@@ -2840,7 +3195,7 @@ function DocumentTable({
                   <tr>
                     <td colSpan={5} className="p-0 border-b border-[#eee]">
                       <button 
-                        className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
+                        className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
                         onClick={() => toggleDropdown(key)}
                       >
                         <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
@@ -2957,13 +3312,1413 @@ function DocumentTable({
               );
             }
 
-                // Generic select-based dropdown for specific labels
+                // Custom handler for Amendments to the MOA
+                if (doc.label === 'Amendments to the MOA' && doc.options) {
+                  const selectedOption = dropdownSelections[doc.id] || '';
+                  const templateItemId = selectedOption ? `${phase}-${doc.id}-${selectedOption}` : '';
+                  const uploadedDoc = selectedOption ? getDocForItem(templateItemId) : null;
+                  const isUploading = uploadingItemId === templateItemId;
+                  const hasFile = !!uploadedDoc;
+
+                  // Helper function to get ordinal suffix
+                  const getOrdinal = (n: number) => {
+                    const s = ['th', 'st', 'nd', 'rd'];
+                    const v = n % 100;
+                    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+                  };
+
+                  // Add PDE row
+                  const addPdeRow = () => {
+                    setPdeRows([...pdeRows, { months: '', date: '' }]);
+                  };
+
+                  // Delete PDE row
+                  const deletePdeRow = (idx: number) => {
+                    if (pdeRows.length > 1) {
+                      setPdeRows(pdeRows.filter((_, i) => i !== idx));
+                    }
+                  };
+
+                  // Add LIB row
+                  const addLibRow = () => {
+                    setLibRows([...libRows, { date: '' }]);
+                  };
+
+                  // Delete LIB row
+                  const deleteLibRow = (idx: number) => {
+                    if (libRows.length > 1) {
+                      setLibRows(libRows.filter((_, i) => i !== idx));
+                    }
+                  };
+
+                  return (
+                    <React.Fragment key={key}>
+                      <tr>
+                        <td colSpan={5} className="p-0 border-b border-[#eee]">
+                          <button
+                            className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                            onClick={() => toggleDropdown(key)}
+                          >
+                            <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                            <span>{doc.label}</span>
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-3">
+                                <select
+                                  value={selectedOption}
+                                  onChange={(e) => {
+                                    setDropdownSelections(prev => ({ ...prev, [doc.id]: e.target.value }));
+                                  }}
+                                  className={`border border-[#ddd] rounded px-3 py-2 text-xs flex-1 ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                  disabled={!isEditMode}
+                                >
+                                  <option value="">Select option...</option>
+                                  {doc.options.map(opt => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                  ))}
+                                </select>
+                                <button
+                                  onClick={() => handleSaveDropdownSelection(doc.id)}
+                                  disabled={!selectedOption || savingData || !isEditMode}
+                                  className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] disabled:bg-[#ccc] disabled:cursor-not-allowed transition-colors"
+                                >
+                                  {savingData ? 'Saving...' : 'Save'}
+                                </button>
+                              </div>
+
+                              {/* Show file upload for selected option (except Change in Project Duration - Annex C) */}
+                              {selectedOption && selectedOption !== 'Change in Project Duration - Annex C' && (
+                                <div className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                  <span className="flex-1 text-xs text-[#333] font-medium">{selectedOption}</span>
+                                  <div className="flex gap-1.5">
+                                    <button
+                                      className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                      title={isEditMode ? "Upload" : "View mode - editing disabled"}
+                                      onClick={() => handleUploadClick(templateItemId)}
+                                      disabled={isUploading || !isEditMode}
+                                    >
+                                      {isUploading ? (
+                                        <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                      ) : (
+                                        <Icon icon="mdi:upload" width={14} height={14} />
+                                      )}
+                                    </button>
+                                    <button
+                                      className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                        hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                      }`}
+                                      title="View"
+                                      onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
+                                      disabled={!hasFile}
+                                    >
+                                      <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                    </button>
+                                    <button
+                                      className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                        hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                      }`}
+                                      title={isEditMode ? "Delete" : "View mode - editing disabled"}
+                                      onClick={() => hasFile && isEditMode && handleDeleteAll(templateItemId)}
+                                      disabled={!hasFile || !isEditMode}
+                                    >
+                                      <Icon icon="mdi:delete-outline" width={14} height={14} />
+                                    </button>
+                                  </div>
+                                  {hasFile && (
+                                    <span className="text-[10px] text-[#2e7d32] bg-[#fffff] px-2 py-0.5 rounded">Uploaded</span>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Special handling for Change in Project Duration - Annex C */}
+                              {selectedOption === 'Change in Project Duration - Annex C' && (
+                                <div className="space-y-4">
+                                  {/* Nested dropdown to select PDE or LIB */}
+                                  <div className="flex items-center gap-3">
+                                    <select
+                                      value={annexCSelection}
+                                      onChange={(e) => setAnnexCSelection(e.target.value)}
+                                      className={`border border-[#ddd] rounded px-3 py-2 text-xs flex-1 ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                      disabled={!isEditMode}
+                                    >
+                                      <option value="">Select type...</option>
+                                      <option value="PDE">Project Duration Extension</option>
+                                      <option value="LIB">Line-Item Budget (LIB) Realignment Restructuring</option>
+                                    </select>
+                                  </div>
+
+                                  {/* Project Duration Extension (PDE) Section */}
+                                  {annexCSelection === 'PDE' && (
+                                    <div className="bg-white border border-[#ddd] rounded p-3">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <div className="text-xs font-semibold text-[#555]">Project Duration Extension</div>
+                                        {isEditMode && (
+                                          <button
+                                            onClick={addPdeRow}
+                                            className="flex items-center gap-1 text-xs text-[#1976d2] font-semibold hover:text-[#1565c0] transition-colors"
+                                          >
+                                            <Icon icon="mdi:plus-circle" width={16} height={16} />
+                                            <span>Add Row</span>
+                                          </button>
+                                        )}
+                                      </div>
+
+                                      {/* PDE Table Header */}
+                                      <div className="grid grid-cols-[minmax(100px,1fr)_minmax(150px,1.5fr)_minmax(150px,1.5fr)_minmax(200px,2fr)_100px] gap-2 mb-2 px-2">
+                                        <span className="text-xs font-semibold text-[#555]">PDE</span>
+                                        <span className="text-xs font-semibold text-[#555]">No. of Months Extension</span>
+                                        <span className="text-xs font-semibold text-[#555]">Date</span>
+                                        <span className="text-xs font-semibold text-[#555]">File</span>
+                                        <span className="text-xs font-semibold text-[#555]">Actions</span>
+                                      </div>
+
+                                      <div className="space-y-2">
+                                        {pdeRows.map((row, idx) => {
+                                          const pdeTemplateItemId = `${phase}-${doc.id}-pde-${idx}`;
+                                          const pdeUploadedDoc = getDocForItem(pdeTemplateItemId);
+                                          const isPdeUploading = uploadingItemId === pdeTemplateItemId;
+                                          const hasPdeFile = !!pdeUploadedDoc;
+
+                                          return (
+                                            <div key={idx} className="grid grid-cols-[minmax(100px,1fr)_minmax(150px,1.5fr)_minmax(150px,1.5fr)_minmax(200px,2fr)_100px] gap-2 items-center border border-[#eee] rounded p-2 bg-[#fafafa]">
+                                              {/* PDE Label */}
+                                              <span className="text-xs font-semibold text-[#2e7d32]">{getOrdinal(idx + 1)} PDE</span>
+
+                                              {/* No. of Months Extension */}
+                                              <input
+                                                type="text"
+                                                value={row.months}
+                                                onChange={(e) => {
+                                                  const updated = [...pdeRows];
+                                                  updated[idx].months = e.target.value;
+                                                  setPdeRows(updated);
+                                                }}
+                                                placeholder="Enter months"
+                                                disabled={!isEditMode}
+                                                className={`w-full border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                              />
+
+                                              {/* Date */}
+                                              <input
+                                                type="date"
+                                                value={row.date}
+                                                onChange={(e) => {
+                                                  const updated = [...pdeRows];
+                                                  updated[idx].date = e.target.value;
+                                                  setPdeRows(updated);
+                                                }}
+                                                disabled={!isEditMode}
+                                                className={`w-full border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                              />
+
+                                              {/* File */}
+                                              <div className="flex-1 min-w-0">
+                                                {renderFileChips(pdeTemplateItemId) ?? <span className="text-[#bbb] italic text-xs">No file</span>}
+                                              </div>
+
+                                              {/* Actions */}
+                                              <div className="flex gap-1.5">
+                                                <button
+                                                  className={`w-7 h-7 border-none rounded-md flex items-center justify-center text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                  title={isEditMode ? "Upload" : "View mode - editing disabled"}
+                                                  onClick={() => handleUploadClick(pdeTemplateItemId)}
+                                                  disabled={!isEditMode || isPdeUploading}
+                                                >
+                                                  {isPdeUploading
+                                                    ? <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                                    : <Icon icon="mdi:upload" width={14} height={14} />}
+                                                </button>
+                                                <button
+                                                  className={`w-7 h-7 border-none rounded-md flex items-center justify-center text-white ${hasPdeFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
+                                                  title="Delete file"
+                                                  onClick={() => hasPdeFile && handleDeleteAll(pdeTemplateItemId)}
+                                                  disabled={!hasPdeFile || !isEditMode}
+                                                >
+                                                  <Icon icon="mdi:delete" width={14} height={14} />
+                                                </button>
+                                                <button
+                                                  className={`w-7 h-7 border-none rounded-md flex items-center justify-center text-white ${isEditMode && pdeRows.length > 1 ? 'bg-[#757575] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
+                                                  title="Delete row"
+                                                  onClick={() => deletePdeRow(idx)}
+                                                  disabled={!isEditMode || pdeRows.length <= 1}
+                                                >
+                                                  <Icon icon="mdi:close" width={14} height={14} />
+                                                </button>
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+
+                                      {/* Save Button for PDE */}
+                                      <div className="flex justify-end mt-3">
+                                        <button
+                                          onClick={() => saveDropdownData(
+                                            { pdeRows, annexCSelection },
+                                            'Project Duration Extension data saved successfully!'
+                                          )}
+                                          disabled={savingData || !isEditMode}
+                                          className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
+                                        >
+                                          {savingData ? 'Saving...' : 'Save All'}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Line-Item Budget (LIB) Realignment Restructuring Section */}
+                                  {annexCSelection === 'LIB' && (
+                                    <div className="bg-white border border-[#ddd] rounded p-3">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <div className="text-xs font-semibold text-[#555]">Line-Item Budget (LIB) Realignment Restructuring</div>
+                                        {isEditMode && (
+                                          <button
+                                            onClick={addLibRow}
+                                            className="flex items-center gap-1 text-xs text-[#1976d2] font-semibold hover:text-[#1565c0] transition-colors"
+                                          >
+                                            <Icon icon="mdi:plus-circle" width={16} height={16} />
+                                            <span>Add Row</span>
+                                          </button>
+                                        )}
+                                      </div>
+
+                                      {/* LIB Table Header */}
+                                      <div className="grid grid-cols-[minmax(100px,1fr)_minmax(150px,1.5fr)_minmax(200px,2fr)_100px] gap-2 mb-2 px-2">
+                                        <span className="text-xs font-semibold text-[#555]">LIB</span>
+                                        <span className="text-xs font-semibold text-[#555]">Date</span>
+                                        <span className="text-xs font-semibold text-[#555]">File</span>
+                                        <span className="text-xs font-semibold text-[#555]">Actions</span>
+                                      </div>
+
+                                      <div className="space-y-2">
+                                        {libRows.map((row, idx) => {
+                                          const libTemplateItemId = `${phase}-${doc.id}-lib-${idx}`;
+                                          const libUploadedDoc = getDocForItem(libTemplateItemId);
+                                          const isLibUploading = uploadingItemId === libTemplateItemId;
+                                          const hasLibFile = !!libUploadedDoc;
+
+                                          return (
+                                            <div key={idx} className="grid grid-cols-[minmax(100px,1fr)_minmax(150px,1.5fr)_minmax(200px,2fr)_100px] gap-2 items-center border border-[#eee] rounded p-2 bg-[#fafafa]">
+                                              {/* LIB Label */}
+                                              <span className="text-xs font-semibold text-[#2e7d32]">{getOrdinal(idx + 1)} LIB</span>
+
+                                              {/* Date */}
+                                              <input
+                                                type="date"
+                                                value={row.date}
+                                                onChange={(e) => {
+                                                  const updated = [...libRows];
+                                                  updated[idx].date = e.target.value;
+                                                  setLibRows(updated);
+                                                }}
+                                                disabled={!isEditMode}
+                                                className={`w-full border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                              />
+
+                                              {/* File */}
+                                              <div className="flex-1 min-w-0">
+                                                {renderFileChips(libTemplateItemId) ?? <span className="text-[#bbb] italic text-xs">No file</span>}
+                                              </div>
+
+                                              {/* Actions */}
+                                              <div className="flex gap-1.5">
+                                                <button
+                                                  className={`w-7 h-7 border-none rounded-md flex items-center justify-center text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                  title={isEditMode ? "Upload" : "View mode - editing disabled"}
+                                                  onClick={() => handleUploadClick(libTemplateItemId)}
+                                                  disabled={!isEditMode || isLibUploading}
+                                                >
+                                                  {isLibUploading
+                                                    ? <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                                    : <Icon icon="mdi:upload" width={14} height={14} />}
+                                                </button>
+                                                <button
+                                                  className={`w-7 h-7 border-none rounded-md flex items-center justify-center text-white ${hasLibFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
+                                                  title="Delete file"
+                                                  onClick={() => hasLibFile && handleDeleteAll(libTemplateItemId)}
+                                                  disabled={!hasLibFile || !isEditMode}
+                                                >
+                                                  <Icon icon="mdi:delete" width={14} height={14} />
+                                                </button>
+                                                <button
+                                                  className={`w-7 h-7 border-none rounded-md flex items-center justify-center text-white ${isEditMode && libRows.length > 1 ? 'bg-[#757575] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
+                                                  title="Delete row"
+                                                  onClick={() => deleteLibRow(idx)}
+                                                  disabled={!isEditMode || libRows.length <= 1}
+                                                >
+                                                  <Icon icon="mdi:close" width={14} height={14} />
+                                                </button>
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+
+                                      {/* Save Button for LIB */}
+                                      <div className="flex justify-end mt-3">
+                                        <button
+                                          onClick={() => saveDropdownData(
+                                            { libRows, annexCSelection },
+                                            'Line-Item Budget data saved successfully!'
+                                          )}
+                                          disabled={savingData || !isEditMode}
+                                          className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
+                                        >
+                                          {savingData ? 'Saving...' : 'Save All'}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                }
+
+                // Custom handler for Refund Documents dropdown
+                if (doc.label === 'Refund Documents' && doc.type === 'dropdown') {
+                  const defaultRefundOptions = ['Letter in acknowledgement of PDCs', 'Receipt of PDC form'];
+                  const isCustomRefundOption = (type: string) => !defaultRefundOptions.includes(type);
+
+                  return (
+                    <React.Fragment key={key}>
+                      <tr>
+                        <td colSpan={5} className="p-0 border-b border-[#eee]">
+                          <button
+                            className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                            onClick={() => toggleDropdown(key)}
+                          >
+                            <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                            <span>{doc.label}</span>
+                            {refundDocumentRows.length > 0 && (
+                              <span className="ml-2 text-[10px] bg-[#2e7d32] text-white px-2 py-0.5 rounded-full">
+                                {refundDocumentRows.length} document(s)
+                              </span>
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                            <div className="space-y-3">
+                              {/* Dropdown to add new refund document */}
+                              <div className="flex items-center justify-between mb-4">
+                                <span className="text-xs font-semibold text-[#555]">Select Refund Document Type</span>
+                                <div className="flex items-center gap-3 flex-1 ml-4">
+                                  {/* Custom dropdown */}
+                                  <div className="flex-1 relative">
+                                    <button
+                                      ref={refundDropdownButtonRef}
+                                      type="button"
+                                      onClick={() => {
+                                        if (!isEditMode) return;
+                                        if (!refundDropdownOpen) {
+                                          const rect = refundDropdownButtonRef.current?.getBoundingClientRect();
+                                          if (rect) {
+                                            setRefundDropdownPos({
+                                              top: rect.top,
+                                              left: rect.left,
+                                              width: rect.width,
+                                            });
+                                          }
+                                        }
+                                        setRefundDropdownOpen(!refundDropdownOpen);
+                                      }}
+                                      className={`w-full border border-[#ddd] rounded px-3 py-2 text-xs text-left flex items-center justify-between ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : 'bg-white cursor-pointer hover:border-[#aaa]'}`}
+                                      disabled={!isEditMode}
+                                    >
+                                      <span className="text-[#999]">Select a refund document type...</span>
+                                      <Icon icon={refundDropdownOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'} width={16} height={16} className="text-[#666]" />
+                                    </button>
+
+                                    {/* Dropdown menu */}
+                                    {refundDropdownOpen && typeof window !== 'undefined' && createPortal(
+                                      <div
+                                        ref={refundDropdownRef}
+                                        style={{
+                                          position: 'fixed',
+                                          top: refundDropdownPos.top,
+                                          left: refundDropdownPos.left,
+                                          width: refundDropdownPos.width,
+                                          transform: 'translateY(calc(-100% - 4px))',
+                                          zIndex: 99999,
+                                        }}
+                                        className="bg-white border border-[#ddd] rounded shadow-lg max-h-[300px] overflow-y-auto"
+                                      >
+                                        {/* Refund document type options */}
+                                        {refundDocumentsOptions.map(type => (
+                                          <div
+                                            key={type}
+                                            className="group px-3 py-2 text-xs cursor-pointer flex items-center justify-between hover:bg-[#f5f5f5] text-[#333]"
+                                            onClick={() => {
+                                              // Add new row with this refund document type
+                                              const newRow = {
+                                                id: `refund-${Date.now()}-${Math.random()}`,
+                                                type: type,
+                                                date: ''
+                                              };
+                                              setRefundDocumentRows(prev => [...prev, newRow]);
+                                              setRefundDropdownOpen(false);
+                                            }}
+                                          >
+                                            <span>{type}</span>
+                                            {/* X button - only for custom types, visible on hover */}
+                                            {isCustomRefundOption(type) && (
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  if (confirm(`Remove "${type}" from available options?`)) {
+                                                    const newTypes = refundDocumentsOptions.filter(t => t !== type);
+                                                    setRefundDocumentsOptions(newTypes);
+                                                    saveDropdownData(
+                                                      { refundDocumentsOptions: newTypes },
+                                                      `Refund document type "${type}" removed successfully!`
+                                                    );
+                                                  }
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center text-[#c62828] hover:bg-[#ffebee] rounded transition-opacity"
+                                                title={`Remove "${type}"`}
+                                              >
+                                                <Icon icon="mdi:close" width={14} height={14} />
+                                              </button>
+                                            )}
+                                          </div>
+                                        ))}
+
+                                        {/* Add new option */}
+                                        <div
+                                          className="px-3 py-2 text-xs text-[#1976d2] font-semibold hover:bg-[#e3f2fd] cursor-pointer border-t border-[#eee]"
+                                          onClick={() => {
+                                            setShowAddRefundDocModal(true);
+                                            setRefundDropdownOpen(false);
+                                          }}
+                                        >
+                                          + Add new option
+                                        </div>
+                                      </div>,
+                                      document.body
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* List of added refund documents - Grouped by Type */}
+                              {refundDocumentRows.length === 0 && (
+                                <p className="text-xs text-[#999] italic text-center py-4">
+                                  No refund documents added yet. Select a refund document type from the dropdown above.
+                                </p>
+                              )}
+
+                              {/* Group refund documents by type */}
+                              {(() => {
+                                const groupedRefunds = refundDocumentRows.reduce((acc, row) => {
+                                  if (!acc[row.type]) acc[row.type] = [];
+                                  acc[row.type].push(row);
+                                  return acc;
+                                }, {} as Record<string, typeof refundDocumentRows>);
+
+                                return Object.entries(groupedRefunds).map(([refundType, rows]) => (
+                                  <div key={refundType} className="mb-4">
+                                    {/* Refund Document Type Header with Add Button */}
+                                    <div className="flex items-center justify-between mb-3 bg-[#f0f0f0] px-4 py-2 rounded-t-lg border border-[#ddd]">
+                                      <span className="text-xs font-bold text-[#333]">{refundType}</span>
+                                      {isEditMode && (
+                                        <button
+                                          onClick={() => {
+                                            const newRow = {
+                                              id: `refund-${Date.now()}-${Math.random()}`,
+                                              type: refundType,
+                                              date: ''
+                                            };
+                                            setRefundDocumentRows(prev => [...prev, newRow]);
+                                          }}
+                                          className="flex items-center gap-1 text-xs text-[#1976d2] hover:underline font-semibold"
+                                        >
+                                          <Icon icon="mdi:plus-circle" width={14} height={14} />
+                                          Add New Row
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    {/* Refund Documents of this type */}
+                                    <div className="space-y-2 border-l border-r border-b border-[#ddd] rounded-b-lg p-3 bg-white">
+                                      {rows.map((row, index) => {
+                                        const templateItemId = `${phase}-${doc.id}-${row.id}`;
+                                        const uploadedDoc = getDocForItem(templateItemId);
+                                        const isUploading = uploadingItemId === templateItemId;
+                                        const hasFile = !!uploadedDoc;
+
+                                        return (
+                                          <div key={row.id} className="bg-[#fafafa] border border-[#e0e0e0] rounded-lg p-3">
+                                            <div className="flex items-center justify-between mb-3">
+                                              <div className="flex items-center gap-3 flex-1">
+                                                <span className="text-xs font-semibold text-[#555] min-w-[180px]">
+                                                  {row.type} #{index + 1}
+                                                </span>
+                                                {/* Date Selector */}
+                                                <div className="flex items-center gap-2">
+                                                  <label className="text-xs text-[#555]">Date:</label>
+                                                  <input
+                                                    type="date"
+                                                    value={row.date || ''}
+                                                    onChange={(e) => {
+                                                      const updatedRows = refundDocumentRows.map(r =>
+                                                        r.id === row.id ? { ...r, date: e.target.value } : r
+                                                      );
+                                                      setRefundDocumentRows(updatedRows);
+                                                    }}
+                                                    className={`border border-[#ddd] rounded px-2 py-1 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                    disabled={!isEditMode}
+                                                  />
+                                                </div>
+                                              </div>
+                                              {isEditMode && (
+                                                <button
+                                                  onClick={() => {
+                                                    setRemoveRefundDocConfirmModal({
+                                                      show: true,
+                                                      refundDocId: row.id,
+                                                      refundDocName: `${row.type} #${index + 1}`
+                                                    });
+                                                  }}
+                                                  className="text-[#c62828] text-xs hover:underline"
+                                                >
+                                                  Remove
+                                                </button>
+                                              )}
+                                            </div>
+
+                                            {/* File upload section */}
+                                            <div className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                              <span className="flex-1 text-xs text-[#333] font-medium">
+                                                {row.type}
+                                              </span>
+                                              <div className="flex gap-1.5">
+                                                <button
+                                                  className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
+                                                  title={isEditMode ? "Upload" : "View mode - editing disabled"}
+                                                  onClick={() => handleUploadClick(templateItemId)}
+                                                  disabled={isUploading || !isEditMode}
+                                                >
+                                                  {isUploading ? (
+                                                    <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                                  ) : (
+                                                    <Icon icon="mdi:upload" width={14} height={14} />
+                                                  )}
+                                                </button>
+
+                                                {hasFile && (
+                                                  <>
+                                                    <button
+                                                      className="w-7 h-7 bg-[#1976d2] border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 hover:opacity-80 text-white"
+                                                      title="View Document"
+                                                      onClick={() => setPreviewDoc(uploadedDoc)}
+                                                    >
+                                                      <Icon icon="mdi:eye" width={14} height={14} />
+                                                    </button>
+                                                    <button
+                                                      className="w-7 h-7 bg-[#388e3c] border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 hover:opacity-80 text-white"
+                                                      title="Download Document"
+                                                      onClick={() => handleDownload(uploadedDoc)}
+                                                    >
+                                                      <Icon icon="mdi:download" width={14} height={14} />
+                                                    </button>
+                                                    <button
+                                                      className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
+                                                      title={isEditMode ? "Delete Document" : "View mode - editing disabled"}
+                                                      onClick={() => isEditMode && handleDeleteAll(templateItemId)}
+                                                      disabled={!isEditMode}
+                                                    >
+                                                      <Icon icon="mdi:delete" width={14} height={14} />
+                                                    </button>
+                                                  </>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ));
+                              })()}
+
+                              {/* Save Button */}
+                              {refundDocumentRows.length > 0 && (
+                                <div className="flex justify-end pt-4 border-t border-[#ddd]">
+                                  <button
+                                    onClick={() => saveDropdownData(
+                                      { refundDocumentsOptions, refundDocumentRows },
+                                      'Refund document data saved successfully!'
+                                    )}
+                                    disabled={savingData || !isEditMode}
+                                    className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
+                                  >
+                                    {savingData ? 'Saving...' : 'Save All'}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                }
+
+                // Communications - Single dropdown with Add New
+                if (doc.label === 'Communications' && doc.type === 'dropdown') {
+                  const defaultCommunicationTypes = ['Incoming', 'Outgoing'];
+                  const isCustomCommunicationType = (type: string) => !defaultCommunicationTypes.includes(type);
+
+                  return (
+                    <React.Fragment key={key}>
+                      <tr>
+                        <td colSpan={5} className="p-0 border-b border-[#eee]">
+                          <button
+                            className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                            onClick={() => toggleDropdown(key)}
+                          >
+                            <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                            <span>{doc.label}</span>
+                            {communicationRows.length > 0 && (
+                              <span className="ml-2 text-[10px] bg-[#2e7d32] text-white px-2 py-0.5 rounded-full">
+                                {communicationRows.length} communication(s)
+                              </span>
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                            <div className="space-y-3">
+                              {/* Dropdown to add new communication */}
+                              <div className="flex items-center justify-between mb-4">
+                                <span className="text-xs font-semibold text-[#555]">Select Communication Type</span>
+                                <div className="flex items-center gap-3 flex-1 ml-4">
+                                  {/* Custom dropdown */}
+                                  <div className="flex-1 relative">
+                                    <button
+                                      ref={communicationDropdownButtonRef}
+                                      type="button"
+                                      onClick={() => {
+                                        if (!isEditMode) return;
+                                        if (!communicationDropdownOpen) {
+                                          const rect = communicationDropdownButtonRef.current?.getBoundingClientRect();
+                                          if (rect) {
+                                            setCommunicationDropdownPos({
+                                              top: rect.top,
+                                              left: rect.left,
+                                              width: rect.width,
+                                            });
+                                          }
+                                        }
+                                        setCommunicationDropdownOpen(!communicationDropdownOpen);
+                                      }}
+                                      className={`w-full border border-[#ddd] rounded px-3 py-2 text-xs text-left flex items-center justify-between ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : 'bg-white cursor-pointer hover:border-[#aaa]'}`}
+                                      disabled={!isEditMode}
+                                    >
+                                      <span className="text-[#999]">Select a communication type...</span>
+                                      <Icon icon={communicationDropdownOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'} width={16} height={16} className="text-[#666]" />
+                                    </button>
+
+                                    {/* Dropdown menu */}
+                                    {communicationDropdownOpen && typeof window !== 'undefined' && createPortal(
+                                      <div
+                                        ref={communicationDropdownRef}
+                                        style={{
+                                          position: 'fixed',
+                                          top: communicationDropdownPos.top,
+                                          left: communicationDropdownPos.left,
+                                          width: communicationDropdownPos.width,
+                                          transform: 'translateY(calc(-100% - 4px))',
+                                          zIndex: 99999,
+                                        }}
+                                        className="bg-white border border-[#ddd] rounded shadow-lg max-h-[300px] overflow-y-auto"
+                                      >
+                                        {/* Communication type options */}
+                                        {communicationTypes.map(type => (
+                                          <div
+                                            key={type}
+                                            className="group px-3 py-2 text-xs cursor-pointer flex items-center justify-between hover:bg-[#f5f5f5] text-[#333]"
+                                            onClick={() => {
+                                              // Add new row with this communication type
+                                              const newRow = {
+                                                id: `communication-${Date.now()}-${Math.random()}`,
+                                                type: type,
+                                                date: ''
+                                              };
+                                              setCommunicationRows(prev => [...prev, newRow]);
+                                              setCommunicationDropdownOpen(false);
+                                            }}
+                                          >
+                                            <span>{type}</span>
+                                            {/* X button - only for custom types, visible on hover */}
+                                            {isCustomCommunicationType(type) && (
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  if (confirm(`Remove "${type}" from available options?`)) {
+                                                    const newTypes = communicationTypes.filter(t => t !== type);
+                                                    setCommunicationTypes(newTypes);
+                                                    saveDropdownData(
+                                                      { communicationTypes: newTypes },
+                                                      `Communication type "${type}" removed successfully!`
+                                                    );
+                                                  }
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center text-[#c62828] hover:bg-[#ffebee] rounded transition-opacity"
+                                                title={`Remove "${type}"`}
+                                              >
+                                                <Icon icon="mdi:close" width={14} height={14} />
+                                              </button>
+                                            )}
+                                          </div>
+                                        ))}
+
+                                        {/* Add new option */}
+                                        <div
+                                          className="px-3 py-2 text-xs text-[#1976d2] font-semibold hover:bg-[#e3f2fd] cursor-pointer border-t border-[#eee]"
+                                          onClick={() => {
+                                            setShowAddCommunicationTypeModal(true);
+                                            setCommunicationDropdownOpen(false);
+                                          }}
+                                        >
+                                          + Add new option
+                                        </div>
+                                      </div>,
+                                      document.body
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* List of added communications - Grouped by Type */}
+                              {communicationRows.length === 0 && (
+                                <p className="text-xs text-[#999] italic text-center py-4">
+                                  No communications added yet. Select a communication type from the dropdown above.
+                                </p>
+                              )}
+
+                              {/* Group communications by type */}
+                              {(() => {
+                                const groupedComms = communicationRows.reduce((acc, row) => {
+                                  if (!acc[row.type]) acc[row.type] = [];
+                                  acc[row.type].push(row);
+                                  return acc;
+                                }, {} as Record<string, typeof communicationRows>);
+
+                                return Object.entries(groupedComms).map(([commType, rows]) => (
+                                  <div key={commType} className="mb-4">
+                                    {/* Communication Type Header with Add Button */}
+                                    <div className="flex items-center justify-between mb-3 bg-[#f0f0f0] px-4 py-2 rounded-t-lg border border-[#ddd]">
+                                      <span className="text-xs font-bold text-[#333]">{commType}</span>
+                                      {isEditMode && (
+                                        <button
+                                          onClick={() => {
+                                            const newRow = {
+                                              id: `communication-${Date.now()}-${Math.random()}`,
+                                              type: commType,
+                                              date: ''
+                                            };
+                                            setCommunicationRows(prev => [...prev, newRow]);
+                                          }}
+                                          className="flex items-center gap-1 text-xs text-[#1976d2] hover:underline font-semibold"
+                                        >
+                                          <Icon icon="mdi:plus-circle" width={14} height={14} />
+                                          Add New Row
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    {/* Communications of this type */}
+                                    <div className="space-y-2 border-l border-r border-b border-[#ddd] rounded-b-lg p-3 bg-white">
+                                      {rows.map((row, index) => {
+                                        const templateItemId = `${phase}-${doc.id}-${row.id}`;
+                                        const uploadedDoc = getDocForItem(templateItemId);
+                                        const isUploading = uploadingItemId === templateItemId;
+                                        const hasFile = !!uploadedDoc;
+
+                                        return (
+                                          <div key={row.id} className="bg-[#fafafa] border border-[#e0e0e0] rounded-lg p-3">
+                                            <div className="flex items-center justify-between mb-3">
+                                              <div className="flex items-center gap-3 flex-1">
+                                                <span className="text-xs font-semibold text-[#555] min-w-[180px]">
+                                                  {row.type} #{index + 1}
+                                                </span>
+                                                {/* Date Selector */}
+                                                <div className="flex items-center gap-2">
+                                                  <label className="text-xs text-[#555]">Date:</label>
+                                                  <input
+                                                    type="date"
+                                                    value={row.date || ''}
+                                                    onChange={(e) => {
+                                                      const updatedRows = communicationRows.map(r =>
+                                                        r.id === row.id ? { ...r, date: e.target.value } : r
+                                                      );
+                                                      setCommunicationRows(updatedRows);
+                                                    }}
+                                                    className={`border border-[#ddd] rounded px-2 py-1 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                    disabled={!isEditMode}
+                                                  />
+                                                </div>
+                                              </div>
+                                              {isEditMode && (
+                                                <button
+                                                  onClick={() => {
+                                                    setRemoveCommunicationConfirmModal({
+                                                      show: true,
+                                                      communicationId: row.id,
+                                                      communicationName: `${row.type} #${index + 1}`
+                                                    });
+                                                  }}
+                                                  className="text-[#c62828] text-xs hover:underline"
+                                                >
+                                                  Remove
+                                                </button>
+                                              )}
+                                            </div>
+
+                                            {/* File upload section */}
+                                            <div className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                              <span className="flex-1 text-xs text-[#333] font-medium">
+                                                {row.type}
+                                              </span>
+                                              <div className="flex gap-1.5">
+                                                <button
+                                                  className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
+                                                  title={isEditMode ? "Upload" : "View mode - editing disabled"}
+                                                  onClick={() => handleUploadClick(templateItemId)}
+                                                  disabled={isUploading || !isEditMode}
+                                                >
+                                                  {isUploading ? (
+                                                    <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                                  ) : (
+                                                    <Icon icon="mdi:upload" width={14} height={14} />
+                                                  )}
+                                                </button>
+
+                                                {hasFile && (
+                                                  <>
+                                                    <button
+                                                      className="w-7 h-7 bg-[#1976d2] border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 hover:opacity-80 text-white"
+                                                      title="View Document"
+                                                      onClick={() => setPreviewDoc(uploadedDoc)}
+                                                    >
+                                                      <Icon icon="mdi:eye" width={14} height={14} />
+                                                    </button>
+                                                    <button
+                                                      className="w-7 h-7 bg-[#388e3c] border-none rounded-md flex items-center justify-center cursor-pointer transition-opacity duration-200 hover:opacity-80 text-white"
+                                                      title="Download Document"
+                                                      onClick={() => handleDownload(uploadedDoc)}
+                                                    >
+                                                      <Icon icon="mdi:download" width={14} height={14} />
+                                                    </button>
+                                                    <button
+                                                      className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
+                                                      title={isEditMode ? "Delete Document" : "View mode - editing disabled"}
+                                                      onClick={() => isEditMode && handleDeleteAll(templateItemId)}
+                                                      disabled={!isEditMode}
+                                                    >
+                                                      <Icon icon="mdi:delete" width={14} height={14} />
+                                                    </button>
+                                                  </>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ));
+                              })()}
+
+                              {/* Save Button */}
+                              {communicationRows.length > 0 && (
+                                <div className="flex justify-end pt-4 border-t border-[#ddd]">
+                                  <button
+                                    onClick={() => saveDropdownData(
+                                      { communicationTypes, communicationRows },
+                                      'Communication data saved successfully!'
+                                    )}
+                                    disabled={savingData || !isEditMode}
+                                    className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
+                                  >
+                                    {savingData ? 'Saving...' : 'Save All'}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                }
+
+                // Custom handler for Others dropdown with customizable options
+                if (doc.label === 'Others' && doc.type === 'dropdown') {
+                  const selectedOption = dropdownSelections[doc.id] || '';
+                  const templateItemId = selectedOption ? `${phase}-${doc.id}-${selectedOption}` : '';
+                  const uploadedDoc = selectedOption ? getDocForItem(templateItemId) : null;
+                  const isUploading = uploadingItemId === templateItemId;
+                  const hasFile = !!uploadedDoc;
+
+                  // Determine which phase we're in and use appropriate state
+                  const isInitiationPhase = phase === 'INITIATION';
+                  const isMonitoringPhase = phase === 'MONITORING';
+                  const currentOthersOptions = isInitiationPhase ? initiationOthersOptions : isMonitoringPhase ? monitoringOthersOptions : othersOptions;
+                  const setCurrentOthersOptions = isInitiationPhase ? setInitiationOthersOptions : isMonitoringPhase ? setMonitoringOthersOptions : setOthersOptions;
+                  const currentOthersDropdownOpen = isInitiationPhase ? initiationOthersDropdownOpen : isMonitoringPhase ? monitoringOthersDropdownOpen : othersDropdownOpen;
+                  const setCurrentOthersDropdownOpen = isInitiationPhase ? setInitiationOthersDropdownOpen : isMonitoringPhase ? setMonitoringOthersDropdownOpen : setOthersDropdownOpen;
+                  const currentOthersDropdownRef = isInitiationPhase ? initiationOthersDropdownRef : isMonitoringPhase ? monitoringOthersDropdownRef : othersDropdownRef;
+                  const setCurrentShowAddOthersModal = isInitiationPhase ? setShowAddInitiationOthersModal : isMonitoringPhase ? setShowAddMonitoringOthersModal : setShowAddOthersModal;
+                  const setCurrentOthersOptionToRemove = isInitiationPhase ? setInitiationOthersOptionToRemove : isMonitoringPhase ? setMonitoringOthersOptionToRemove : setOthersOptionToRemove;
+                  const setCurrentShowRemoveOthersModal = isInitiationPhase ? setShowRemoveInitiationOthersModal : isMonitoringPhase ? setShowRemoveMonitoringOthersModal : setShowRemoveOthersModal;
+
+                  // Default options that cannot be removed
+                  const defaultOthersOptions = isInitiationPhase
+                    ? ['Media Documentation']
+                    : isMonitoringPhase
+                    ? ['Media Documentation']
+                    : ['Withdrawal Request', 'Withdrawal Approval', 'Photo(s) During Implementation'];
+
+                  // Check if an option is custom (not default)
+                  const isCustomOption = (opt: string) => !defaultOthersOptions.includes(opt);
+
+                  // Remove option handler - shows confirmation modal
+                  const removeOthersOption = (optToRemove: string) => {
+                    setCurrentOthersOptionToRemove(optToRemove);
+                    setCurrentShowRemoveOthersModal(true);
+                    setCurrentOthersDropdownOpen(false);
+                  };
+
+                  return (
+                    <React.Fragment key={key}>
+                      <tr>
+                        <td colSpan={5} className="p-0 border-b border-[#eee]">
+                          <button
+                            className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                            onClick={() => toggleDropdown(key)}
+                          >
+                            <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                            <span>{doc.label}</span>
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-3">
+                                {/* Custom dropdown with X button on hover for custom options */}
+                                <div className="flex-1 relative" ref={currentOthersDropdownRef}>
+                                  <button
+                                    type="button"
+                                    onClick={() => isEditMode && setCurrentOthersDropdownOpen(!currentOthersDropdownOpen)}
+                                    className={`w-full border border-[#ddd] rounded px-3 py-2 text-xs text-left flex items-center justify-between ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : 'bg-white cursor-pointer hover:border-[#aaa]'}`}
+                                    disabled={!isEditMode}
+                                  >
+                                    <span className={selectedOption ? 'text-[#333]' : 'text-[#999]'}>
+                                      {selectedOption || 'Select option...'}
+                                    </span>
+                                    <Icon icon={currentOthersDropdownOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'} width={16} height={16} className="text-[#666]" />
+                                  </button>
+
+                                  {/* Dropdown menu */}
+                                  {currentOthersDropdownOpen && (
+                                    <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-[#ddd] rounded shadow-lg z-[9999] max-h-[200px] overflow-y-auto">
+                                      {/* Empty option */}
+                                      <div
+                                        className="px-3 py-2 text-xs text-[#999] hover:bg-[#f5f5f5] cursor-pointer"
+                                        onClick={() => {
+                                          setDropdownSelections(prev => ({ ...prev, [doc.id]: '' }));
+                                          setCurrentOthersDropdownOpen(false);
+                                        }}
+                                      >
+                                        Select option...
+                                      </div>
+
+                                      {/* Options */}
+                                      {currentOthersOptions.map(opt => (
+                                        <div
+                                          key={opt}
+                                          className={`group px-3 py-2 text-xs cursor-pointer flex items-center justify-between hover:bg-[#f5f5f5] ${selectedOption === opt ? 'bg-[#fffff] text-[#2e7d32] font-semibold' : 'text-[#333]'}`}
+                                          onClick={() => {
+                                            setDropdownSelections(prev => ({ ...prev, [doc.id]: opt }));
+                                            setCurrentOthersDropdownOpen(false);
+                                          }}
+                                        >
+                                          <span>{opt}</span>
+                                          {/* X button - only for custom options, visible on hover */}
+                                          {isCustomOption(opt) && (
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                removeOthersOption(opt);
+                                              }}
+                                              className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center text-[#c62828] hover:bg-[#ffebee] rounded transition-opacity"
+                                              title={`Remove "${opt}"`}
+                                            >
+                                              <Icon icon="mdi:close" width={14} height={14} />
+                                            </button>
+                                          )}
+                                        </div>
+                                      ))}
+
+                                      {/* Add new option */}
+                                      <div
+                                        className="px-3 py-2 text-xs text-[#1976d2] font-semibold hover:bg-[#e3f2fd] cursor-pointer border-t border-[#eee]"
+                                        onClick={() => {
+                                          setCurrentShowAddOthersModal(true);
+                                          setCurrentOthersDropdownOpen(false);
+                                        }}
+                                      >
+                                        + Add new option
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={() => handleSaveDropdownSelection(doc.id)}
+                                  disabled={!selectedOption || savingData || !isEditMode}
+                                  className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] disabled:bg-[#ccc] disabled:cursor-not-allowed transition-colors"
+                                >
+                                  {savingData ? 'Saving...' : 'Save'}
+                                </button>
+                              </div>
+
+                              {selectedOption && (
+                                <div className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                  <span className="flex-1 text-xs text-[#333] font-medium">{selectedOption}</span>
+                                  <div className="flex gap-1.5">
+                                    <button
+                                      className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                      title={isEditMode ? "Upload" : "View mode - editing disabled"}
+                                      onClick={() => handleUploadClick(templateItemId)}
+                                      disabled={isUploading || !isEditMode}
+                                    >
+                                      {isUploading ? (
+                                        <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                      ) : (
+                                        <Icon icon="mdi:upload" width={14} height={14} />
+                                      )}
+                                    </button>
+                                    <button
+                                      className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                        hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                      }`}
+                                      title="View"
+                                      onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
+                                      disabled={!hasFile}
+                                    >
+                                      <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                    </button>
+                                    <button
+                                      className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                        hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                      }`}
+                                      title={isEditMode ? "Delete" : "View mode - editing disabled"}
+                                      onClick={() => hasFile && isEditMode && handleDeleteAll(templateItemId)}
+                                      disabled={!hasFile || !isEditMode}
+                                    >
+                                      <Icon icon="mdi:delete-outline" width={14} height={14} />
+                                    </button>
+                                  </div>
+                                  {hasFile && (
+                                    <span className="text-[10px] text-[#2e7d32] bg-[#fffff] px-2 py-0.5 rounded">Uploaded</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                }
+
+                // Management Reports - Single dropdown with Add New
+                if (doc.label === 'Management Reports' && doc.type === 'dropdown') {
+                  const defaultReportTypes = [
+                    'Liquidation Report',
+                    'Completion Report',
+                    'Terminal or Graduation Report',
+                    'Termination Report',
+                    'Demand Letters',
+                    'Media Documentation'
+                  ];
+
+                  const isCustomReportType = (type: string) => !defaultReportTypes.includes(type);
+
+                  return (
+                    <React.Fragment key={key}>
+                      <tr>
+                        <td colSpan={5} className="p-0 border-b border-[#eee]">
+                          <button
+                            className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                            onClick={() => toggleDropdown(key)}
+                          >
+                            <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                            <span>{doc.label}</span>
+                            {managementReportRows.length > 0 && (
+                              <span className="ml-2 text-[10px] bg-[#2e7d32] text-white px-2 py-0.5 rounded-full">
+                                {managementReportRows.length} report(s)
+                              </span>
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                            <div className="space-y-3">
+                              {/* Dropdown to add new report */}
+                              <div className="flex items-center justify-between mb-4">
+                                <span className="text-xs font-semibold text-[#555]">Select Report Type</span>
+                                <div className="flex items-center gap-3 flex-1 ml-4">
+                                  {/* Custom dropdown */}
+                                  <div className="flex-1 relative" ref={managementReportDropdownRef}>
+                                    <button
+                                      type="button"
+                                      onClick={() => isEditMode && setManagementReportDropdownOpen(!managementReportDropdownOpen)}
+                                      className={`w-full border border-[#ddd] rounded px-3 py-2 text-xs text-left flex items-center justify-between ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : 'bg-white cursor-pointer hover:border-[#aaa]'}`}
+                                      disabled={!isEditMode}
+                                    >
+                                      <span className="text-[#999]">Select a report type...</span>
+                                      <Icon icon={managementReportDropdownOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'} width={16} height={16} className="text-[#666]" />
+                                    </button>
+
+                                    {/* Dropdown menu */}
+                                    {managementReportDropdownOpen && (
+                                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#ddd] rounded shadow-lg z-[9999] max-h-[300px] overflow-y-auto">
+                                        {/* Report type options */}
+                                        {managementReportTypes.map(type => (
+                                          <div
+                                            key={type}
+                                            className="group px-3 py-2 text-xs cursor-pointer flex items-center justify-between hover:bg-[#f5f5f5] text-[#333]"
+                                            onClick={() => {
+                                              // Add new row with this report type
+                                              const newRow = {
+                                                id: `management-${Date.now()}-${Math.random()}`,
+                                                type: type,
+                                                date: ''
+                                              };
+                                              setManagementReportRows(prev => [...prev, newRow]);
+                                              setManagementReportDropdownOpen(false);
+                                            }}
+                                          >
+                                            <span>{type}</span>
+                                            {/* X button - only for custom types, visible on hover */}
+                                            {isCustomReportType(type) && (
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  if (confirm(`Remove "${type}" from available options?`)) {
+                                                    const newTypes = managementReportTypes.filter(t => t !== type);
+                                                    setManagementReportTypes(newTypes);
+                                                    saveDropdownData(
+                                                      { managementReportTypes: newTypes },
+                                                      `Report type "${type}" removed successfully!`
+                                                    );
+                                                  }
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center text-[#c62828] hover:bg-[#ffebee] rounded transition-opacity"
+                                                title={`Remove "${type}"`}
+                                              >
+                                                <Icon icon="mdi:close" width={14} height={14} />
+                                              </button>
+                                            )}
+                                          </div>
+                                        ))}
+
+                                        {/* Add new report type */}
+                                        <div
+                                          className="px-3 py-2 text-xs text-[#1976d2] font-semibold hover:bg-[#e3f2fd] cursor-pointer border-t border-[#eee]"
+                                          onClick={() => {
+                                            setShowAddManagementReportTypeModal(true);
+                                            setManagementReportDropdownOpen(false);
+                                          }}
+                                        >
+                                          + Add new report type
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* List of added reports - Grouped by Type */}
+                              {managementReportRows.length === 0 && (
+                                <p className="text-xs text-[#999] italic text-center py-4">
+                                  No reports added yet. Select a report type from the dropdown above.
+                                </p>
+                              )}
+
+                              {/* Group reports by type */}
+                              {(() => {
+                                const groupedReports = managementReportRows.reduce((acc, row) => {
+                                  if (!acc[row.type]) acc[row.type] = [];
+                                  acc[row.type].push(row);
+                                  return acc;
+                                }, {} as Record<string, typeof managementReportRows>);
+
+                                return Object.entries(groupedReports).map(([reportType, rows]) => (
+                                  <div key={reportType} className="mb-4">
+                                    {/* Report Type Header with Add Button */}
+                                    <div className="flex items-center justify-between mb-3 bg-[#f0f0f0] px-4 py-2 rounded-t-lg border border-[#ddd]">
+                                      <span className="text-xs font-bold text-[#333]">{reportType}</span>
+                                      {isEditMode && (
+                                        <button
+                                          onClick={() => {
+                                            const newRow = {
+                                              id: `management-${Date.now()}-${Math.random()}`,
+                                              type: reportType,
+                                              date: ''
+                                            };
+                                            setManagementReportRows(prev => [...prev, newRow]);
+                                          }}
+                                          className="flex items-center gap-1 text-xs text-[#1976d2] hover:underline font-semibold"
+                                        >
+                                          <Icon icon="mdi:plus-circle" width={14} height={14} />
+                                          Add New Report
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    {/* Reports of this type */}
+                                    <div className="space-y-2 border-l border-r border-b border-[#ddd] rounded-b-lg p-3 bg-white">
+                                      {rows.map((row, index) => {
+                                        const templateItemId = `${phase}-${doc.id}-${row.id}`;
+                                        const uploadedDoc = getDocForItem(templateItemId);
+                                        const isUploading = uploadingItemId === templateItemId;
+                                        const hasFile = !!uploadedDoc;
+
+                                        return (
+                                          <div key={row.id} className="bg-[#fafafa] border border-[#e0e0e0] rounded-lg p-3">
+                                            <div className="flex items-center justify-between mb-3">
+                                              <div className="flex items-center gap-3 flex-1">
+                                                <span className="text-xs font-semibold text-[#555] min-w-[180px]">
+                                                  {row.type} #{index + 1}
+                                                </span>
+                                                {/* Date Selector */}
+                                                <div className="flex items-center gap-2">
+                                                  <label className="text-xs text-[#555]">Date:</label>
+                                                  <input
+                                                    type="date"
+                                                    value={row.date || ''}
+                                                    onChange={(e) => {
+                                                      const updatedRows = managementReportRows.map(r =>
+                                                        r.id === row.id ? { ...r, date: e.target.value } : r
+                                                      );
+                                                      setManagementReportRows(updatedRows);
+                                                    }}
+                                                    className={`border border-[#ddd] rounded px-2 py-1 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                    disabled={!isEditMode}
+                                                  />
+                                                </div>
+                                              </div>
+                                              {isEditMode && (
+                                                <button
+                                                  onClick={() => {
+                                                    setRemoveReportConfirmModal({
+                                                      show: true,
+                                                      reportId: row.id,
+                                                      reportName: `${row.type} #${index + 1}`
+                                                    });
+                                                  }}
+                                                  className="text-[#c62828] text-xs hover:underline"
+                                                >
+                                                  Remove
+                                                </button>
+                                              )}
+                                            </div>
+
+                                            {/* File upload section */}
+                                            <div className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                              <span className="flex-1 text-xs text-[#333]">
+                                                {row.type} {row.date && `(${new Date(row.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})`}
+                                              </span>
+                                              <div className="flex gap-1.5">
+                                                <button
+                                                  className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                  title={isEditMode ? "Upload" : "View mode - editing disabled"}
+                                                  onClick={() => handleUploadClick(templateItemId)}
+                                                  disabled={isUploading || !isEditMode}
+                                                >
+                                                  {isUploading ? (
+                                                    <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                                  ) : (
+                                                    <Icon icon="mdi:upload" width={14} height={14} />
+                                                  )}
+                                                </button>
+                                                <button
+                                                  className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                                    hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                                  }`}
+                                                  title="View"
+                                                  onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
+                                                  disabled={!hasFile}
+                                                >
+                                                  <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                                </button>
+                                                <button
+                                                  className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                                    hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                                  }`}
+                                                  title={isEditMode ? "Delete" : "View mode - editing disabled"}
+                                                  onClick={() => hasFile && isEditMode && handleDeleteAll(templateItemId)}
+                                                  disabled={!hasFile || !isEditMode}
+                                                >
+                                                  <Icon icon="mdi:delete-outline" width={14} height={14} />
+                                                </button>
+                                              </div>
+                                              {hasFile && (
+                                                <span className="text-[10px] text-[#2e7d32] bg-[#e8f5e9] px-2 py-0.5 rounded">Uploaded</span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ));
+                              })()}
+
+                              {/* Save button */}
+                              {managementReportRows.length > 0 && (
+                                <div className="flex justify-end pt-2">
+                                  <button
+                                    onClick={() => setSaveReportsConfirmModal(true)}
+                                    disabled={savingData || !isEditMode}
+                                    className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
+                                  >
+                                    {savingData ? 'Saving...' : 'Save All'}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                }
+
+                // Generic select-based dropdown for Pre-Project Information Sheet (PIS)
                 const selectBasedDropdowns = [
-                  'Amendments to the MOA',
-                  'Others',
-                  'Liquidation Report',
-                  'Terminal or Graduation Report',
-                  'Termination Report',
                   'Pre-Project Information Sheet (PIS)'
                 ];
 
@@ -2979,7 +4734,7 @@ function DocumentTable({
                       <tr>
                         <td colSpan={5} className="p-0 border-b border-[#eee]">
                           <button
-                            className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                            className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
                             onClick={() => toggleDropdown(key)}
                           >
                             <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
@@ -3052,7 +4807,7 @@ function DocumentTable({
                                     </button>
                                   </div>
                                   {hasFile && (
-                                    <span className="text-[10px] text-[#2e7d32] bg-[#e8f5e9] px-2 py-0.5 rounded">Uploaded</span>
+                                    <span className="text-[10px] text-[#2e7d32] bg-[#fffff] px-2 py-0.5 rounded">Uploaded</span>
                                   )}
                                 </div>
                               )}
@@ -3075,7 +4830,7 @@ function DocumentTable({
                       <tr>
                         <td colSpan={5} className="p-0 border-b border-[#eee]">
                           <button
-                            className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                            className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
                             onClick={() => toggleDropdown(key)}
                           >
                             <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
@@ -3168,7 +4923,7 @@ function DocumentTable({
                                         </button>
                                       </div>
                                       {hasPptFile && (
-                                        <span className="text-[10px] text-[#2e7d32] bg-[#e8f5e9] px-2 py-0.5 rounded">Uploaded</span>
+                                        <span className="text-[10px] text-[#2e7d32] bg-[#fffff] px-2 py-0.5 rounded">Uploaded</span>
                                       )}
                                     </div>
 
@@ -3210,7 +4965,7 @@ function DocumentTable({
                                         </button>
                                       </div>
                                       {hasComplianceFile && (
-                                        <span className="text-[10px] text-[#2e7d32] bg-[#e8f5e9] px-2 py-0.5 rounded">Uploaded</span>
+                                        <span className="text-[10px] text-[#2e7d32] bg-[#fffff] px-2 py-0.5 rounded">Uploaded</span>
                                       )}
                                     </div>
                                   </div>
@@ -3276,7 +5031,7 @@ function DocumentTable({
                     <tr>
                       <td colSpan={5} className="p-0 border-b border-[#eee]">
                         <button
-                          className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                          className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
                           onClick={() => toggleDropdown(key)}
                         >
                           <Icon icon={expandedDropdowns[key] ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
@@ -3743,7 +5498,7 @@ function DocumentTable({
     {uploadSuccess&&(
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]" onClick={()=>setUploadSuccess(null)}>
         <div className="bg-white rounded-2xl w-full max-w-[440px] py-8 px-10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] text-center" onClick={e=>e.stopPropagation()}>
-          <div className="w-14 h-14 rounded-full bg-[#e8f5e9] flex items-center justify-center mx-auto mb-4"><Icon icon="mdi:check-circle" width={36} height={36} color="#2e7d32"/></div>
+          <div className="w-14 h-14 rounded-full bg-[#fffff] flex items-center justify-center mx-auto mb-4"><Icon icon="mdi:check-circle" width={36} height={36} color="#2e7d32"/></div>
           <h3 className="text-lg font-bold text-[#333] m-0 mb-5">File Upload Successfully!</h3>
           <div className="flex items-center gap-3 bg-[#f5f7fa] rounded-lg px-4 py-3 mb-5 text-left">
             <div className="flex-shrink-0 w-10 h-12 bg-[#e53935] rounded flex items-center justify-center"><span className="text-white text-[10px] font-bold uppercase">{uploadSuccess.fileName.split('.').pop()||'FILE'}</span></div>
@@ -3763,7 +5518,7 @@ function DocumentTable({
     {saveSuccessModal?.show && (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]" onClick={() => setSaveSuccessModal(null)}>
         <div className="bg-white rounded-2xl w-full max-w-[400px] py-8 px-10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] text-center" onClick={e => e.stopPropagation()}>
-          <div className="w-14 h-14 rounded-full bg-[#e8f5e9] flex items-center justify-center mx-auto mb-4">
+          <div className="w-14 h-14 rounded-full bg-[#fffff] flex items-center justify-center mx-auto mb-4">
             <Icon icon="mdi:check-circle" width={36} height={36} color="#2e7d32" />
           </div>
           <h3 className="text-lg font-bold text-[#333] m-0 mb-3">Saved Successfully!</h3>
@@ -3866,6 +5621,661 @@ function DocumentTable({
               className="px-4 py-2 bg-primary text-white rounded text-sm font-medium hover:opacity-90"
             >
               Add
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Add New Others Option Modal */}
+    {showAddOthersModal && (
+      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1200]">
+        <div className="bg-white rounded-lg w-full max-w-[300px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+          <h3 className="text-base font-bold text-primary mb-3">Add New Option</h3>
+          <input
+            type="text"
+            value={newOthersName}
+            onChange={(e) => setNewOthersName(e.target.value)}
+            placeholder="Enter option name"
+            className="w-full px-3 py-2 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary mb-4"
+            autoFocus
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => { setShowAddOthersModal(false); setNewOthersName(''); }}
+              className="px-4 py-2 bg-gray-200 text-gray-600 rounded text-sm font-medium hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (newOthersName.trim() && !othersOptions.includes(newOthersName.trim())) {
+                  const updated = [...othersOptions, newOthersName.trim()];
+                  setOthersOptions(updated);
+                  saveDropdownData(
+                    { othersOptions: updated },
+                    `Option "${newOthersName.trim()}" added successfully!`
+                  );
+                } else if (othersOptions.includes(newOthersName.trim())) {
+                  alert('This option already exists!');
+                  return;
+                }
+                setShowAddOthersModal(false);
+                setNewOthersName('');
+              }}
+              className="px-4 py-2 bg-primary text-white rounded text-sm font-medium hover:opacity-90"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Add New Initiation Others Option Modal */}
+    {showAddInitiationOthersModal && (
+      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1200]">
+        <div className="bg-white rounded-lg w-full max-w-[300px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+          <h3 className="text-base font-bold text-primary mb-3">Add New Option</h3>
+          <input
+            type="text"
+            value={newInitiationOthersName}
+            onChange={(e) => setNewInitiationOthersName(e.target.value)}
+            placeholder="Enter option name"
+            className="w-full px-3 py-2 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary mb-4"
+            autoFocus
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => { setShowAddInitiationOthersModal(false); setNewInitiationOthersName(''); }}
+              className="px-4 py-2 bg-gray-200 text-gray-600 rounded text-sm font-medium hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (newInitiationOthersName.trim() && !initiationOthersOptions.includes(newInitiationOthersName.trim())) {
+                  const updated = [...initiationOthersOptions, newInitiationOthersName.trim()];
+                  setInitiationOthersOptions(updated);
+                  saveDropdownData(
+                    { initiationOthersOptions: updated },
+                    `Option "${newInitiationOthersName.trim()}" added successfully!`
+                  );
+                } else if (initiationOthersOptions.includes(newInitiationOthersName.trim())) {
+                  alert('This option already exists!');
+                  return;
+                }
+                setShowAddInitiationOthersModal(false);
+                setNewInitiationOthersName('');
+              }}
+              className="px-4 py-2 bg-primary text-white rounded text-sm font-medium hover:opacity-90"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Add New Monitoring Others Option Modal */}
+    {showAddMonitoringOthersModal && (
+      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1200]">
+        <div className="bg-white rounded-lg w-full max-w-[300px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+          <h3 className="text-base font-bold text-primary mb-3">Add New Option</h3>
+          <input
+            type="text"
+            value={newMonitoringOthersName}
+            onChange={(e) => setNewMonitoringOthersName(e.target.value)}
+            placeholder="Enter option name"
+            className="w-full px-3 py-2 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary mb-4"
+            autoFocus
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => { setShowAddMonitoringOthersModal(false); setNewMonitoringOthersName(''); }}
+              className="px-4 py-2 bg-gray-200 text-gray-600 rounded text-sm font-medium hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (newMonitoringOthersName.trim() && !monitoringOthersOptions.includes(newMonitoringOthersName.trim())) {
+                  const updated = [...monitoringOthersOptions, newMonitoringOthersName.trim()];
+                  setMonitoringOthersOptions(updated);
+                  saveDropdownData(
+                    { monitoringOthersOptions: updated },
+                    `Option "${newMonitoringOthersName.trim()}" added successfully!`
+                  );
+                } else if (monitoringOthersOptions.includes(newMonitoringOthersName.trim())) {
+                  alert('This option already exists!');
+                  return;
+                }
+                setShowAddMonitoringOthersModal(false);
+                setNewMonitoringOthersName('');
+              }}
+              className="px-4 py-2 bg-primary text-white rounded text-sm font-medium hover:opacity-90"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Add New Communication Type Modal */}
+    {showAddCommunicationTypeModal && (
+      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1200]">
+        <div className="bg-white rounded-lg w-full max-w-[300px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+          <h3 className="text-base font-bold text-primary mb-3">Add New Communication Type</h3>
+          <input
+            type="text"
+            value={newCommunicationType}
+            onChange={(e) => setNewCommunicationType(e.target.value)}
+            placeholder="Enter communication type name"
+            className="w-full px-3 py-2 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary mb-4"
+            autoFocus
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => { setShowAddCommunicationTypeModal(false); setNewCommunicationType(''); }}
+              className="px-4 py-2 bg-gray-200 text-gray-600 rounded text-sm font-medium hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const trimmedType = newCommunicationType.trim();
+                if (!trimmedType) {
+                  alert('Please enter a valid communication type name!');
+                  return;
+                }
+
+                if (communicationTypes.includes(trimmedType)) {
+                  alert('This communication type already exists!');
+                  return;
+                }
+
+                const updated = [...communicationTypes, trimmedType];
+                setCommunicationTypes(updated);
+                saveDropdownData(
+                  { communicationTypes: updated },
+                  `Communication type "${trimmedType}" added successfully!`
+                );
+
+                setShowAddCommunicationTypeModal(false);
+                setNewCommunicationType('');
+              }}
+              className="px-4 py-2 bg-primary text-white rounded text-sm font-medium hover:opacity-90"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Add New Refund Document Option Modal */}
+    {showAddRefundDocModal && (
+      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1200]">
+        <div className="bg-white rounded-lg w-full max-w-[300px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+          <h3 className="text-base font-bold text-primary mb-3">Add New Option</h3>
+          <input
+            type="text"
+            value={newRefundDocName}
+            onChange={(e) => setNewRefundDocName(e.target.value)}
+            placeholder="Enter option name"
+            className="w-full px-3 py-2 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary mb-4"
+            autoFocus
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => { setShowAddRefundDocModal(false); setNewRefundDocName(''); }}
+              className="px-4 py-2 bg-gray-200 text-gray-600 rounded text-sm font-medium hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (newRefundDocName.trim() && !refundDocumentsOptions.includes(newRefundDocName.trim())) {
+                  const updated = [...refundDocumentsOptions, newRefundDocName.trim()];
+                  setRefundDocumentsOptions(updated);
+                  saveDropdownData(
+                    { refundDocumentsOptions: updated },
+                    `Option "${newRefundDocName.trim()}" added successfully!`
+                  );
+                } else if (refundDocumentsOptions.includes(newRefundDocName.trim())) {
+                  alert('This option already exists!');
+                  return;
+                }
+                setShowAddRefundDocModal(false);
+                setNewRefundDocName('');
+              }}
+              className="px-4 py-2 bg-primary text-white rounded text-sm font-medium hover:opacity-90"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Add New Management Report Type Modal */}
+    {showAddManagementReportTypeModal && (
+      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1200]">
+        <div className="bg-white rounded-lg w-full max-w-[300px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+          <h3 className="text-base font-bold text-primary mb-3">Add New Report Type</h3>
+          <input
+            type="text"
+            value={newManagementReportType}
+            onChange={(e) => setNewManagementReportType(e.target.value)}
+            placeholder="Enter report type name"
+            className="w-full px-3 py-2 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary mb-4"
+            autoFocus
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => { setShowAddManagementReportTypeModal(false); setNewManagementReportType(''); }}
+              className="px-4 py-2 bg-gray-200 text-gray-600 rounded text-sm font-medium hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const trimmedType = newManagementReportType.trim();
+                if (!trimmedType) {
+                  alert('Please enter a valid report type name!');
+                  return;
+                }
+
+                if (managementReportTypes.includes(trimmedType)) {
+                  alert('This report type already exists!');
+                  return;
+                }
+
+                const updated = [...managementReportTypes, trimmedType];
+                setManagementReportTypes(updated);
+                saveDropdownData(
+                  { managementReportTypes: updated },
+                  `Report type "${trimmedType}" added successfully!`
+                );
+
+                setShowAddManagementReportTypeModal(false);
+                setNewManagementReportType('');
+              }}
+              className="px-4 py-2 bg-primary text-white rounded text-sm font-medium hover:opacity-90"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Remove Report Confirmation Modal */}
+    {removeReportConfirmModal && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]" onClick={() => setRemoveReportConfirmModal(null)}>
+        <div className="bg-white rounded-2xl w-full max-w-[400px] py-8 px-10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] text-center" onClick={e => e.stopPropagation()}>
+          <div className="w-14 h-14 rounded-full bg-[#ffebee] flex items-center justify-center mx-auto mb-4">
+            <Icon icon="mdi:alert-circle-outline" width={36} height={36} color="#c62828" />
+          </div>
+          <h3 className="text-lg font-bold text-[#333] m-0 mb-3">Remove Report?</h3>
+          <p className="text-[14px] text-[#666] m-0 mb-6">
+            Are you sure you want to remove <strong className="text-[#333]">{removeReportConfirmModal.reportName}</strong>? This action cannot be undone.
+          </p>
+          <div className="flex gap-3 justify-center">
+            <button
+              type="button"
+              onClick={() => setRemoveReportConfirmModal(null)}
+              className="py-2.5 px-8 bg-white text-[#333] border border-[#d0d0d0] rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#f5f5f5]"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setManagementReportRows(prev => prev.filter(r => r.id !== removeReportConfirmModal.reportId));
+                setRemoveReportConfirmModal(null);
+              }}
+              className="py-2.5 px-8 bg-[#c62828] text-white border-none rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#b71c1c]"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Remove Communication Confirmation Modal */}
+    {removeCommunicationConfirmModal && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]" onClick={() => setRemoveCommunicationConfirmModal(null)}>
+        <div className="bg-white rounded-2xl w-full max-w-[400px] py-8 px-10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] text-center" onClick={e => e.stopPropagation()}>
+          <div className="w-14 h-14 rounded-full bg-[#ffebee] flex items-center justify-center mx-auto mb-4">
+            <Icon icon="mdi:alert-circle-outline" width={36} height={36} color="#c62828" />
+          </div>
+          <h3 className="text-lg font-bold text-[#333] m-0 mb-3">Remove Communication?</h3>
+          <p className="text-[14px] text-[#666] m-0 mb-6">
+            Are you sure you want to remove <strong className="text-[#333]">{removeCommunicationConfirmModal.communicationName}</strong>? This action cannot be undone.
+          </p>
+          <div className="flex gap-3 justify-center">
+            <button
+              type="button"
+              onClick={() => setRemoveCommunicationConfirmModal(null)}
+              className="py-2.5 px-8 bg-white text-[#333] border border-[#d0d0d0] rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#f5f5f5]"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCommunicationRows(prev => prev.filter(r => r.id !== removeCommunicationConfirmModal.communicationId));
+                setRemoveCommunicationConfirmModal(null);
+              }}
+              className="py-2.5 px-8 bg-[#c62828] text-white border-none rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#b71c1c]"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Remove Refund Document Confirmation Modal */}
+    {removeRefundDocConfirmModal && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]" onClick={() => setRemoveRefundDocConfirmModal(null)}>
+        <div className="bg-white rounded-2xl w-full max-w-[400px] py-8 px-10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] text-center" onClick={e => e.stopPropagation()}>
+          <div className="w-14 h-14 rounded-full bg-[#ffebee] flex items-center justify-center mx-auto mb-4">
+            <Icon icon="mdi:alert-circle-outline" width={36} height={36} color="#c62828" />
+          </div>
+          <h3 className="text-lg font-bold text-[#333] m-0 mb-3">Remove Refund Document?</h3>
+          <p className="text-[14px] text-[#666] m-0 mb-6">
+            Are you sure you want to remove <strong className="text-[#333]">{removeRefundDocConfirmModal.refundDocName}</strong>? This action cannot be undone.
+          </p>
+          <div className="flex gap-3 justify-center">
+            <button
+              type="button"
+              onClick={() => setRemoveRefundDocConfirmModal(null)}
+              className="py-2.5 px-8 bg-white text-[#333] border border-[#d0d0d0] rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#f5f5f5]"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setRefundDocumentRows(prev => prev.filter(r => r.id !== removeRefundDocConfirmModal.refundDocId));
+                setRemoveRefundDocConfirmModal(null);
+              }}
+              className="py-2.5 px-8 bg-[#c62828] text-white border-none rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#b71c1c]"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Save Reports Confirmation Modal */}
+    {saveReportsConfirmModal && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]" onClick={() => setSaveReportsConfirmModal(false)}>
+        <div className="bg-white rounded-2xl w-full max-w-[400px] py-8 px-10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] text-center" onClick={e => e.stopPropagation()}>
+          <div className="w-14 h-14 rounded-full bg-[#e3f2fd] flex items-center justify-center mx-auto mb-4">
+            <Icon icon="mdi:content-save-outline" width={36} height={36} color="#1976d2" />
+          </div>
+          <h3 className="text-lg font-bold text-[#333] m-0 mb-3">Save Management Reports?</h3>
+          <p className="text-[14px] text-[#666] m-0 mb-6">
+            You are about to save <strong className="text-[#333]">{managementReportRows.length} management report(s)</strong>. Do you want to continue?
+          </p>
+          <div className="flex gap-3 justify-center">
+            <button
+              type="button"
+              onClick={() => setSaveReportsConfirmModal(false)}
+              className="py-2.5 px-8 bg-white text-[#333] border border-[#d0d0d0] rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#f5f5f5]"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                saveDropdownData(
+                  { managementReportRows },
+                  `${managementReportRows.length} management report(s) saved successfully!`
+                );
+                setSaveReportsConfirmModal(false);
+              }}
+              className="py-2.5 px-8 bg-[#1976d2] text-white border-none rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#1565c0]"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Remove Others Option Confirmation Modal */}
+    {showRemoveOthersModal && (
+      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1200]">
+        <div className="bg-white rounded-lg w-full max-w-[320px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-[#ffebee] flex items-center justify-center">
+              <Icon icon="mdi:alert-outline" width={24} height={24} className="text-[#c62828]" />
+            </div>
+            <h3 className="text-base font-bold text-[#333]">Remove Option</h3>
+          </div>
+          <p className="text-sm text-[#666] mb-5">
+            Are you sure you want to remove <span className="font-semibold text-[#333]">"{othersOptionToRemove}"</span> from the options?
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowRemoveOthersModal(false);
+                setOthersOptionToRemove('');
+              }}
+              className="px-4 py-2 bg-gray-200 text-gray-600 rounded text-sm font-medium hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const updated = othersOptions.filter(opt => opt !== othersOptionToRemove);
+                setOthersOptions(updated);
+                // Clear selection if the removed option was selected
+                setDropdownSelections(prev => {
+                  const newSelections = { ...prev };
+                  Object.keys(newSelections).forEach(key => {
+                    if (newSelections[key] === othersOptionToRemove) {
+                      newSelections[key] = '';
+                    }
+                  });
+                  return newSelections;
+                });
+                saveDropdownData(
+                  { othersOptions: updated },
+                  `Option "${othersOptionToRemove}" removed successfully!`
+                );
+                setShowRemoveOthersModal(false);
+                setOthersOptionToRemove('');
+              }}
+              className="px-4 py-2 bg-[#c62828] text-white rounded text-sm font-medium hover:bg-[#b71c1c]"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Remove Initiation Others Option Confirmation Modal */}
+    {showRemoveInitiationOthersModal && (
+      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1200]">
+        <div className="bg-white rounded-lg w-full max-w-[320px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-[#ffebee] flex items-center justify-center">
+              <Icon icon="mdi:alert-outline" width={24} height={24} className="text-[#c62828]" />
+            </div>
+            <h3 className="text-base font-bold text-[#333]">Remove Option</h3>
+          </div>
+          <p className="text-sm text-[#666] mb-5">
+            Are you sure you want to remove <span className="font-semibold text-[#333]">"{initiationOthersOptionToRemove}"</span> from the options?
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowRemoveInitiationOthersModal(false);
+                setInitiationOthersOptionToRemove('');
+              }}
+              className="px-4 py-2 bg-gray-200 text-gray-600 rounded text-sm font-medium hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const updated = initiationOthersOptions.filter(opt => opt !== initiationOthersOptionToRemove);
+                setInitiationOthersOptions(updated);
+                // Clear selection if the removed option was selected
+                setDropdownSelections(prev => {
+                  const newSelections = { ...prev };
+                  Object.keys(newSelections).forEach(key => {
+                    if (newSelections[key] === initiationOthersOptionToRemove) {
+                      newSelections[key] = '';
+                    }
+                  });
+                  return newSelections;
+                });
+                saveDropdownData(
+                  { initiationOthersOptions: updated },
+                  `Option "${initiationOthersOptionToRemove}" removed successfully!`
+                );
+                setShowRemoveInitiationOthersModal(false);
+                setInitiationOthersOptionToRemove('');
+              }}
+              className="px-4 py-2 bg-[#c62828] text-white rounded text-sm font-medium hover:bg-[#b71c1c]"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Remove Monitoring Others Option Confirmation Modal */}
+    {showRemoveMonitoringOthersModal && (
+      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1200]">
+        <div className="bg-white rounded-lg w-full max-w-[320px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-[#ffebee] flex items-center justify-center">
+              <Icon icon="mdi:alert-outline" width={24} height={24} className="text-[#c62828]" />
+            </div>
+            <h3 className="text-base font-bold text-[#333]">Remove Option</h3>
+          </div>
+          <p className="text-sm text-[#666] mb-5">
+            Are you sure you want to remove <span className="font-semibold text-[#333]">"{monitoringOthersOptionToRemove}"</span> from the options?
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowRemoveMonitoringOthersModal(false);
+                setMonitoringOthersOptionToRemove('');
+              }}
+              className="px-4 py-2 bg-gray-200 text-gray-600 rounded text-sm font-medium hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const updated = monitoringOthersOptions.filter(opt => opt !== monitoringOthersOptionToRemove);
+                setMonitoringOthersOptions(updated);
+                // Clear selection if the removed option was selected
+                setDropdownSelections(prev => {
+                  const newSelections = { ...prev };
+                  Object.keys(newSelections).forEach(key => {
+                    if (newSelections[key] === monitoringOthersOptionToRemove) {
+                      newSelections[key] = '';
+                    }
+                  });
+                  return newSelections;
+                });
+                saveDropdownData(
+                  { monitoringOthersOptions: updated },
+                  `Option "${monitoringOthersOptionToRemove}" removed successfully!`
+                );
+                setShowRemoveMonitoringOthersModal(false);
+                setMonitoringOthersOptionToRemove('');
+              }}
+              className="px-4 py-2 bg-[#c62828] text-white rounded text-sm font-medium hover:bg-[#b71c1c]"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Remove Refund Document Option Confirmation Modal */}
+    {showRemoveRefundDocModal && (
+      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1200]">
+        <div className="bg-white rounded-lg w-full max-w-[320px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-[#ffebee] flex items-center justify-center">
+              <Icon icon="mdi:alert-outline" width={24} height={24} className="text-[#c62828]" />
+            </div>
+            <h3 className="text-base font-bold text-[#333]">Remove Option</h3>
+          </div>
+          <p className="text-sm text-[#666] mb-5">
+            Are you sure you want to remove <span className="font-semibold text-[#333]">"{refundDocOptionToRemove}"</span> from the options?
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowRemoveRefundDocModal(false);
+                setRefundDocOptionToRemove('');
+              }}
+              className="px-4 py-2 bg-gray-200 text-gray-600 rounded text-sm font-medium hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const updated = refundDocumentsOptions.filter(opt => opt !== refundDocOptionToRemove);
+                setRefundDocumentsOptions(updated);
+                // Clear selection if the removed option was selected
+                setDropdownSelections(prev => {
+                  const newSelections = { ...prev };
+                  Object.keys(newSelections).forEach(key => {
+                    if (newSelections[key] === refundDocOptionToRemove) {
+                      newSelections[key] = '';
+                    }
+                  });
+                  return newSelections;
+                });
+                saveDropdownData(
+                  { refundDocumentsOptions: updated },
+                  `Option "${refundDocOptionToRemove}" removed successfully!`
+                );
+                setShowRemoveRefundDocModal(false);
+                setRefundDocOptionToRemove('');
+              }}
+              className="px-4 py-2 bg-[#c62828] text-white rounded text-sm font-medium hover:bg-[#b71c1c]"
+            >
+              Remove
             </button>
           </div>
         </div>
@@ -4045,10 +6455,49 @@ export default function ProjectDetailPage() {
   const [initiationFiles, setInitiationFiles] = useState({ uploaded: 0, total: 0 });
   const [implementationProgress, setImplementationProgress] = useState(0);
   const [implementationFiles, setImplementationFiles] = useState({ uploaded: 0, total: 0 });
+  const [managementProgress, setManagementProgress] = useState(0);
+  const [managementFiles, setManagementFiles] = useState({ uploaded: 0, total: 0 });
+  const [monitoringProgress, setMonitoringProgress] = useState(0);
+  const [monitoringFiles, setMonitoringFiles] = useState({ uploaded: 0, total: 0 });
+  const [refundProgress, setRefundProgress] = useState(0);
+  const [refundFiles, setRefundFiles] = useState({ uploaded: 0, total: 0 });
+  const [communicationsProgress, setCommunicationsProgress] = useState(0);
+  const [communicationsFiles, setCommunicationsFiles] = useState({ uploaded: 0, total: 0 });
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [showExecutiveSummaryPreview, setShowExecutiveSummaryPreview] = useState(false);
+
+  // Executive Summary editable fields
+  const [execSummaryData, setExecSummaryData] = useState({
+    requestedAmount: '',
+    ownersEquity: '',
+    totalProjectCost: '',
+    dostTechnology: '',
+    incomePresent: '',
+    incomeAdditional: '',
+    jobsCreatedPresent: '',
+    jobsCreatedAdditional: '',
+    productivityPresent: '',
+    productivityIncrease: '',
+    marketPresent: '',
+    marketAdditional: '',
+    listOfProducts: '',
+    withFdaLto: '',
+    withCprs: '',
+    businessPlan: '',
+    plans: '',
+    preparedByName: '',
+    preparedByPosition: 'Project Technical Assistant III, PSTO MOR',
+    reviewedByName: 'Ruel Vincent C. Banal',
+    reviewedByPosition: 'Officer-In-Charge, PSTO MOR',
+  });
+
+  const updateExecSummaryField = (field: string, value: string) => {
+    setExecSummaryData(prev => ({ ...prev, [field]: value }));
+  };
+
   const statusDropdownRef = useRef<HTMLDivElement>(null);
-  const overallProgress = Math.round((initiationProgress + implementationProgress) / 2);
+  const overallProgress = Math.round((initiationProgress + implementationProgress + managementProgress + monitoringProgress + refundProgress + communicationsProgress) / 6);
 
   // Edit Mode states
   const [isEditMode, setIsEditMode] = useState(false);
@@ -4169,6 +6618,13 @@ export default function ProjectDetailPage() {
       .then(data=>setProject(data)).catch(()=>setError(true)).finally(()=>setLoading(false));
   }, [id]);
 
+  // Initialize Executive Summary prepared by name from assignee
+  useEffect(() => {
+    if (project?.assignee && !execSummaryData.preparedByName) {
+      setExecSummaryData(prev => ({ ...prev, preparedByName: project.assignee || '' }));
+    }
+  }, [project?.assignee, execSummaryData.preparedByName]);
+
   // Check if current user is the owner (assignee) or admin
   const isOwnerOrAdmin = (): boolean => {
     if (!currentUser || !project) return false;
@@ -4195,6 +6651,352 @@ export default function ProjectDetailPage() {
     const hasEditAccess = approvedEditors.includes(currentUser.id);
 
     return hasEditAccess;
+  };
+
+  // Generate and download Executive Summary as DOCX
+  const downloadExecutiveSummary = async (project: Project, data: typeof execSummaryData) => {
+    const { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, ImageRun, WidthType, BorderStyle, AlignmentType, VerticalAlign, UnderlineType, HorizontalPositionRelativeFrom, VerticalPositionRelativeFrom, TextWrappingType, TextWrappingSide } = await import('docx');
+
+    // Fetch the logo image
+    const logoResponse = await fetch('/setup-4.0-logo.png');
+    const logoBlob = await logoResponse.blob();
+    const logoArrayBuffer = await logoBlob.arrayBuffer();
+    const logoBuffer = new Uint8Array(logoArrayBuffer);
+
+    // Border style for main table
+    const tableBorder = { style: BorderStyle.SINGLE, size: 8, color: "000000" };
+    const noBorder = { style: BorderStyle.NONE };
+    const bottomBorder = { style: BorderStyle.SINGLE, size: 8, color: "000000" };
+
+    // Helper to create header cell for metric rows (Present, Additional Y1, Increase Y1)
+    const createMetricHeaderCell = (label: string) => {
+      return new TableCell({
+        verticalAlign: VerticalAlign.CENTER,
+        margins: { top: 50, bottom: 50, left: 100, right: 100 },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({
+                text: label,
+                bold: true,
+                size: 20,
+                font: "Calibri"
+              })
+            ]
+          })
+        ]
+      });
+    };
+
+    // Helper to create value cell for metric rows
+    const createMetricValueCell = (value: string) => {
+      return new TableCell({
+        verticalAlign: VerticalAlign.CENTER,
+        margins: { top: 50, bottom: 50, left: 100, right: 100 },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({
+                text: value || "",
+                size: 20,
+                font: "Calibri"
+              })
+            ]
+          })
+        ]
+      });
+    };
+
+    const doc = new Document({
+      sections: [{
+        properties: {
+          page: {
+            margin: {
+              top: 720,     // 0.5 inch
+              right: 720,
+              bottom: 720,
+              left: 720,
+            },
+          },
+        },
+        children: [
+          // Header with floating logo and centered title
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 },
+            children: [
+              // Floating logo positioned at left
+              new ImageRun({
+                data: logoBuffer,
+                transformation: { width: 120, height: 40 },
+                type: "png",
+                floating: {
+                  horizontalPosition: {
+                    relative: HorizontalPositionRelativeFrom.PAGE,
+                    offset: 500000, // 0.5 inch from left edge (in EMUs: 914400 per inch)
+                  },
+                  verticalPosition: {
+                    relative: VerticalPositionRelativeFrom.PARAGRAPH,
+                    offset: 0,
+                  },
+                  wrap: {
+                    type: TextWrappingType.NONE,
+                  },
+                },
+              }),
+              // Centered title text
+              new TextRun({
+                text: "EXECUTIVE SUMMARY",
+                bold: true,
+                size: 50,
+                font: "Calibri",
+              }),
+            ],
+          }),
+          new Paragraph({ text: "", spacing: { after: 200 } }),
+
+          // Main Table
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: {
+              top: tableBorder,
+              bottom: tableBorder,
+              left: tableBorder,
+              right: tableBorder,
+              insideHorizontal: tableBorder,
+              insideVertical: tableBorder,
+            },
+            rows: [
+              // Project Title
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 35, type: WidthType.PERCENTAGE },
+                    children: [new Paragraph({ children: [new TextRun({ text: "Project Title:", bold: true, size: 20, font: "Calibri" })] })],
+                  }),
+                  new TableCell({
+                    width: { size: 65, type: WidthType.PERCENTAGE },
+                    columnSpan: 2,
+                    children: [new Paragraph({ children: [new TextRun({ text: project.title || "", size: 20, font: "Calibri" })] })],
+                  }),
+                ],
+              }),
+              // Proponent
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Proponent:", bold: true, size: 20, font: "Calibri" })] })] }),
+                  new TableCell({ columnSpan: 2, children: [new Paragraph({ children: [new TextRun({ text: project.corporatorName || "", size: 20, font: "Calibri" })] })] }),
+                ],
+              }),
+              // Requested Amount
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Requested Amount:", bold: true, size: 20, font: "Calibri" })] })] }),
+                  new TableCell({ columnSpan: 2, children: [new Paragraph({ children: [new TextRun({ text: data.requestedAmount || "", size: 20, font: "Calibri" })] })] }),
+                ],
+              }),
+              // Owner's Equity
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Owner's Equity:", bold: true, size: 20, font: "Calibri" })] })] }),
+                  new TableCell({ columnSpan: 2, children: [new Paragraph({ children: [new TextRun({ text: data.ownersEquity || "", size: 20, font: "Calibri" })] })] }),
+                ],
+              }),
+              // Total Project Cost
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Total Project Cost:", bold: true, size: 20, font: "Calibri" })] })] }),
+                  new TableCell({ columnSpan: 2, children: [new Paragraph({ children: [new TextRun({ text: data.totalProjectCost || "", size: 20, font: "Calibri" })] })] }),
+                ],
+              }),
+              // 1. DOST technology
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "1. DOST technology to be adopted and the mode of techno transfer.", bold: true, size: 20, font: "Calibri" })] })] }),
+                  new TableCell({ columnSpan: 2, children: [new Paragraph({ children: [new TextRun({ text: data.dostTechnology || "", size: 20, font: "Calibri" })] })] }),
+                ],
+              }),
+              // 2. Income - Header row (Present / Additional Y1)
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 35, type: WidthType.PERCENTAGE },
+                    rowSpan: 2,
+                    verticalAlign: VerticalAlign.CENTER,
+                    children: [new Paragraph({ children: [new TextRun({ text: "2. Income", bold: true, size: 20, font: "Calibri" })] })],
+                  }),
+                  createMetricHeaderCell("Present"),
+                  createMetricHeaderCell("Additional (Y1)"),
+                ],
+              }),
+              // 2. Income - Value row
+              new TableRow({
+                children: [
+                  createMetricValueCell(data.incomePresent),
+                  createMetricValueCell(data.incomeAdditional),
+                ],
+              }),
+              // 3. Jobs Created - Header row
+              new TableRow({
+                children: [
+                  new TableCell({
+                    rowSpan: 2,
+                    verticalAlign: VerticalAlign.CENTER,
+                    children: [new Paragraph({ children: [new TextRun({ text: "3. Jobs Created", bold: true, size: 20, font: "Calibri" })] })],
+                  }),
+                  createMetricHeaderCell("Present"),
+                  createMetricHeaderCell("Additional (Y1)"),
+                ],
+              }),
+              // 3. Jobs Created - Value row
+              new TableRow({
+                children: [
+                  createMetricValueCell(data.jobsCreatedPresent),
+                  createMetricValueCell(data.jobsCreatedAdditional),
+                ],
+              }),
+              // 4. Productivity - Header row
+              new TableRow({
+                children: [
+                  new TableCell({
+                    rowSpan: 2,
+                    verticalAlign: VerticalAlign.CENTER,
+                    children: [new Paragraph({ children: [new TextRun({ text: "4. Productivity", bold: true, size: 20, font: "Calibri" })] })],
+                  }),
+                  createMetricHeaderCell("Present"),
+                  createMetricHeaderCell("Increase (Y1)"),
+                ],
+              }),
+              // 4. Productivity - Value row
+              new TableRow({
+                children: [
+                  createMetricValueCell(data.productivityPresent),
+                  createMetricValueCell(data.productivityIncrease),
+                ],
+              }),
+              // 5. Market - Header row
+              new TableRow({
+                children: [
+                  new TableCell({
+                    rowSpan: 2,
+                    verticalAlign: VerticalAlign.CENTER,
+                    children: [new Paragraph({ children: [new TextRun({ text: "5. Market", bold: true, size: 20, font: "Calibri" })] })],
+                  }),
+                  createMetricHeaderCell("Present"),
+                  createMetricHeaderCell("Additional (Y1)"),
+                ],
+              }),
+              // 5. Market - Value row
+              new TableRow({
+                children: [
+                  createMetricValueCell(data.marketPresent),
+                  createMetricValueCell(data.marketAdditional),
+                ],
+              }),
+              // 6. List of Products
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "6. List of Products", bold: true, size: 20, font: "Calibri" })] })] }),
+                  new TableCell({ columnSpan: 2, children: [new Paragraph({ children: [new TextRun({ text: data.listOfProducts || "", size: 20, font: "Calibri" })] })] }),
+                ],
+              }),
+              // 7. With FDA-LTO?
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "7. With FDA-LTO?", bold: true, size: 20, font: "Calibri" })] })] }),
+                  new TableCell({ columnSpan: 2, children: [new Paragraph({ children: [new TextRun({ text: data.withFdaLto || "", size: 20, font: "Calibri" })] })] }),
+                ],
+              }),
+              // 8. With CPRs?
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "8. With CPRs?", bold: true, size: 20, font: "Calibri" })] })] }),
+                  new TableCell({ columnSpan: 2, children: [new Paragraph({ children: [new TextRun({ text: data.withCprs || "", size: 20, font: "Calibri" })] })] }),
+                ],
+              }),
+              // 9. Business plan paragraph
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "9. A short paragraph on the business plan answering the question, How will the enterprise earn income?", bold: true, size: 20, font: "Calibri" })] })] }),
+                  new TableCell({ columnSpan: 2, children: [new Paragraph({ children: [new TextRun({ text: data.businessPlan || "", size: 20, font: "Calibri" })] }), new Paragraph(""), new Paragraph(""), new Paragraph("")] }),
+                ],
+              }),
+              // 10. Plans
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "10. Plans", bold: true, size: 20, font: "Calibri" })] })] }),
+                  new TableCell({ columnSpan: 2, children: [new Paragraph({ children: [new TextRun({ text: data.plans || "", size: 20, font: "Calibri" })] }), new Paragraph(""), new Paragraph(""), new Paragraph(""), new Paragraph("")] }),
+                ],
+              }),
+            ],
+          }),
+
+          // Footer section
+          new Paragraph({ text: "", spacing: { before: 400, after: 200 } }),
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: {
+              top: noBorder,
+              bottom: noBorder,
+              left: noBorder,
+              right: noBorder,
+              insideHorizontal: noBorder,
+              insideVertical: noBorder,
+            },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 50, type: WidthType.PERCENTAGE },
+                    borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder },
+                    children: [
+                      new Paragraph({ children: [new TextRun({ text: "Prepared by:", font: "Calibri", size: 20 })] }),
+                      new Paragraph({ text: "" }),
+                      new Paragraph({ text: "" }),
+                      new Paragraph({ text: "" }),
+                      new Paragraph({
+                        children: [
+                          new TextRun({ text: data.preparedByName || "", underline: { type: UnderlineType.SINGLE }, font: "Calibri", size: 20 })
+                        ]
+                      }),
+                      new Paragraph({ children: [new TextRun({ text: data.preparedByPosition || "", font: "Calibri", size: 20 })] }),
+                    ],
+                  }),
+                  new TableCell({
+                    width: { size: 50, type: WidthType.PERCENTAGE },
+                    borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder },
+                    children: [
+                      new Paragraph({ children: [new TextRun({ text: "Reviewed by", font: "Calibri", size: 20 })] }),
+                      new Paragraph({ text: "" }),
+                      new Paragraph({ text: "" }),
+                      new Paragraph({ text: "" }),
+                      new Paragraph({
+                        children: [
+                          new TextRun({ text: data.reviewedByName || "", underline: { type: UnderlineType.SINGLE }, font: "Calibri", size: 20 })
+                        ]
+                      }),
+                      new Paragraph({ children: [new TextRun({ text: data.reviewedByPosition || "", font: "Calibri", size: 20 })] }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          }),
+        ],
+      }],
+    });
+
+    const blob = await Packer.toBlob(doc);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Executive_Summary_${project.title?.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   // Check if user has a pending edit request
@@ -4589,13 +7391,66 @@ export default function ProjectDetailPage() {
           </div>
         </div>
 
+        {/* Executive Summary */}
+        <div className="bg-gradient-to-r from-[#e3f2fd] to-[#bbdefb] rounded-xl py-5 px-7 mb-2 shadow-[0_2px_8px_rgba(0,0,0,0.1)] border-l-4 border-[#1976d2]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-md">
+                <Icon icon="mdi:file-document-edit-outline" width={24} height={24} color="#1976d2" />
+              </div>
+              <div>
+                <h3 className="text-[16px] font-bold text-[#146184] m-0 mb-1">Executive Summary</h3>
+                <p className="text-[12px] text-[#555] m-0">Auto-generated document with project details</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowExecutiveSummaryPreview(true)}
+                className="flex items-center gap-2 px-5 py-2.5 bg-white text-[#1976d2] border-2 border-[#1976d2] rounded-lg text-[13px] font-semibold hover:bg-[#1976d2] hover:text-white transition-all shadow-sm"
+              >
+                <Icon icon="mdi:eye-outline" width={18} height={18} />
+                Preview
+              </button>
+              <button
+                onClick={async () => {
+                  if (!project) return;
+                  await downloadExecutiveSummary(project, execSummaryData);
+                }}
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#1976d2] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1565c0] transition-all shadow-md"
+              >
+                <Icon icon="mdi:download" width={18} height={18} />
+                Download DOCX
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Progress */}
         <div className="bg-white rounded-xl py-6 px-7 mb-2 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-4 gap-6 mb-6">
             {[
               { label: 'Project Initiation', progress: initiationProgress, files: initiationFiles },
               { label: 'Project Implementation', progress: implementationProgress, files: implementationFiles },
-              { label: 'Overall Project Progress', progress: overallProgress, files: { uploaded: initiationFiles.uploaded + implementationFiles.uploaded, total: initiationFiles.total + implementationFiles.total } },
+              { label: 'Project Management', progress: managementProgress, files: managementFiles },
+              { label: 'Project Monitoring', progress: monitoringProgress, files: monitoringFiles },
+            ].map(({ label, progress, files }) => (
+              <div key={label}>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-[13px] font-semibold text-[#333] m-0">{label}</h3>
+                  <span className="text-[13px] font-semibold text-[#333]">{progress}%</span>
+                </div>
+                <div className="w-full h-2 bg-[#e0e0e0] rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-300" style={{ width: `${progress}%`, backgroundColor: currentStatus.bar }}/>
+                </div>
+                <span className="text-[11px] text-[#888] mt-1 block">{files.uploaded}/{files.total} files uploaded</span>
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-3 gap-6">
+            {[
+              { label: 'Project Refund', progress: refundProgress, files: refundFiles },
+              { label: 'Communications', progress: communicationsProgress, files: communicationsFiles },
+              { label: 'Overall Project Progress', progress: overallProgress, files: { uploaded: initiationFiles.uploaded + implementationFiles.uploaded + managementFiles.uploaded + monitoringFiles.uploaded + refundFiles.uploaded + communicationsFiles.uploaded, total: initiationFiles.total + implementationFiles.total + managementFiles.total + monitoringFiles.total + refundFiles.total + communicationsFiles.total } },
             ].map(({ label, progress, files }) => (
               <div key={label}>
                 <div className="flex items-center justify-between mb-2">
@@ -4648,6 +7503,54 @@ export default function ProjectDetailPage() {
             isEditMode={isEditMode}
           />
 
+          {/* Project Management */}
+          <DocumentTable
+            key={`management-${modeKey}`}
+            title="Project Management"
+            docs={managementDocs}
+            projectId={id}
+            phase="MANAGEMENT"
+            onProgressUpdate={(p, u, t) => { setManagementProgress(p); setManagementFiles({ uploaded: u, total: t }); }}
+            initialDropdownData={project.dropdownData}
+            isEditMode={isEditMode}
+          />
+
+          {/* Project Monitoring */}
+          <DocumentTable
+            key={`monitoring-${modeKey}`}
+            title="Project Monitoring"
+            docs={monitoringDocs}
+            projectId={id}
+            phase="MONITORING"
+            onProgressUpdate={(p, u, t) => { setMonitoringProgress(p); setMonitoringFiles({ uploaded: u, total: t }); }}
+            initialDropdownData={project.dropdownData}
+            isEditMode={isEditMode}
+          />
+
+          {/* Project Refund */}
+          <DocumentTable
+            key={`refund-${modeKey}`}
+            title="Project Refund"
+            docs={refundDocs}
+            projectId={id}
+            phase="REFUND"
+            onProgressUpdate={(p, u, t) => { setRefundProgress(p); setRefundFiles({ uploaded: u, total: t }); }}
+            initialDropdownData={project.dropdownData}
+            isEditMode={isEditMode}
+          />
+
+          {/* Communications */}
+          <DocumentTable
+            key={`communications-${modeKey}`}
+            title="Communications"
+            docs={communicationsDocs}
+            projectId={id}
+            phase="COMMUNICATIONS"
+            onProgressUpdate={(p, u, t) => { setCommunicationsProgress(p); setCommunicationsFiles({ uploaded: u, total: t }); }}
+            initialDropdownData={project.dropdownData}
+            isEditMode={isEditMode}
+          />
+
         {/* Edit Request Modal */}
         {editRequestModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]" onClick={() => setEditRequestModal(false)}>
@@ -4688,7 +7591,7 @@ export default function ProjectDetailPage() {
         {editRequestSent && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]" onClick={() => setEditRequestSent(false)}>
             <div className="bg-white rounded-2xl w-full max-w-[400px] py-8 px-10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] text-center" onClick={(e) => e.stopPropagation()}>
-              <div className="w-14 h-14 rounded-full bg-[#e8f5e9] flex items-center justify-center mx-auto mb-4">
+              <div className="w-14 h-14 rounded-full bg-[#fffff] flex items-center justify-center mx-auto mb-4">
                 <Icon icon="mdi:check-circle" width={36} height={36} color="#2e7d32" />
               </div>
               <h3 className="text-lg font-bold text-[#333] m-0 mb-3">Request Sent!</h3>
@@ -4826,7 +7729,7 @@ export default function ProjectDetailPage() {
                       {approvedEditorsList.map((editor) => (
                         <div
                           key={editor.userId}
-                          className="flex items-center gap-3 p-3 bg-[#e8f5e9] rounded-lg border border-[#c8e6c9]"
+                          className="flex items-center gap-3 p-3 bg-[#fffff] rounded-lg border border-[#c8e6c9]"
                         >
                           {/* User Avatar */}
                           {editor.userProfileUrl ? (
@@ -4877,6 +7780,266 @@ export default function ProjectDetailPage() {
                   className="w-full py-2.5 bg-primary text-white border-none rounded-lg text-sm font-semibold cursor-pointer hover:bg-[#0d4a5f] transition-colors"
                 >
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Executive Summary Preview Modal - A4 Size */}
+        {showExecutiveSummaryPreview && project && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] p-4 overflow-auto" onClick={() => setShowExecutiveSummaryPreview(false)}>
+            <div className="bg-gray-200 rounded-xl overflow-hidden shadow-2xl flex flex-col max-h-[95vh]" onClick={(e) => e.stopPropagation()}>
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-[#146184] to-[#1976d2] px-6 py-3 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <Icon icon="mdi:file-document-outline" width={24} height={24} color="white" />
+                  <h3 className="text-white text-lg font-bold m-0">Executive Summary Preview (A4)</h3>
+                </div>
+                <button onClick={() => setShowExecutiveSummaryPreview(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
+                  <Icon icon="mdi:close" width={24} height={24} color="white" />
+                </button>
+              </div>
+
+              {/* A4 Paper Container */}
+              <div className="overflow-auto flex-1 p-6 flex justify-center">
+                <div
+                  className="bg-white shadow-xl"
+                  style={{
+                    width: '210mm',
+                    minHeight: '297mm',
+                    padding: '15mm 20mm',
+                    fontFamily: 'Calibri, Arial, sans-serif',
+                    fontSize: '11pt',
+                    lineHeight: '1.3',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  {/* Header - Logo floating left, Title truly centered */}
+                  <div style={{ position: 'relative', marginBottom: '15px' }}>
+                    {/* Logo positioned absolutely so it doesn't affect title centering */}
+                    <img
+                      src="/setup-4.0-logo.png"
+                      alt="SETUP 4.0 Logo"
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        height: '45px',
+                        width: 'auto'
+                      }}
+                    />
+                    {/* Title centered across full width */}
+                    <div style={{ width: '100%', textAlign: 'center', paddingTop: '10px', paddingBottom: '10px' }}>
+                      <span style={{ fontSize: '24pt', fontWeight: 'bold', letterSpacing: '1px' }}>EXECUTIVE SUMMARY</span>
+                    </div>
+                  </div>
+
+                  {/* Main Table */}
+                  <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
+                    <tbody>
+                      {/* Project Title */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', width: '35%' }}>Project Title:</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px' }} colSpan={2}>{project.title || ''}</td>
+                      </tr>
+                      {/* Proponent */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Proponent:</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px' }} colSpan={2}>{project.corporatorName || ''}</td>
+                      </tr>
+                      {/* Requested Amount */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Requested Amount:</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px' }} colSpan={2}>
+                          <input type="text" value={execSummaryData.requestedAmount} onChange={(e) => updateExecSummaryField('requestedAmount', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* Owner's Equity */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Owner&apos;s Equity:</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px' }} colSpan={2}>
+                          <input type="text" value={execSummaryData.ownersEquity} onChange={(e) => updateExecSummaryField('ownersEquity', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* Total Project Cost */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Total Project Cost:</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px' }} colSpan={2}>
+                          <input type="text" value={execSummaryData.totalProjectCost} onChange={(e) => updateExecSummaryField('totalProjectCost', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* 1. DOST technology */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', verticalAlign: 'top' }}>1. DOST technology to be adopted and the mode of techno transfer.</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px' }} colSpan={2}>
+                          <textarea value={execSummaryData.dostTechnology} onChange={(e) => updateExecSummaryField('dostTechnology', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', resize: 'none', minHeight: '30px' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* 2. Income - Header row */}
+                      <tr>
+                        <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', verticalAlign: 'middle', width: '35%' }}>2. Income</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', width: '32.5%', textAlign: 'center', fontWeight: 'bold' }}>Present</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', width: '32.5%', textAlign: 'center', fontWeight: 'bold' }}>Additional (Y1)</td>
+                      </tr>
+                      {/* 2. Income - Value row */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
+                          <input type="text" value={execSummaryData.incomePresent} onChange={(e) => updateExecSummaryField('incomePresent', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', textAlign: 'center' }} placeholder="" />
+                        </td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
+                          <input type="text" value={execSummaryData.incomeAdditional} onChange={(e) => updateExecSummaryField('incomeAdditional', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', textAlign: 'center' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* 3. Jobs Created - Header row */}
+                      <tr>
+                        <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', verticalAlign: 'middle' }}>3. Jobs Created</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>Present</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>Additional (Y1)</td>
+                      </tr>
+                      {/* 3. Jobs Created - Value row */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
+                          <input type="text" value={execSummaryData.jobsCreatedPresent} onChange={(e) => updateExecSummaryField('jobsCreatedPresent', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', textAlign: 'center' }} placeholder="" />
+                        </td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
+                          <input type="text" value={execSummaryData.jobsCreatedAdditional} onChange={(e) => updateExecSummaryField('jobsCreatedAdditional', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', textAlign: 'center' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* 4. Productivity - Header row */}
+                      <tr>
+                        <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', verticalAlign: 'middle' }}>4. Productivity</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>Present</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>Increase (Y1)</td>
+                      </tr>
+                      {/* 4. Productivity - Value row */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
+                          <input type="text" value={execSummaryData.productivityPresent} onChange={(e) => updateExecSummaryField('productivityPresent', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', textAlign: 'center' }} placeholder="" />
+                        </td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
+                          <input type="text" value={execSummaryData.productivityIncrease} onChange={(e) => updateExecSummaryField('productivityIncrease', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', textAlign: 'center' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* 5. Market - Header row */}
+                      <tr>
+                        <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', verticalAlign: 'middle' }}>5. Market</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>Present</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>Additional (Y1)</td>
+                      </tr>
+                      {/* 5. Market - Value row */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
+                          <input type="text" value={execSummaryData.marketPresent} onChange={(e) => updateExecSummaryField('marketPresent', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', textAlign: 'center' }} placeholder="" />
+                        </td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
+                          <input type="text" value={execSummaryData.marketAdditional} onChange={(e) => updateExecSummaryField('marketAdditional', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', textAlign: 'center' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* 6. List of Products */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', verticalAlign: 'top' }}>6. List of Products</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px' }} colSpan={2}>
+                          <textarea value={execSummaryData.listOfProducts} onChange={(e) => updateExecSummaryField('listOfProducts', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', resize: 'none', minHeight: '30px' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* 7. With FDA-LTO? */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>7. With FDA-LTO?</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px' }} colSpan={2}>
+                          <input type="text" value={execSummaryData.withFdaLto} onChange={(e) => updateExecSummaryField('withFdaLto', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* 8. With CPRs? */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>8. With CPRs?</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px' }} colSpan={2}>
+                          <input type="text" value={execSummaryData.withCprs} onChange={(e) => updateExecSummaryField('withCprs', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* 9. Business plan paragraph */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', verticalAlign: 'top' }}>9. A short paragraph on the business plan answering the question, How will the enterprise earn income?</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', minHeight: '80px' }} colSpan={2}>
+                          <textarea value={execSummaryData.businessPlan} onChange={(e) => updateExecSummaryField('businessPlan', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', resize: 'none', minHeight: '60px' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* 10. Plans */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', verticalAlign: 'top' }}>10. Plans</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', minHeight: '100px' }} colSpan={2}>
+                          <textarea value={execSummaryData.plans} onChange={(e) => updateExecSummaryField('plans', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', resize: 'none', minHeight: '80px' }} placeholder="" />
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  {/* Footer - Prepared by / Reviewed by */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px' }}>
+                    {/* Prepared by */}
+                    <div style={{ width: '45%' }}>
+                      <div style={{ marginBottom: '8px' }}>Prepared by:</div>
+                      <div style={{ marginTop: '40px' }}>
+                        <input
+                          type="text"
+                          value={execSummaryData.preparedByName}
+                          onChange={(e) => updateExecSummaryField('preparedByName', e.target.value)}
+                          style={{ width: '100%', borderBottom: '1px solid #000', background: 'transparent', outline: 'none', textAlign: 'left', paddingBottom: '2px' }}
+                          placeholder=""
+                        />
+                      </div>
+                      <div style={{ marginTop: '2px' }}>
+                        <input
+                          type="text"
+                          value={execSummaryData.preparedByPosition}
+                          onChange={(e) => updateExecSummaryField('preparedByPosition', e.target.value)}
+                          style={{ width: '100%', background: 'transparent', outline: 'none', textAlign: 'left', fontSize: '10pt', border: 'none' }}
+                          placeholder=""
+                        />
+                      </div>
+                    </div>
+                    {/* Reviewed by */}
+                    <div style={{ width: '45%' }}>
+                      <div style={{ marginBottom: '8px' }}>Reviewed by</div>
+                      <div style={{ marginTop: '40px' }}>
+                        <input
+                          type="text"
+                          value={execSummaryData.reviewedByName}
+                          onChange={(e) => updateExecSummaryField('reviewedByName', e.target.value)}
+                          style={{ width: '100%', borderBottom: '1px solid #000', background: 'transparent', outline: 'none', textAlign: 'left', paddingBottom: '2px' }}
+                          placeholder=""
+                        />
+                      </div>
+                      <div style={{ marginTop: '2px' }}>
+                        <input
+                          type="text"
+                          value={execSummaryData.reviewedByPosition}
+                          onChange={(e) => updateExecSummaryField('reviewedByPosition', e.target.value)}
+                          style={{ width: '100%', background: 'transparent', outline: 'none', textAlign: 'left', fontSize: '10pt', border: 'none' }}
+                          placeholder=""
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-3 bg-gray-100 border-t border-gray-200 flex justify-end gap-3 shrink-0">
+                <button onClick={() => setShowExecutiveSummaryPreview(false)} className="px-5 py-2 bg-gray-300 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-400 transition-colors">
+                  Close
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!project) return;
+                    await downloadExecutiveSummary(project, execSummaryData);
+                    setShowExecutiveSummaryPreview(false);
+                  }}
+                  className="px-5 py-2 bg-[#1976d2] text-white rounded-lg text-sm font-semibold hover:bg-[#1565c0] transition-colors flex items-center gap-2"
+                >
+                  <Icon icon="mdi:download" width={18} height={18} />
+                  Download DOCX
                 </button>
               </div>
             </div>
