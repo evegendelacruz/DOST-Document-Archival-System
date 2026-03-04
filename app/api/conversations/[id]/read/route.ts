@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
+
 // PATCH /api/conversations/[id]/read — mark conversation as read for current user
 export async function PATCH(
   req: NextRequest,

@@ -23,6 +23,10 @@
       "Bash(cmd.exe /c \"npm install @tailwindcss/oxide-win32-x64-msvc@4.1.18 --save-optional\")",
       "Bash(timeout 30 npm run dev:*)",
       "Bash(timeout 15 npm run dev:*)"
+      "Bash(tail:*)",
+      "Bash(npm view:*)",
+      "Bash(git add:*)",
+      "Bash(npm install:*)"
     ]
   }
 }

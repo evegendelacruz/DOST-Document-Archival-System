@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from '../components/DashboardLayout';
 
-type ActionType = "upload" | "delete" | "edit" | "create" | "login" | "logout" | "download" | "update";
+type ActionType = "upload" | "delete" | "edit" | "create" | "download" | "update";
 
 interface UserInfo {
   id: string;
@@ -35,10 +35,10 @@ const ACTION_COLORS: Record<string, { bg: string }> = {
   delete: { bg: "#e05a4e" },
   edit: { bg: "#2ecc71" },
   update: { bg: "#2ecc71" },
-  login: { bg: "#3498db" },
-  logout: { bg: "#95a5a6" },
   download: { bg: "#9b59b6" },
 };
+
+const CEST_RESOURCE_TYPES = 'CEST_PROJECT,CEST_DOCUMENT';
 
 const UploadIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -60,14 +60,6 @@ const EditIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-  </svg>
-);
-
-const LoginIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-    <polyline points="10 17 15 12 10 7"/>
-    <line x1="15" y1="12" x2="3" y2="12"/>
   </svg>
 );
 
@@ -123,7 +115,6 @@ function ActionIcon({ action }: { action: string }) {
       {(actionLower === "upload") && <UploadIcon />}
       {(actionLower === "delete") && <DeleteIcon />}
       {(actionLower === "edit" || actionLower === "update") && <EditIcon />}
-      {(actionLower === "login" || actionLower === "logout") && <LoginIcon />}
       {(actionLower === "download") && <DownloadIcon />}
       {(actionLower === "create") && <CreateIcon />}
     </div>
@@ -151,30 +142,23 @@ function UserBadge({ name, action }: { name: string; action: string }) {
 
 function formatActivityDescription(activity: Activity): string {
   const action = (activity.action || 'unknown').toLowerCase();
-  const resourceType = (activity.resourceType || 'item').replace(/_/g, ' ').toLowerCase();
+  const resourceType = (activity.resourceType || '').toUpperCase();
   const title = activity.resourceTitle || 'item';
 
-  switch (action) {
-    case 'login':
-      return 'Logged into the system';
-    case 'logout':
-      return 'Logged out of the system';
-    case 'create':
-      return `Created a new ${resourceType}: "${title}"`;
-    case 'update':
-      return `Updated ${resourceType}: "${title}"`;
-    case 'delete':
-      return `Deleted ${resourceType}: "${title}"`;
-    case 'upload':
-      return `Uploaded a document: "${title}"`;
-    case 'download':
-      return `Downloaded a document: "${title}"`;
-    default:
-      if (resourceType === 'auth' || resourceType === 'item') {
-        return `${action.charAt(0).toUpperCase() + action.slice(1)} action performed`;
-      }
-      return `${action.charAt(0).toUpperCase() + action.slice(1)} ${resourceType}: "${title}"`;
+  if (resourceType === 'CEST_DOCUMENT') {
+    if (action === 'upload') return `Uploaded document to CEST project: "${title}"`;
+    if (action === 'delete') return `Deleted document from CEST project: "${title}"`;
+    return `${action.charAt(0).toUpperCase() + action.slice(1)} CEST document: "${title}"`;
   }
+
+  if (resourceType === 'CEST_PROJECT') {
+    if (action === 'create') return `Created CEST project: "${title}"`;
+    if (action === 'update') return `Updated CEST project: "${title}"`;
+    if (action === 'delete') return `Deleted CEST project: "${title}"`;
+    return `${action.charAt(0).toUpperCase() + action.slice(1)} CEST project: "${title}"`;
+  }
+
+  return `${action.charAt(0).toUpperCase() + action.slice(1)}: "${title}"`;
 }
 
 function formatDate(timestamp: string): string {
@@ -245,6 +229,9 @@ export default function RecentActivity() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
+
+      // Always filter to CEST activities only
+      params.append("resourceType", CEST_RESOURCE_TYPES);
 
       // Filter by current user if "My Activities" tab is selected
       if (activeTab === "my" && currentUserId) {
@@ -317,7 +304,7 @@ export default function RecentActivity() {
       {/* Header */}
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: "#1a6b7a" }}>Recent Activity</h1>
-        <p style={{ margin: "4px 0 0", fontSize: 13, color: "#888" }}>User Activity History</p>
+        <p style={{ margin: "4px 0 0", fontSize: 13, color: "#888" }}>CEST Project Activity History</p>
       </div>
 
       {/* View Toggle */}
@@ -429,7 +416,6 @@ export default function RecentActivity() {
             }}
           >
             <option>All Actions</option>
-            <option>Login</option>
             <option>Create</option>
             <option>Update</option>
             <option>Delete</option>
