@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Icon } from '@iconify/react';
+import { QRCodeSVG } from 'qrcode.react';
 import DashboardLayout from '../../components/DashboardLayout';
 
 // Helper to get userId for activity logging
@@ -229,6 +230,15 @@ function DocumentTable({
   const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
   const [uploadSuccess, setUploadSuccess] = useState<{ fileName: string; fileType: string; fileSize: string; uploadedBy: string; date: string } | null>(null);
   const [fileListModal, setFileListModal] = useState<string | null>(null);
+  const [qrPickModal, setQrPickModal] = useState<string | null>(null);
+  const [qrDoc, setQrDoc] = useState<ProjectDocument | null>(null);
+  const [qrPinInput, setQrPinInput] = useState('');
+  const [qrPinSaved, setQrPinSaved] = useState(false);
+  const [qrPinError, setQrPinError] = useState('');
+  const [qrSaving, setQrSaving] = useState(false);
+  const [qrViewUrl, setQrViewUrl] = useState('');
+  const [qrCopied, setQrCopied] = useState(false);
+  const [qrDocHasPin, setQrDocHasPin] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const targetItemIdRef = useRef<string | null>(null);
   const [moaType, setMoaType] = useState<string>('');
@@ -824,6 +834,62 @@ function DocumentTable({
     }
   };
 
+  const openQrModal = async (doc: ProjectDocument) => {
+    setQrDoc(doc);
+    setQrViewUrl('');
+    setQrPinInput('');
+    setQrPinSaved(false);
+    setQrPinError('');
+    setQrCopied(false);
+    try {
+      const ipRes = await fetch('/api/local-ip');
+      if (ipRes.ok) {
+        const { origin } = await ipRes.json();
+        setQrViewUrl(`${origin}/view-doc/${doc.id}`);
+      } else {
+        setQrViewUrl(`${window.location.origin}/view-doc/${doc.id}`);
+      }
+    } catch {
+      setQrViewUrl(`${window.location.origin}/view-doc/${doc.id}`);
+    }
+    try {
+      const res = await fetch(`/api/view-doc/${doc.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setQrDocHasPin(data.hasPin);
+      }
+    } catch { /* ignore */ }
+  };
+
+  const handleSavePin = async () => {
+    if (!qrDoc) return;
+    if (qrPinInput && (!/^\d+$/.test(qrPinInput) || qrPinInput.length !== 4)) {
+      setQrPinError('PIN must be exactly 4 digits');
+      return;
+    }
+    setQrSaving(true);
+    setQrPinError('');
+    try {
+      const res = await fetch(`/api/view-doc/${qrDoc.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: qrPinInput || null }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        setQrPinError(err.error || 'Failed to save PIN');
+        return;
+      }
+      setQrDocHasPin(!!qrPinInput);
+      setQrPinSaved(true);
+      setTimeout(() => setQrPinSaved(false), 2500);
+    } catch {
+      setQrPinError('Failed to save PIN');
+    } finally {
+      setQrSaving(false);
+    }
+  };
+
   // Save dropdown data to API (merges with existing data)
   const saveDropdownData = async (data: Record<string, unknown>, successMessage: string) => {
     setSavingData(true);
@@ -959,18 +1025,18 @@ function DocumentTable({
 
       {/* View Mode Banner */}
       {!isEditMode && (
-        <div className="flex items-start gap-2 bg-[#fff3e0] border border-[#ffcc80] rounded-lg py-2.5 px-4 mx-7 mb-4 text-xs text-[#e65100] leading-[1.4]">
+        <div className="flex items-start gap-2 bg-[#fff3e0] border border-[#ffcc80] rounded-lg py-2.5 px-4 mx-7 max-md:mx-4 mb-4 text-xs text-[#e65100] leading-[1.4]">
           <Icon icon="mdi:eye-outline" width={16} height={16} className="min-w-4 mt-px" />
           <span><strong>View Mode:</strong> You are currently in view mode. Editing, uploading, and deleting are disabled. Click &quot;Edit Mode&quot; button to enable editing.</span>
         </div>
       )}
 
-      <div className="flex items-start gap-2 bg-[#e1f5fe] border border-[#b3e5fc] rounded-lg py-2.5 px-4 mx-7 mb-4 text-xs text-[#0277bd] leading-[1.4]">
+      <div className="flex items-start gap-2 bg-[#e1f5fe] border border-[#b3e5fc] rounded-lg py-2.5 px-4 mx-7 max-md:mx-4 mb-4 text-xs text-[#0277bd] leading-[1.4]">
         <Icon icon="mdi:information-outline" width={16} height={16} className="min-w-4 mt-px" />
         <span>To ensure that the document you uploaded is viewable in our system, click the View button below and check the document you uploaded. If it is not viewable, re-upload the document</span>
       </div>
       <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileChange} />
-      <div className="overflow-x-auto px-7">
+      <div className="overflow-x-auto px-7 max-md:px-2">
         <table className="w-full border-collapse text-[13px]">
           <thead>
             <tr className="bg-primary text-white">
@@ -7045,8 +7111,8 @@ export default function ProjectDetailPage() {
     finally { setUpdatingStatus(false); setShowStatusDropdown(false); }
   };
 
-  if (loading) return <DashboardLayout activePath="/setup"><main className="flex-1 py-6 px-10 bg-[#f4f6f8]"><p className="text-[#999] text-sm">Loading project...</p></main></DashboardLayout>;
-  if (error || !project) return <DashboardLayout activePath="/setup"><main className="flex-1 py-6 px-10 bg-[#f4f6f8]"><p>Project not found.</p><Link href="/setup" className="inline-flex items-center gap-1.5 text-primary text-sm font-medium no-underline hover:text-accent"><Icon icon="mdi:arrow-left" width={18} height={18}/>Back</Link></main></DashboardLayout>;
+  if (loading) return <DashboardLayout activePath="/setup"><main className="flex-1 py-6 px-10 max-md:px-3 bg-[#f4f6f8]"><p className="text-[#999] text-sm">Loading project...</p></main></DashboardLayout>;
+  if (error || !project) return <DashboardLayout activePath="/setup"><main className="flex-1 py-6 px-10 max-md:px-3 bg-[#f4f6f8]"><p>Project not found.</p><Link href="/setup" className="inline-flex items-center gap-1.5 text-primary text-sm font-medium no-underline hover:text-accent"><Icon icon="mdi:arrow-left" width={18} height={18}/>Back</Link></main></DashboardLayout>;
 
   const datePublished = new Date(project.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const statusConfig: Record<string, { label: string; bg: string; text: string; bar: string }> = {
@@ -7061,18 +7127,18 @@ export default function ProjectDetailPage() {
 
   return (
     <DashboardLayout activePath="/setup">
-      <main className="flex-1 py-6 px-10 pb-[60px] overflow-y-auto bg-[#f4f6f8]">
+      <main className="flex-1 py-6 px-10 max-md:px-3 max-md:py-3 pb-[60px] overflow-y-auto bg-[#f4f6f8]">
         <Link href="/setup" className="inline-flex items-center gap-1.5 text-primary text-sm font-medium no-underline mb-4 hover:text-accent">
           <Icon icon="mdi:arrow-left" width={18} height={18}/><span>Back</span>
         </Link>
 
         {/* Project Info Card */}
-        <div className="bg-white rounded-xl py-6 px-7 mb-2 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-          <div className="flex items-start justify-between mb-5">
+        <div className="bg-white rounded-xl py-6 px-7 max-md:px-4 mb-2 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+          <div className="flex items-start justify-between mb-5 max-md:flex-col max-md:gap-3">
             <div className="flex items-center gap-3.5 mb-5">
               <div className="w-[120px] h-auto"><img src="/setup-4.0-logo.png" alt="SETUP" className="w-[120px] h-auto"/></div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 max-md:w-full max-md:justify-end">
               {/* Permission Button - Show only for owner (assignee) or admin, not for users with granted edit access */}
               {isOwnerOrAdmin() && (
                 <button
@@ -7119,11 +7185,11 @@ export default function ProjectDetailPage() {
               </button>
             </div>
           </div>
-          <div className="flex gap-5 items-start">
-            <div className="w-[100px] h-[100px] min-w-[100px] rounded-full bg-gray-200 flex items-center justify-center overflow-hidden ring-2 ring-[#183166] ring-offset-2">
+          <div className="flex gap-5 items-start max-md:flex-col">
+            <div className="w-[100px] h-[100px] min-w-[100px] max-md:w-[70px] max-md:h-[70px] max-md:min-w-[70px] rounded-full bg-gray-200 flex items-center justify-center overflow-hidden ring-2 ring-[#183166] ring-offset-2">
               {project.companyLogoUrl ? <img src={project.companyLogoUrl} alt="logo" className="w-full h-full object-cover"/> : <Icon icon="mdi:store" width={48} height={48} color="#999"/>}
             </div>
-            <div className="flex-1 flex gap-5">
+            <div className="flex-1 flex gap-5 max-md:flex-col">
               <div className="flex-1">
                 <div className="flex items-center gap-2 text-[13px] mb-1">
                   <span className="text-[#555] font-medium">{project.firm||'—'}</span>

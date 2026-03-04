@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
+
 // Test endpoint to verify activity logging works
 export async function GET() {
   try {

@@ -715,50 +715,50 @@ export default function SetupPage() {
 
   return (
     <DashboardLayout activePath="/setup">
-      <main className="flex-1 py-5 px-[30px] bg-[#f5f5f5] overflow-x-auto min-w-0">
+      <main className="flex-1 py-5 px-[30px] max-md:px-3 max-md:py-3 bg-[#f5f5f5] overflow-x-auto min-w-0">
         {/* SETUP Header */}
-        <div className="flex justify-between items-center bg-white py-[15px] px-[25px] rounded-[15px] mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.05)] gap-[30px]">
-          <div className="flex items-center gap-[15px]">
+        <div className="flex justify-between items-center bg-white py-[15px] px-[25px] rounded-[15px] mb-5 shadow-[0_2px_8px_rgba(0,0,0,0.05)] gap-[30px] max-md:flex-col max-md:gap-2 max-md:py-3 max-md:px-4">
+          <div className="flex items-center gap-[15px] max-md:w-full max-md:justify-between">
             <div className="flex flex-col">
-              <Image 
-                src="/setup-4.0-logo.png" 
-                alt="SETUP 4.0 - Small Enterprise Technology Upgrading Program" 
+              <Image
+                src="/setup-4.0-logo.png"
+                alt="SETUP 4.0 - Small Enterprise Technology Upgrading Program"
                 width={160}
                 height={25}
                 style={{ width: '160px', height: 'auto' }}
               />
             </div>
           </div>
-          <div className="flex-1 flex justify-center items-center">
-            <div className="relative w-[600px] h-[50px]">
+          <div className="flex-1 flex justify-center items-center max-md:w-full">
+            <div className="relative w-[600px] max-md:w-full h-[50px] max-md:h-[44px]">
               <Icon icon="mdi:magnify" className="absolute left-[15px] top-1/2 -translate-y-1/2 text-[#999] w-5 h-5" width={20} height={20} />
               <input type="text" className="w-full h-full pl-[50px] pr-[25px] border border-[#e0e0e0] rounded-[25px] text-[15px] bg-[#f5f5f5] transition-all duration-200 focus:outline-none focus:border-primary focus:bg-white focus:shadow-[0_2px_8px_rgba(20,97,132,0.1)] placeholder:text-[#999]" placeholder="Search here" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
           </div>
-          <button className="flex items-center gap-2 py-3 px-5 bg-accent text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover" onClick={() => { setEditingProjectId(null); setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', year: '', companyLogo: null }); setEmails(['']); setContactNumbers(['']); setFormErrors({}); setSaveError(''); setShowAddModal(true); }}>
+          <button className="flex items-center gap-2 py-3 px-5 bg-accent text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover max-md:hidden" onClick={() => { setEditingProjectId(null); setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', year: '', companyLogo: null }); setEmails(['']); setContactNumbers(['']); setFormErrors({}); setSaveError(''); setShowAddModal(true); }}>
             <Icon icon="mdi:plus" width={20} height={20} />
             Add New Project
           </button>
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex gap-[15px] mb-5 w-full">
+        <div className="flex gap-[15px] mb-5 w-full max-md:grid max-md:grid-cols-3 max-md:gap-2">
           {filterTabs.map(tab => (
-            <button key={tab.id} className={`flex-1 flex flex-col items-center justify-center py-5 px-[15px] border-none rounded-xl cursor-pointer transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.06)] ${activeFilter === tab.id ? 'bg-primary' : 'bg-white hover:bg-[#f0f8ff] hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)]'}`} onClick={() => setActiveFilter(prev => prev === tab.id ? '' : tab.id)}>
-              <div className="inline-flex items-center gap-[5px] mb-2">
-                <span className={`text-[13px] font-medium leading-none ${activeFilter === tab.id ? 'text-white' : 'text-[#666]'}`}>{tab.label}</span>
+            <button key={tab.id} className={`flex-1 flex flex-col items-center justify-center py-5 px-[15px] max-md:py-3 max-md:px-2 border-none rounded-xl cursor-pointer transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.06)] ${activeFilter === tab.id ? 'bg-primary' : 'bg-white hover:bg-[#f0f8ff] hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)]'}`} onClick={() => setActiveFilter(prev => prev === tab.id ? '' : tab.id)}>
+              <div className="inline-flex items-center gap-[5px] mb-2 max-md:mb-1">
+                <span className={`text-[13px] max-md:text-[11px] font-medium leading-none ${activeFilter === tab.id ? 'text-white' : 'text-[#666]'}`}>{tab.label}</span>
                 <span className="w-1.5 h-1.5 rounded-full inline-block align-middle" style={{ backgroundColor: tab.color }}></span>
               </div>
-              <span className={`text-[32px] font-bold ${activeFilter === tab.id ? 'text-white' : 'text-primary'}`}>{statusCounts[tab.id] || 0}</span>
+              <span className={`text-[32px] max-md:text-2xl font-bold ${activeFilter === tab.id ? 'text-white' : 'text-primary'}`}>{statusCounts[tab.id] || 0}</span>
             </button>
           ))}
         </div>
 
         {/* Masterlist Section */}
         <div className="bg-white rounded-[15px] p-5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
-          <div className="flex justify-between items-center mb-5 pb-[15px] border-b border-[#e0e0e0]">
+          <div className="flex justify-between items-center mb-5 pb-[15px] border-b border-[#e0e0e0] max-md:flex-col max-md:items-start max-md:gap-2">
             <h2 className="text-lg font-bold text-primary m-0">MASTERLIST</h2>
-            <div className="flex gap-2.5">
+            <div className="flex gap-2.5 max-md:flex-wrap max-md:gap-1.5">
               {/* Sort Dropdown */}
               <div className="relative" ref={sortRef}>
                 <button className="flex items-center gap-[5px] py-2 px-[15px] bg-white border border-[#d0d0d0] rounded-lg text-[13px] text-[#333] cursor-pointer transition-all duration-200 hover:bg-[#f5f5f5] hover:border-primary" onClick={() => { setShowSortDropdown(v => !v); setShowFilterDropdown(false); }}>
@@ -801,11 +801,11 @@ export default function SetupPage() {
                 )}
               </div>
 
-              <button className="flex items-center gap-[5px] py-2 px-[15px] bg-[#dc3545] text-white border border-[#dc3545] rounded-lg text-[13px] cursor-pointer transition-all duration-200 hover:bg-[#c82333]" onClick={handleExportPDF}>
-                <Icon icon="mdi:file-pdf-box" width={16} height={16} /> Export PDF
+              <button className="flex items-center gap-[5px] py-2 px-[15px] max-md:px-2.5 bg-[#dc3545] text-white border border-[#dc3545] rounded-lg text-[13px] cursor-pointer transition-all duration-200 hover:bg-[#c82333]" onClick={handleExportPDF}>
+                <Icon icon="mdi:file-pdf-box" width={16} height={16} /><span className="max-md:hidden"> Export PDF</span>
               </button>
-              <button className="flex items-center gap-[5px] py-2 px-[15px] bg-[#217346] text-white border border-[#217346] rounded-lg text-[13px] cursor-pointer transition-all duration-200 hover:bg-[#1a5c38]" onClick={handleExportExcel}>
-                <Icon icon="mdi:file-excel-box" width={16} height={16} /> Export Excel
+              <button className="flex items-center gap-[5px] py-2 px-[15px] max-md:px-2.5 bg-[#217346] text-white border border-[#217346] rounded-lg text-[13px] cursor-pointer transition-all duration-200 hover:bg-[#1a5c38]" onClick={handleExportExcel}>
+                <Icon icon="mdi:file-excel-box" width={16} height={16} /><span className="max-md:hidden"> Export Excel</span>
               </button>
             </div>
           </div>
@@ -920,6 +920,15 @@ export default function SetupPage() {
           </div>
         )}
       </main>
+
+      {/* Mobile FAB — Add New Project */}
+      <button
+        onClick={() => { setEditingProjectId(null); setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', year: '', companyLogo: null }); setEmails(['']); setContactNumbers(['']); setFormErrors({}); setSaveError(''); setShowAddModal(true); }}
+        className="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-accent text-white shadow-xl flex items-center justify-center active:scale-90 transition-transform"
+        aria-label="Add New Project"
+      >
+        <Icon icon="mdi:plus" width={28} height={28} />
+      </button>
 
       {/* Add New Project Modal */}
       {showAddModal && (

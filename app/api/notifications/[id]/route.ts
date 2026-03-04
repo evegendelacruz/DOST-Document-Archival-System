@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -8,11 +9,16 @@ export async function PATCH(
   const { id } = await params;
   const data = await req.json();
 
+  const updateData: { read?: boolean; inviteStatus?: string } = {
+    read: data.read ?? true,
+  };
+  if (data.inviteStatus !== undefined) {
+    updateData.inviteStatus = data.inviteStatus;
+  }
+
   const notification = await prisma.notification.update({
     where: { id },
-    data: {
-      read: data.read ?? true,
-    },
+    data: updateData,
   });
 
   return NextResponse.json(notification);

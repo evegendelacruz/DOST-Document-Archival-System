@@ -7,7 +7,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import NotificationDropdown from './notification';
-import MessengerDropdown from './MessengerDropdown';
+// import MessengerDropdown from './MessengerDropdown'; // temporarily disabled
+import SnakeGame from './SnakeGame';
 
 
 interface UserPermissions {
@@ -19,11 +20,16 @@ interface UserPermissions {
   canManageUsers: boolean;
 }
 
-export default function Header() {
+interface HeaderProps {
+  onMenuToggle?: () => void;
+}
+
+export default function Header({ onMenuToggle }: HeaderProps) {
   const [userName, setUserName] = useState('User');
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [permissions, setPermissions] = useState<UserPermissions | null>(null);
+  const [showSnake, setShowSnake] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -119,22 +125,43 @@ export default function Header() {
   return (
     <header className="flex justify-between items-center py-2 px-6 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.1)] z-[100] max-md:py-1.5 max-md:px-3.5">
       <div className="flex items-center gap-2.5">
+        {/* Hamburger — mobile only */}
+        <button
+          onClick={onMenuToggle}
+          className="md:hidden flex items-center justify-center w-8 h-8 rounded-full text-gray-500 hover:bg-gray-100 transition-colors"
+          aria-label="Toggle menu"
+        >
+          <Icon icon="mdi:menu" width={22} height={22} />
+        </button>
         <div className="w-9 h-9 flex-shrink-0 flex items-center justify-center">
           <Image src="/Logo1.png" alt="DOST Logo" width={36} height={36} className="w-9 h-9 object-contain" />
         </div>
-        <div className="flex flex-col sm:flex hidden">
+        <div className="hidden sm:flex flex-col">
           <div className="text-[11px] text-[#666] font-bold tracking-[0.3px]">Provincial Science and Technology Office in Misamis Oriental</div>
           <div className="text-lg text-primary font-bold tracking-[0.2px]">Department of Science and Technology</div>
         </div>
       </div>
       <div className="flex items-center gap-2.5">
+        <button
+          onClick={() => setShowSnake(true)}
+          className="flex items-center justify-center w-8 h-8 rounded-full text-gray-500 transition-all duration-300 hover:bg-accent hover:text-white hover:scale-115 hover:shadow-[0_4px_14px_rgba(0,174,239,0.4)] active:scale-90 active:transition-all active:duration-100"
+          title="Snake Game"
+        >
+          <Icon icon="mdi:gamepad-variant" width={24} height={24} />
+        </button>
+
         {(!permissions || permissions.canAccessMaps) && (
           <Link href="/maps" className="flex items-center justify-center no-underline w-8 h-8 rounded-full color-#666 text-gray-500 transition-all duration-300 hover:bg-accent hover:text-white hover:scale-115 hover:rotate-[15deg] hover:shadow-[0_4px_14px_rgba(0,174,239,0.4)] hover:[animation:none] active:scale-90 active:-rotate-[10deg] active:transition-all active:duration-100" title="Maps">
             <Icon icon="mdi:compass-outline" width={24} height={24} />
           </Link>
         )}
 
-        <MessengerDropdown />
+        {showSnake && <SnakeGame onClose={() => setShowSnake(false)} />}
+
+        {/* MessengerDropdown — temporarily disabled */}
+        <button disabled className="relative flex items-center justify-center w-8 h-8 rounded-full text-gray-500 pointer-events-none opacity-40" title="Messenger (disabled)">
+          <Icon icon="mdi:message-text-outline" width={24} height={24} />
+        </button>
         <NotificationDropdown />
        
         {/* User Profile Dropdown */}

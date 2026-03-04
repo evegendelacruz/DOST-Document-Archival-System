@@ -8,6 +8,7 @@ export type ResourceType =
   | 'AUTH'
   | 'SETUP_PROJECT'
   | 'CEST_PROJECT'
+  | 'CEST_DOCUMENT'
   | 'DOCUMENT'
   | 'CALENDAR_EVENT'
   | 'MAP_PIN'

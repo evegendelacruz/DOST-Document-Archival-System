@@ -38,6 +38,7 @@ interface UserPermissions {
 interface BookingFormData {
   eventTitle: string;
   eventDate: string;
+  eventTime: string;
   location: string;
   bookedBy: string;
   bookedById: string;
@@ -53,6 +54,7 @@ interface CurrentUser {
   id: string;
   fullName: string;
   profileImageUrl: string | null;
+  role?: string;
 }
 
 interface StaffUser {
@@ -61,10 +63,16 @@ interface StaffUser {
   profileImageUrl: string | null;
 }
 
+interface InviteStatus {
+  userId: string;
+  status: 'pending' | 'accepted' | 'declined';
+}
+
 interface CalendarEvent {
   id: string;
   title: string;
   date: string;
+  time?: string | null;
   location: string;
   bookedBy: string;
   bookedById: string | null;
@@ -78,6 +86,7 @@ interface CalendarEvent {
   staffInvolvedIds: string[];
   staffInvolvedNames?: string;
   staffInvolvedUsers?: StaffUser[];
+  inviteStatuses?: InviteStatus[];
   createdAt?: string;
 }
 
@@ -137,10 +146,11 @@ export default function DashboardPage() {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [permissions, setPermissions] = useState<UserPermissions | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
-  const [allUsers, setAllUsers] = useState<{id: string; fullName: string; profileImageUrl: string | null}[]>([]);
+  const [allUsers, setAllUsers] = useState<{id: string; fullName: string; profileImageUrl: string | null; birthday: string | null}[]>([]);
   const [bookingForm, setBookingForm] = useState<BookingFormData>({
     eventTitle: '',
     eventDate: '',
+    eventTime: '',
     location: '',
     bookedBy: '',
     bookedById: '',
@@ -165,6 +175,7 @@ export default function DashboardPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showEditConfirm, setShowEditConfirm] = useState(false);
   const [showEditSuccess, setShowEditSuccess] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   // Fetch user permissions with real-time polling
   useEffect(() => {
@@ -299,11 +310,13 @@ export default function DashboardPage() {
   const handlePrevMonth = () => {
     if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(currentYear - 1); }
     else { setCurrentMonth(currentMonth - 1); }
+    setSelectedDay(null);
   };
 
   const handleNextMonth = () => {
     if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(currentYear + 1); }
     else { setCurrentMonth(currentMonth + 1); }
+    setSelectedDay(null);
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -364,6 +377,7 @@ export default function DashboardPage() {
       body: JSON.stringify({
         title: bookingForm.eventTitle,
         date: bookingForm.eventDate,
+        time: bookingForm.eventTime || undefined,
         location: bookingForm.location,
         bookedBy: currentUser?.fullName || bookingForm.bookedBy || 'N/A',
         bookedById: currentUser?.id || undefined,
@@ -390,6 +404,7 @@ export default function DashboardPage() {
     setBookingForm({
       eventTitle: '',
       eventDate: '',
+      eventTime: '',
       location: '',
       bookedBy: '',
       bookedById: '',
@@ -454,6 +469,24 @@ export default function DashboardPage() {
     return dateA.getTime() - dateB.getTime();
   });
 
+  // Birthday helpers — birthday is now a plain "YYYY-MM-DD" string from the API
+  // (formatted server-side in Asia/Manila time), so no Date object needed.
+  const parseBirthday = (birthday: string) => {
+    const [, m, d] = birthday.split('-').map(Number);
+    return { month: m - 1, day: d }; // month is 0-indexed to match currentMonth
+  };
+
+  const getBirthdaysForDate = (month: number, day: number) =>
+    allUsers.filter(u => {
+      if (!u.birthday) return false;
+      const b = parseBirthday(u.birthday);
+      return b.month === month && b.day === day;
+    });
+
+  const birthdaysThisMonth = allUsers
+    .filter(u => u.birthday && parseBirthday(u.birthday).month === currentMonth)
+    .sort((a, b) => parseBirthday(a.birthday!).day - parseBirthday(b.birthday!).day);
+
   const handleServiceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (e.target.value === '__add_new__') {
       setShowAddService(true);
@@ -475,6 +508,10 @@ export default function DashboardPage() {
     setSelectedEvent(event);
     setShowEventDetailModal(true);
   };
+
+  // Returns true if the current user created the event or is an admin
+  const canEditEvent = (event: CalendarEvent) =>
+    currentUser?.id === event.bookedById || currentUser?.role === 'ADMIN';
 
   const handleEditEvent = (event: CalendarEvent) => {
     setEditingEvent(event);
@@ -520,6 +557,7 @@ export default function DashboardPage() {
           body: JSON.stringify({
             title: editingEvent.title,
             date: editingEvent.date,
+            time: editingEvent.time || undefined,
             location: editingEvent.location,
             bookedBy: editingEvent.bookedBy,
             bookedById: editingEvent.bookedById || undefined,
@@ -598,21 +636,21 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout activePath="/dashboard" sidebarItems={sidebarItems}>
-      <main className={`flex-1 py-6 px-[60px] flex flex-col items-center max-md:py-[30px] max-md:px-5 ${showResults ? 'items-start' : ''}`}>
+      <main className={`flex-1 py-6 px-[60px] flex flex-col items-center max-md:py-3 max-md:px-3 ${showResults ? 'items-start' : ''}`}>
         {activeNav === 'calendar' && (!permissions || permissions.canAccessCalendar) && (
-          <div className="flex w-full gap-[30px] items-start">
-            <div className="flex-1 bg-white rounded-[15px] p-[30px] shadow-[0_2px_10px_rgba(0,0,0,0.05)]">
+          <div className="flex w-full gap-[30px] items-start max-md:hidden">
+            <div className="flex-1 bg-white rounded-[15px] p-[30px] max-md:p-3 shadow-[0_2px_10px_rgba(0,0,0,0.05)]">
               <div className="flex items-center justify-center gap-5 mb-2">
                 <button className="bg-transparent border-none cursor-pointer p-[5px] flex items-center justify-center hover:opacity-70" onClick={handlePrevMonth}>
                   <Icon icon="mdi:chevron-left" width={24} height={24} color="#00AEEF" />
                 </button>
-                <h2 className="text-[28px] font-bold text-primary text-center">{monthNames[currentMonth]} {currentYear}</h2>
+                <h2 className="text-[28px] max-md:text-xl font-bold text-primary text-center">{monthNames[currentMonth]} {currentYear}</h2>
                 <button className="bg-transparent border-none cursor-pointer p-[5px] flex items-center justify-center hover:opacity-70" onClick={handleNextMonth}>
                   <Icon icon="mdi:chevron-right" width={24} height={24} color="#00AEEF" />
                 </button>
               </div>
               {/* Legend */}
-              <div className="flex items-center justify-center gap-4 mb-4 flex-wrap">
+              <div className="flex items-center justify-center gap-4 mb-4 flex-wrap max-md:hidden">
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 rounded-sm bg-[#f44336]"></div>
                   <span className="text-xs text-[#666]">Urgent</span>
@@ -633,41 +671,52 @@ export default function DashboardPage() {
                   <div className="w-3 h-3 rounded-sm bg-[#00AEEF]"></div>
                   <span className="text-xs text-[#666]">Today</span>
                 </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm bg-pink-200"></div>
+                  <span className="text-xs text-[#666]">Birthday</span>
+                </div>
               </div>
               <div className="w-full">
                 <div className="grid grid-cols-7 mb-2.5">
-                  {['SUNDAY','MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'].map(day => (
-                    <div key={day} className="text-center text-xs font-semibold text-primary p-2.5 tracking-[1px]">{day}</div>
+                  {[['SUNDAY','S'],['MONDAY','M'],['TUESDAY','T'],['WEDNESDAY','W'],['THURSDAY','T'],['FRIDAY','F'],['SATURDAY','S']].map(([full, short]) => (
+                    <div key={full} className="text-center text-xs font-semibold text-primary p-2.5 tracking-[1px] max-md:p-1 max-md:tracking-normal max-md:text-[11px]">
+                      <span className="max-md:hidden">{full}</span>
+                      <span className="hidden max-md:inline">{short}</span>
+                    </div>
                   ))}
                 </div>
                <div className="grid grid-cols-7 border border-[#e0e0e0] border-r-0 border-b-0">
                 {calendarDays.map((day, index) => {
                   const dayEvents = day.currentMonth ? getEventsForDate(currentYear, currentMonth, day.day, events) : [];
+                  const dayBirthdays = day.currentMonth ? getBirthdaysForDate(currentMonth, day.day) : [];
+                  const totalItems = dayEvents.length + dayBirthdays.length;
+                  const eventSlots = Math.min(dayEvents.length, 2);
+                  const bdaySlots = Math.min(dayBirthdays.length, 2 - eventSlots);
                   const isTodayDate = day.currentMonth && isToday(currentYear, currentMonth, day.day);
                   return (
                     <div
                       key={index}
-                      className={`min-h-[80px] p-1.5 border-r border-b border-[#e0e0e0] ${(index % 7 === 0 || index % 7 === 6) ? 'bg-[#e8f4f8]' : 'bg-white'}`}
+                      className={`min-h-[80px] max-md:min-h-[46px] p-1.5 max-md:p-0.5 border-r border-b border-[#e0e0e0] ${(index % 7 === 0 || index % 7 === 6) ? 'bg-[#e8f4f8]' : 'bg-white'}`}
                     >
                       {isTodayDate ? (
-                        <div className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#00AEEF] ">
-                          <span className="text-sm font-medium text-white">{day.day}</span>
+                        <div className="inline-flex items-center justify-center w-6 h-6 max-md:w-5 max-md:h-5 rounded-full bg-[#00AEEF]">
+                          <span className="text-sm max-md:text-xs font-medium text-white">{day.day}</span>
                         </div>
                       ) : (
-                        <span className={`text-sm font-medium ${!day.currentMonth ? 'text-[#ccc]' : 'text-primary'}`}>
+                        <span className={`text-sm max-md:text-xs font-medium ${!day.currentMonth ? 'text-[#ccc]' : 'text-primary'}`}>
                           {day.day}
                         </span>
                       )}
                       <div className="mt-1 flex flex-col gap-0.5">
-                        {dayEvents.slice(0, 2).map((event) => (
+                        {dayEvents.slice(0, eventSlots).map((event) => (
                           <div
                             key={event.id}
                             onClick={() => handleEventClick(event)}
-                            className={`flex items-center gap-1 px-1 py-0.5 rounded text-[10px] truncate cursor-pointer transition-all hover:scale-105 hover:shadow-sm group relative ${priorityColors[event.priority]?.bg || 'bg-gray-100'}`}
+                            className={`flex items-center gap-1 px-1 py-0.5 rounded text-[10px] truncate cursor-pointer transition-all hover:scale-105 hover:shadow-sm group relative max-md:px-0.5 max-md:py-0 max-md:bg-transparent ${priorityColors[event.priority]?.bg || 'bg-gray-100'}`}
                             title={`${event.title}\n${event.location}\n${event.bookedBy}`}
                           >
-                            <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${priorityColors[event.priority]?.dot || 'bg-gray-400'}`}></div>
-                            <span className={`truncate ${priorityColors[event.priority]?.text || 'text-gray-600'}`}>{event.title}</span>
+                            <div className={`w-1.5 h-1.5 max-md:w-2 max-md:h-2 rounded-full shrink-0 ${priorityColors[event.priority]?.dot || 'bg-gray-400'}`}></div>
+                            <span className={`truncate max-md:hidden ${priorityColors[event.priority]?.text || 'text-gray-600'}`}>{event.title}</span>
                             {/* Tooltip */}
                             <div className="absolute left-0 bottom-full mb-1 hidden group-hover:block z-50 w-48 p-2 bg-white rounded-lg shadow-lg border border-gray-200 text-left">
                               <p className="text-xs font-bold text-primary mb-1">{event.title}</p>
@@ -692,8 +741,18 @@ export default function DashboardPage() {
                             </div>
                           </div>
                         ))}
-                        {dayEvents.length > 2 && (
-                          <span className="text-[9px] text-[#999] pl-1">+{dayEvents.length - 2} more</span>
+                        {dayBirthdays.slice(0, bdaySlots).map((u) => (
+                          <div
+                            key={`bday-${u.id}`}
+                            className="flex items-center gap-1 px-1 py-0.5 rounded text-[10px] truncate bg-pink-100"
+                            title={`🎂 ${u.fullName}'s Birthday`}
+                          >
+                            <span className="shrink-0">🎂</span>
+                            <span className="truncate text-pink-700 font-medium max-md:hidden">{u.fullName.split(' ')[0]}</span>
+                          </div>
+                        ))}
+                        {totalItems > 2 && (
+                          <span className="text-[9px] text-[#999] pl-1">+{totalItems - 2} more</span>
                         )}
                       </div>
                     </div>
@@ -702,17 +761,41 @@ export default function DashboardPage() {
               </div>
               </div>
             </div>
-            <div className="w-[300px] shrink-0 flex flex-col">
+            <div className="w-[300px] max-md:w-full shrink-0 flex flex-col">
               <button
                 onClick={() => setShowBookingModal(true)}
-                className="flex items-center justify-center gap-2 w-full py-[15px] px-[25px] bg-accent text-white border-none rounded-[30px] text-base font-semibold cursor-pointer transition-colors duration-200 mb-5 hover:bg-accent-hover"
+                className="flex items-center justify-center gap-2 w-full py-[15px] px-[25px] bg-accent text-white border-none rounded-[30px] text-base font-semibold cursor-pointer transition-colors duration-200 mb-5 hover:bg-accent-hover max-md:hidden"
               >
                 <Icon icon="mdi:plus" width={20} height={20} />
                 Book Appointment
               </button>
-              <div className="bg-white rounded-[15px] p-5 shadow-[0_2px_10px_rgba(0,0,0,0.05)] flex flex-col overflow-hidden h-[580px]">
+              <div className="bg-white rounded-[15px] p-5 shadow-[0_2px_10px_rgba(0,0,0,0.05)] flex flex-col overflow-hidden h-[580px] max-md:h-[340px]">
                 <h3 className="text-xl font-bold text-primary mb-4 text-center shrink-0">Upcoming Events</h3>
                 <div className="flex flex-col gap-3 overflow-y-auto flex-1 pr-1">
+                {birthdaysThisMonth.length > 0 && (
+                  <div className="mb-1">
+                    <p className="text-xs font-semibold text-pink-500 mb-1.5 flex items-center gap-1">
+                      🎂 Birthdays in {monthNames[currentMonth]}
+                    </p>
+                    <div className="flex flex-col gap-1.5">
+                      {birthdaysThisMonth.map(u => (
+                        <div key={u.id} className="flex items-center gap-2 bg-pink-50 border-l-4 border-pink-400 rounded-r-lg px-3 py-2">
+                          {u.profileImageUrl ? (
+                            <img src={u.profileImageUrl} alt={u.fullName} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                          ) : (
+                            <Icon icon="mdi:account-circle" width={28} className="text-pink-400 shrink-0" />
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-pink-700 truncate">{u.fullName}</p>
+                            <p className="text-[10px] text-pink-400">
+                              {(() => { const b = parseBirthday(u.birthday!); return new Date(2000, b.month, b.day).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }); })()}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {sortedEvents.length === 0 ? (
                   <p className="text-sm text-[#999] italic">No upcoming events yet...</p>
                 ) : (
@@ -728,7 +811,7 @@ export default function DashboardPage() {
                         </span>
                       </div>
                       <div className="text-[11px] text-[#666] leading-relaxed space-y-0.5">
-                        <p><span className="font-semibold text-[#333]">Event Date:</span> {new Date(event.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                        <p><span className="font-semibold text-[#333]">Event Date:</span> {new Date(event.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}{event.time && <span className="text-gray-500"> · {event.time}</span>}</p>
                         <p><span className="font-semibold text-[#333]">Location:</span> {event.location}</p>
                         <div className="flex items-center gap-1">
                           <span className="font-semibold text-[#333]">Booked by:</span>
@@ -749,13 +832,21 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-1">
                           <span className="font-semibold text-[#333]">Personnel:</span>
                           {event.bookedPersonnelUser ? (
-                            <div className="flex items-center gap-1 bg-gray-100 rounded-full px-1.5 py-0.5">
-                              {event.bookedPersonnelUser.profileImageUrl ? (
-                                <img src={event.bookedPersonnelUser.profileImageUrl} alt={event.bookedPersonnelUser.fullName} className="w-4 h-4 rounded-full object-cover" />
-                              ) : (
-                                <Icon icon="mdi:account-circle" width={16} height={16} className="text-gray-400" />
-                              )}
-                              <span className="text-[10px] text-[#333]">{event.bookedPersonnelUser.fullName}</span>
+                            <div className="flex items-center gap-1 flex-wrap">
+                              <div className="flex items-center gap-1 bg-gray-100 rounded-full px-1.5 py-0.5">
+                                {event.bookedPersonnelUser.profileImageUrl ? (
+                                  <img src={event.bookedPersonnelUser.profileImageUrl} alt={event.bookedPersonnelUser.fullName} className="w-4 h-4 rounded-full object-cover" />
+                                ) : (
+                                  <Icon icon="mdi:account-circle" width={16} height={16} className="text-gray-400" />
+                                )}
+                                <span className="text-[10px] text-[#333]">{event.bookedPersonnelUser.fullName}</span>
+                              </div>
+                              {(() => {
+                                const st = event.inviteStatuses?.find((s: { userId: string; status: string }) => s.userId === event.bookedPersonnelId)?.status;
+                                if (st === 'accepted') return null;
+                                if (st === 'declined') return <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">declined</span>;
+                                return <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-100 text-yellow-700">pending</span>;
+                              })()}
                             </div>
                           ) : (
                             <>
@@ -784,22 +875,24 @@ export default function DashboardPage() {
                           )}
                         </div>
                       </div>
-                      <div className="flex justify-end gap-1.5 mt-2.5 pt-2 border-t border-gray-100">
-                        <button
-                          onClick={() => handleEditEvent(event)}
-                          className="p-1.5 text-primary bg-primary/10 rounded hover:bg-primary/20 transition-colors"
-                          title="Edit event"
-                        >
-                          <Icon icon="mdi:pencil" width={14} height={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteEvent(event)}
-                          className="p-1.5 text-red-500 bg-red-50 rounded hover:bg-red-100 transition-colors"
-                          title="Delete event"
-                        >
-                          <Icon icon="mdi:delete" width={14} height={14} />
-                        </button>
-                      </div>
+                      {canEditEvent(event) && (
+                        <div className="flex justify-end gap-1.5 mt-2.5 pt-2 border-t border-gray-100">
+                          <button
+                            onClick={() => handleEditEvent(event)}
+                            className="p-1.5 text-primary bg-primary/10 rounded hover:bg-primary/20 transition-colors"
+                            title="Edit event"
+                          >
+                            <Icon icon="mdi:pencil" width={14} height={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteEvent(event)}
+                            className="p-1.5 text-red-500 bg-red-50 rounded hover:bg-red-100 transition-colors"
+                            title="Delete event"
+                          >
+                            <Icon icon="mdi:delete" width={14} height={14} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
@@ -807,6 +900,178 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* ── Mobile Calendar ── Google Calendar Style (hidden on desktop) */}
+        {activeNav === 'calendar' && (!permissions || permissions.canAccessCalendar) && (
+          <div className="md:hidden w-full pb-24">
+
+            {/* Mini Calendar Card */}
+            <div className="bg-white rounded-2xl shadow-sm mb-3 overflow-hidden">
+              {/* Month nav */}
+              <div className="flex items-center justify-between px-4 pt-3 pb-1">
+                <button onClick={handlePrevMonth} className="p-1.5 rounded-full active:bg-gray-100 transition-colors">
+                  <Icon icon="mdi:chevron-left" width={22} height={22} color="#146184" />
+                </button>
+                <span className="text-[15px] font-bold text-primary">{monthNames[currentMonth]} {currentYear}</span>
+                <button onClick={handleNextMonth} className="p-1.5 rounded-full active:bg-gray-100 transition-colors">
+                  <Icon icon="mdi:chevron-right" width={22} height={22} color="#146184" />
+                </button>
+              </div>
+
+              {/* Day-of-week headers */}
+              <div className="grid grid-cols-7 px-2">
+                {['S','M','T','W','T','F','S'].map((d, i) => (
+                  <div key={i} className="text-center text-[11px] font-semibold text-gray-400 py-1">{d}</div>
+                ))}
+              </div>
+
+              {/* Day cells */}
+              <div className="grid grid-cols-7 px-2 pb-3 gap-y-1">
+                {calendarDays.map((day, index) => {
+                  const dayEvts = day.currentMonth ? getEventsForDate(currentYear, currentMonth, day.day, events) : [];
+                  const dayBdays = day.currentMonth ? getBirthdaysForDate(currentMonth, day.day) : [];
+                  const isTodayDate = day.currentMonth && isToday(currentYear, currentMonth, day.day);
+                  const isSelected = selectedDay === day.day && day.currentMonth;
+                  const dotColors = [
+                    ...dayEvts.slice(0, 3).map(ev => priorityColors[ev.priority]?.dot || 'bg-gray-400'),
+                    ...dayBdays.slice(0, Math.max(0, 3 - dayEvts.length)).map(() => 'bg-pink-400'),
+                  ].slice(0, 3);
+                  return (
+                    <div
+                      key={index}
+                      onClick={() => { if (day.currentMonth) setSelectedDay(prev => prev === day.day ? null : day.day); }}
+                      className="flex flex-col items-center"
+                    >
+                      <div className={[
+                        'w-8 h-8 flex items-center justify-center rounded-full text-[13px] font-medium transition-colors select-none',
+                        isTodayDate ? 'bg-accent text-white' : '',
+                        isSelected && !isTodayDate ? 'bg-primary text-white' : '',
+                        !day.currentMonth ? 'text-gray-300' : '',
+                        day.currentMonth && !isTodayDate && !isSelected ? 'text-gray-700 cursor-pointer active:bg-gray-100' : '',
+                      ].filter(Boolean).join(' ')}>
+                        {day.day}
+                      </div>
+                      <div className="flex gap-[3px] mt-[2px] h-[6px] items-center">
+                        {dotColors.map((color, i) => (
+                          <div key={i} className={`w-[5px] h-[5px] rounded-full ${color}`} />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Events panel — selected day OR upcoming */}
+            {selectedDay !== null ? (
+              <div>
+                <div className="flex items-center justify-between mb-2 px-1">
+                  <span className="text-[13px] font-semibold text-gray-600">
+                    {monthNames[currentMonth]} {selectedDay}, {currentYear}
+                  </span>
+                  <button onClick={() => setSelectedDay(null)} className="text-xs text-accent font-semibold">
+                    Show all
+                  </button>
+                </div>
+                {(() => {
+                  const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
+                  const dayEvts = events.filter(e => e.date === dateStr);
+                  const dayBdays = getBirthdaysForDate(currentMonth, selectedDay);
+                  if (dayEvts.length === 0 && dayBdays.length === 0) {
+                    return (
+                      <div className="bg-white rounded-2xl p-5 text-center shadow-sm">
+                        <p className="text-sm text-gray-400 italic">No events this day</p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <>
+                      {dayBdays.map(u => (
+                        <div key={u.id} className="bg-white rounded-2xl p-3 mb-2 flex items-center gap-3 shadow-sm border-l-4 border-pink-400">
+                          <span className="text-2xl">🎂</span>
+                          <p className="text-[13px] font-semibold text-pink-700">{u.fullName}&apos;s Birthday</p>
+                        </div>
+                      ))}
+                      {dayEvts.map(event => (
+                        <div
+                          key={event.id}
+                          onClick={() => handleEventClick(event)}
+                          className={`bg-white rounded-2xl p-3 mb-2 shadow-sm border-l-4 ${priorityColors[event.priority]?.border || 'border-gray-300'} cursor-pointer active:bg-gray-50 transition-colors`}
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <span className="text-[13px] font-semibold text-primary leading-tight flex-1">{event.title}</span>
+                            <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${priorityColors[event.priority]?.bg} ${priorityColors[event.priority]?.text}`}>
+                              {event.priority}
+                            </span>
+                          </div>
+                          {event.time && <p className="text-xs text-gray-500 mb-0.5">⏰ {event.time}</p>}
+                          <p className="text-xs text-gray-500">📍 {event.location}</p>
+                        </div>
+                      ))}
+                    </>
+                  );
+                })()}
+              </div>
+            ) : (
+              <div>
+                <span className="text-[13px] font-semibold text-gray-600 px-1 mb-2 block">Upcoming Events</span>
+                {birthdaysThisMonth.length > 0 && (
+                  <div className="mb-2">
+                    <p className="text-xs font-semibold text-pink-500 mb-1.5 px-1">🎂 Birthdays in {monthNames[currentMonth]}</p>
+                    {birthdaysThisMonth.map(u => (
+                      <div key={u.id} className="bg-white rounded-2xl p-3 mb-1.5 flex items-center gap-3 shadow-sm border-l-4 border-pink-400">
+                        {u.profileImageUrl
+                          ? <img src={u.profileImageUrl} alt={u.fullName} className="w-8 h-8 rounded-full object-cover shrink-0" />
+                          : <Icon icon="mdi:account-circle" width={32} className="text-pink-400 shrink-0" />
+                        }
+                        <div>
+                          <p className="text-[13px] font-semibold text-pink-700">{u.fullName}</p>
+                          <p className="text-xs text-pink-400">
+                            {(() => { const b = parseBirthday(u.birthday!); return new Date(2000, b.month, b.day).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }); })()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {sortedEvents.length === 0 && birthdaysThisMonth.length === 0 ? (
+                  <div className="bg-white rounded-2xl p-5 text-center shadow-sm">
+                    <p className="text-sm text-gray-400 italic">No upcoming events</p>
+                  </div>
+                ) : sortedEvents.map(event => (
+                  <div
+                    key={event.id}
+                    onClick={() => handleEventClick(event)}
+                    className={`bg-white rounded-2xl p-3 mb-2 shadow-sm border-l-4 ${priorityColors[event.priority]?.border || 'border-gray-300'} cursor-pointer active:bg-gray-50 transition-colors`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <span className="text-[13px] font-semibold text-primary leading-tight flex-1">{event.title}</span>
+                      <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${priorityColors[event.priority]?.bg} ${priorityColors[event.priority]?.text}`}>
+                        {event.priority}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mb-0.5">
+                      📅 {new Date(event.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {event.time && ` · ${event.time}`}
+                    </p>
+                    <p className="text-xs text-gray-500">📍 {event.location}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Mobile FAB — Book Appointment (calendar view only) */}
+        {activeNav === 'calendar' && (!permissions || permissions.canAccessCalendar) && (
+          <button
+            onClick={() => setShowBookingModal(true)}
+            className="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-accent text-white shadow-xl flex items-center justify-center active:scale-90 transition-transform"
+            aria-label="Book Appointment"
+          >
+            <Icon icon="mdi:plus" width={28} height={28} />
+          </button>
         )}
 
         {activeNav === 'archival' && !showResults && (!permissions || permissions.canAccessArchival) && (
@@ -993,16 +1258,29 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-[#333] mb-1">
-                    Location<span className="text-red-500">*</span>
+                    Event Time (optional)
                   </label>
                   <input
-                    type="text"
-                    name="location"
-                    value={bookingForm.location}
+                    type="time"
+                    name="eventTime"
+                    value={bookingForm.eventTime}
                     onChange={handleBookingInputChange}
                     className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#333] mb-1">
+                  Location<span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="location"
+                  value={bookingForm.location}
+                  onChange={handleBookingInputChange}
+                  className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -1122,6 +1400,12 @@ export default function DashboardPage() {
                 <div>
                   <p className="font-semibold text-[#333]">Event Date</p>
                   <p className="text-[#666]">{new Date(selectedEvent.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                  {selectedEvent.time && (
+                    <p className="text-[#666] text-xs mt-0.5 flex items-center gap-1">
+                      <Icon icon="mdi:clock-outline" width={12} height={12} className="text-primary" />
+                      {selectedEvent.time}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -1163,7 +1447,7 @@ export default function DashboardPage() {
                 <div>
                   <p className="font-semibold text-[#333]">Booked Personnel</p>
                   {selectedEvent.bookedPersonnelUser ? (
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-1.5 mt-1">
                       <div className="flex items-center gap-1.5 bg-gray-100 rounded-full px-2 py-1">
                         {selectedEvent.bookedPersonnelUser.profileImageUrl ? (
                           <img src={selectedEvent.bookedPersonnelUser.profileImageUrl} alt={selectedEvent.bookedPersonnelUser.fullName} className="w-5 h-5 rounded-full object-cover" />
@@ -1172,6 +1456,13 @@ export default function DashboardPage() {
                         )}
                         <span className="text-xs text-[#333]">{selectedEvent.bookedPersonnelUser.fullName}</span>
                       </div>
+                      {(() => {
+                        const personnelStatus = selectedEvent.inviteStatuses?.find(s => s.userId === selectedEvent.bookedPersonnelId)?.status;
+                        if (personnelStatus === 'accepted') return null;
+                        if (personnelStatus === 'declined') return <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">declined</span>;
+                        if (selectedEvent.bookedPersonnelId) return <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-100 text-yellow-700">pending</span>;
+                        return null;
+                      })()}
                     </div>
                   ) : (
                     <p className="text-[#666]">{selectedEvent.bookedPersonnel}</p>
@@ -1183,17 +1474,24 @@ export default function DashboardPage() {
                 <div>
                   <p className="font-semibold text-[#333]">Staff Involved</p>
                   {selectedEvent.staffInvolvedUsers && selectedEvent.staffInvolvedUsers.length > 0 ? (
-                    <div className="flex items-center gap-2 flex-wrap mt-1">
-                      {selectedEvent.staffInvolvedUsers.map((staff, idx) => (
-                        <div key={`${staff.id}-${idx}`} className="flex items-center gap-1.5 bg-gray-100 rounded-full px-2 py-1">
-                          {staff.profileImageUrl ? (
-                            <img src={staff.profileImageUrl} alt={staff.fullName} className="w-5 h-5 rounded-full object-cover" />
-                          ) : (
-                            <Icon icon="mdi:account-circle" width={20} height={20} className="text-gray-400" />
-                          )}
-                          <span className="text-xs text-[#333]">{staff.fullName}</span>
-                        </div>
-                      ))}
+                    <div className="flex flex-col gap-1.5 mt-1">
+                      {selectedEvent.staffInvolvedUsers.map((staff) => {
+                        const inviteStatus = selectedEvent.inviteStatuses?.find(s => s.userId === staff.id)?.status;
+                        return (
+                          <div key={staff.id} className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 bg-gray-100 rounded-full px-2 py-1">
+                              {staff.profileImageUrl ? (
+                                <img src={staff.profileImageUrl} alt={staff.fullName} className="w-5 h-5 rounded-full object-cover" />
+                              ) : (
+                                <Icon icon="mdi:account-circle" width={20} height={20} className="text-gray-400" />
+                              )}
+                              <span className="text-xs text-[#333]">{staff.fullName}</span>
+                            </div>
+                            {inviteStatus === 'accepted' && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">accepted</span>}
+                            {inviteStatus === 'declined' && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">declined</span>}
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <p className="text-[#666]">{selectedEvent.staffInvolvedNames || selectedEvent.staffInvolved}</p>
@@ -1203,13 +1501,15 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex justify-end gap-2 mt-6">
-              <button
-                onClick={() => { setShowEventDetailModal(false); handleEditEvent(selectedEvent); }}
-                className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
-              >
-                <Icon icon="mdi:pencil" width={16} height={16} />
-                Edit
-              </button>
+              {canEditEvent(selectedEvent) && (
+                <button
+                  onClick={() => { setShowEventDetailModal(false); handleEditEvent(selectedEvent); }}
+                  className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
+                >
+                  <Icon icon="mdi:pencil" width={16} height={16} />
+                  Edit
+                </button>
+              )}
               <button
                 onClick={() => { setShowEventDetailModal(false); setSelectedEvent(null); }}
                 className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors"
@@ -1256,14 +1556,24 @@ export default function DashboardPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#333] mb-1">Location</label>
+                  <label className="block text-xs font-medium text-[#333] mb-1">Event Time (optional)</label>
                   <input
-                    type="text"
-                    value={editingEvent.location}
-                    onChange={(e) => setEditingEvent({ ...editingEvent, location: e.target.value })}
+                    type="time"
+                    value={editingEvent.time || ''}
+                    onChange={(e) => setEditingEvent({ ...editingEvent, time: e.target.value || null })}
                     className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#333] mb-1">Location</label>
+                <input
+                  type="text"
+                  value={editingEvent.location}
+                  onChange={(e) => setEditingEvent({ ...editingEvent, location: e.target.value })}
+                  className="w-full px-2.5 py-1.5 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
