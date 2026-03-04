@@ -7612,7 +7612,7 @@ export default function ProjectDetailPage() {
                     />
                     {/* Title centered across full width */}
                     <div style={{ width: '100%', textAlign: 'center', paddingTop: '10px', paddingBottom: '10px' }}>
-                      <span style={{ fontSize: '16pt', fontWeight: 'bold', letterSpacing: '1px' }}>EXECUTIVE SUMMARY</span>
+                      <span style={{ fontSize: '24pt', fontWeight: 'bold', letterSpacing: '1px' }}>EXECUTIVE SUMMARY</span>
                     </div>
                   </div>
 
