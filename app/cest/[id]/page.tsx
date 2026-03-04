@@ -968,6 +968,36 @@ export default function CestProfilePage() {
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
   const [loadingPermissions, setLoadingPermissions] = useState(false);
 
+  // Executive Summary states
+  const [showExecutiveSummaryPreview, setShowExecutiveSummaryPreview] = useState(false);
+  const [execSummaryData, setExecSummaryData] = useState({
+    requestedAmount: '',
+    ownersEquity: '',
+    totalProjectCost: '',
+    dostTechnology: '',
+    incomePresent: '',
+    incomeAdditional: '',
+    jobsCreatedPresent: '',
+    jobsCreatedAdditional: '',
+    productivityPresent: '',
+    productivityIncrease: '',
+    marketPresent: '',
+    marketAdditional: '',
+    listOfProducts: '',
+    withFdaLto: '',
+    withCprs: '',
+    businessPlan: '',
+    plans: '',
+    preparedByName: '',
+    preparedByPosition: 'Project Technical Assistant III, PSTO MOR',
+    reviewedByName: 'Ruel Vincent C. Banal',
+    reviewedByPosition: 'Officer-In-Charge, PSTO MOR',
+  });
+
+  const updateExecSummaryField = (field: string, value: string) => {
+    setExecSummaryData(prev => ({ ...prev, [field]: value }));
+  };
+
   const overallProgress = Math.round((initiationProgress + implementationProgress + monitoringProgress) / 3);
 
   // Get current user from localStorage
@@ -1084,6 +1114,345 @@ export default function CestProfilePage() {
       fetchEditRequestsAndEditors();
     }
   }, [id, loading, fetchEditRequestsAndEditors]);
+
+  // Download Executive Summary as DOCX
+  const downloadExecutiveSummary = async (projectData: CestProject, data: typeof execSummaryData) => {
+    const { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, ImageRun, WidthType, BorderStyle, UnderlineType, AlignmentType, VerticalAlign, HorizontalPositionRelativeFrom, VerticalPositionRelativeFrom, TextWrappingType } = await import('docx');
+
+    // Fetch the logo image
+    const logoResponse = await fetch('/cest-logo-text.png');
+    const logoBlob = await logoResponse.blob();
+    const logoArrayBuffer = await logoBlob.arrayBuffer();
+    const logoBuffer = new Uint8Array(logoArrayBuffer);
+
+    // Border style for main table
+    const tableBorder = { style: BorderStyle.SINGLE, size: 8, color: "000000" };
+    const noBorder = { style: BorderStyle.NONE };
+
+    // Helper to create header cell for metric rows (Present, Additional Y1, Increase Y1)
+    const createMetricHeaderCell = (label: string) => {
+      return new TableCell({
+        verticalAlign: VerticalAlign.CENTER,
+        margins: { top: 50, bottom: 50, left: 100, right: 100 },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({
+                text: label,
+                bold: true,
+                size: 20,
+                font: "Calibri"
+              })
+            ]
+          })
+        ]
+      });
+    };
+
+    // Helper to create value cell for metric rows
+    const createMetricValueCell = (value: string) => {
+      return new TableCell({
+        verticalAlign: VerticalAlign.CENTER,
+        margins: { top: 50, bottom: 50, left: 100, right: 100 },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({
+                text: value || "",
+                size: 20,
+                font: "Calibri"
+              })
+            ]
+          })
+        ]
+      });
+    };
+
+    const doc = new Document({
+      sections: [{
+        properties: {
+          page: {
+            margin: {
+              top: 720,
+              right: 720,
+              bottom: 720,
+              left: 720,
+            },
+          },
+        },
+        children: [
+          // Header with floating logo and centered title
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 },
+            children: [
+              // Floating logo positioned at left
+              new ImageRun({
+                data: logoBuffer,
+                transformation: { width: 120, height: 60 },
+                type: "png",
+                floating: {
+                  horizontalPosition: {
+                    relative: HorizontalPositionRelativeFrom.PAGE,
+                    offset: 500000, // 0.5 inch from left edge (in EMUs: 914400 per inch)
+                  },
+                  verticalPosition: {
+                    relative: VerticalPositionRelativeFrom.PARAGRAPH,
+                    offset: -200000,
+                  },
+                  wrap: {
+                    type: TextWrappingType.NONE,
+                  },
+                },
+              }),
+              // Centered title text
+              new TextRun({
+                text: "EXECUTIVE SUMMARY",
+                bold: true,
+                size: 50,
+                font: "Calibri",
+              }),
+            ],
+          }),
+          new Paragraph({ text: "", spacing: { after: 200 } }),
+
+          // Main Table
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: {
+              top: tableBorder,
+              bottom: tableBorder,
+              left: tableBorder,
+              right: tableBorder,
+              insideHorizontal: tableBorder,
+              insideVertical: tableBorder,
+            },
+            rows: [
+              // Project Title
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 35, type: WidthType.PERCENTAGE },
+                    children: [new Paragraph({ children: [new TextRun({ text: "Project Title:", bold: true, size: 20, font: "Calibri" })] })],
+                  }),
+                  new TableCell({
+                    width: { size: 65, type: WidthType.PERCENTAGE },
+                    columnSpan: 2,
+                    children: [new Paragraph({ children: [new TextRun({ text: projectData.projectTitle || "", size: 20, font: "Calibri" })] })],
+                  }),
+                ],
+              }),
+              // Proponent
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Proponent:", bold: true, size: 20, font: "Calibri" })] })] }),
+                  new TableCell({ columnSpan: 2, children: [new Paragraph({ children: [new TextRun({ text: projectData.beneficiaries || "", size: 20, font: "Calibri" })] })] }),
+                ],
+              }),
+              // Requested Amount
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Requested Amount:", bold: true, size: 20, font: "Calibri" })] })] }),
+                  new TableCell({ columnSpan: 2, children: [new Paragraph({ children: [new TextRun({ text: data.requestedAmount || "", size: 20, font: "Calibri" })] })] }),
+                ],
+              }),
+              // Owner's Equity
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Owner's Equity:", bold: true, size: 20, font: "Calibri" })] })] }),
+                  new TableCell({ columnSpan: 2, children: [new Paragraph({ children: [new TextRun({ text: data.ownersEquity || "", size: 20, font: "Calibri" })] })] }),
+                ],
+              }),
+              // Total Project Cost
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Total Project Cost:", bold: true, size: 20, font: "Calibri" })] })] }),
+                  new TableCell({ columnSpan: 2, children: [new Paragraph({ children: [new TextRun({ text: data.totalProjectCost || "", size: 20, font: "Calibri" })] })] }),
+                ],
+              }),
+              // 1. DOST technology
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "1. DOST technology to be adopted and the mode of techno transfer.", bold: true, size: 20, font: "Calibri" })] })] }),
+                  new TableCell({ columnSpan: 2, children: [new Paragraph({ children: [new TextRun({ text: data.dostTechnology || "", size: 20, font: "Calibri" })] })] }),
+                ],
+              }),
+              // 2. Income - Header row
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 35, type: WidthType.PERCENTAGE },
+                    rowSpan: 2,
+                    verticalAlign: VerticalAlign.CENTER,
+                    children: [new Paragraph({ children: [new TextRun({ text: "2. Income", bold: true, size: 20, font: "Calibri" })] })],
+                  }),
+                  createMetricHeaderCell("Present"),
+                  createMetricHeaderCell("Additional (Y1)"),
+                ],
+              }),
+              // 2. Income - Value row
+              new TableRow({
+                children: [
+                  createMetricValueCell(data.incomePresent),
+                  createMetricValueCell(data.incomeAdditional),
+                ],
+              }),
+              // 3. Jobs Created - Header row
+              new TableRow({
+                children: [
+                  new TableCell({
+                    rowSpan: 2,
+                    verticalAlign: VerticalAlign.CENTER,
+                    children: [new Paragraph({ children: [new TextRun({ text: "3. Jobs Created", bold: true, size: 20, font: "Calibri" })] })],
+                  }),
+                  createMetricHeaderCell("Present"),
+                  createMetricHeaderCell("Additional (Y1)"),
+                ],
+              }),
+              // 3. Jobs Created - Value row
+              new TableRow({
+                children: [
+                  createMetricValueCell(data.jobsCreatedPresent),
+                  createMetricValueCell(data.jobsCreatedAdditional),
+                ],
+              }),
+              // 4. Productivity - Header row
+              new TableRow({
+                children: [
+                  new TableCell({
+                    rowSpan: 2,
+                    verticalAlign: VerticalAlign.CENTER,
+                    children: [new Paragraph({ children: [new TextRun({ text: "4. Productivity", bold: true, size: 20, font: "Calibri" })] })],
+                  }),
+                  createMetricHeaderCell("Present"),
+                  createMetricHeaderCell("Increase (Y1)"),
+                ],
+              }),
+              // 4. Productivity - Value row
+              new TableRow({
+                children: [
+                  createMetricValueCell(data.productivityPresent),
+                  createMetricValueCell(data.productivityIncrease),
+                ],
+              }),
+              // 5. Market - Header row
+              new TableRow({
+                children: [
+                  new TableCell({
+                    rowSpan: 2,
+                    verticalAlign: VerticalAlign.CENTER,
+                    children: [new Paragraph({ children: [new TextRun({ text: "5. Market", bold: true, size: 20, font: "Calibri" })] })],
+                  }),
+                  createMetricHeaderCell("Present"),
+                  createMetricHeaderCell("Additional (Y1)"),
+                ],
+              }),
+              // 5. Market - Value row
+              new TableRow({
+                children: [
+                  createMetricValueCell(data.marketPresent),
+                  createMetricValueCell(data.marketAdditional),
+                ],
+              }),
+              // 6. List of Products
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "6. List of Products", bold: true, size: 20, font: "Calibri" })] })] }),
+                  new TableCell({ columnSpan: 2, children: [new Paragraph({ children: [new TextRun({ text: data.listOfProducts || "", size: 20, font: "Calibri" })] })] }),
+                ],
+              }),
+              // 7. With FDA-LTO?
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "7. With FDA-LTO?", bold: true, size: 20, font: "Calibri" })] })] }),
+                  new TableCell({ columnSpan: 2, children: [new Paragraph({ children: [new TextRun({ text: data.withFdaLto || "", size: 20, font: "Calibri" })] })] }),
+                ],
+              }),
+              // 8. With CPRs?
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "8. With CPRs?", bold: true, size: 20, font: "Calibri" })] })] }),
+                  new TableCell({ columnSpan: 2, children: [new Paragraph({ children: [new TextRun({ text: data.withCprs || "", size: 20, font: "Calibri" })] })] }),
+                ],
+              }),
+              // 9. Business plan paragraph
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "9. A short paragraph on the business plan answering the question, How will the enterprise earn income?", bold: true, size: 20, font: "Calibri" })] })] }),
+                  new TableCell({ columnSpan: 2, children: [new Paragraph({ children: [new TextRun({ text: data.businessPlan || "", size: 20, font: "Calibri" })] }), new Paragraph(""), new Paragraph(""), new Paragraph("")] }),
+                ],
+              }),
+              // 10. Plans
+              new TableRow({
+                children: [
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "10. Plans", bold: true, size: 20, font: "Calibri" })] })] }),
+                  new TableCell({ columnSpan: 2, children: [new Paragraph({ children: [new TextRun({ text: data.plans || "", size: 20, font: "Calibri" })] }), new Paragraph(""), new Paragraph(""), new Paragraph(""), new Paragraph("")] }),
+                ],
+              }),
+            ],
+          }),
+
+          new Paragraph({ text: "", spacing: { after: 400 } }),
+
+          // Footer - Prepared by / Reviewed by
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder, insideHorizontal: noBorder, insideVertical: noBorder },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 50, type: WidthType.PERCENTAGE },
+                    borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder },
+                    children: [
+                      new Paragraph({ children: [new TextRun({ text: "Prepared by:", font: "Calibri", size: 20 })] }),
+                      new Paragraph({ text: "" }),
+                      new Paragraph({ text: "" }),
+                      new Paragraph({ text: "" }),
+                      new Paragraph({
+                        children: [
+                          new TextRun({ text: data.preparedByName || "", underline: { type: UnderlineType.SINGLE }, font: "Calibri", size: 20 })
+                        ]
+                      }),
+                      new Paragraph({ children: [new TextRun({ text: data.preparedByPosition || "", font: "Calibri", size: 20 })] }),
+                    ],
+                  }),
+                  new TableCell({
+                    width: { size: 50, type: WidthType.PERCENTAGE },
+                    borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder },
+                    children: [
+                      new Paragraph({ children: [new TextRun({ text: "Reviewed by", font: "Calibri", size: 20 })] }),
+                      new Paragraph({ text: "" }),
+                      new Paragraph({ text: "" }),
+                      new Paragraph({ text: "" }),
+                      new Paragraph({
+                        children: [
+                          new TextRun({ text: data.reviewedByName || "", underline: { type: UnderlineType.SINGLE }, font: "Calibri", size: 20 })
+                        ]
+                      }),
+                      new Paragraph({ children: [new TextRun({ text: data.reviewedByPosition || "", font: "Calibri", size: 20 })] }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          }),
+        ],
+      }],
+    });
+
+    const blob = await Packer.toBlob(doc);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Executive_Summary_${projectData.projectTitle?.replace(/[^a-zA-Z0-9]/g, '_') || 'CEST'}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   const handleStatusUpdate = async (newStatus: string) => {
     if (!project || newStatus === project.status) {
@@ -1517,6 +1886,40 @@ export default function CestProfilePage() {
           </div>
         </div>
 
+        {/* Executive Summary */}
+        <div className="bg-gradient-to-r from-[#e8f5e9] to-[#c8e6c9] rounded-xl py-5 px-7 mb-2 shadow-[0_2px_8px_rgba(0,0,0,0.1)] border-l-4 border-[#2e7d32]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-md">
+                <Icon icon="mdi:file-document-edit-outline" width={24} height={24} color="#2e7d32" />
+              </div>
+              <div>
+                <h3 className="text-[16px] font-bold text-[#1b5e20] m-0 mb-1">Executive Summary</h3>
+                <p className="text-[12px] text-[#555] m-0">Auto-generated document with project details</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowExecutiveSummaryPreview(true)}
+                className="flex items-center gap-2 px-5 py-2.5 bg-white text-[#2e7d32] border-2 border-[#2e7d32] rounded-lg text-[13px] font-semibold hover:bg-[#2e7d32] hover:text-white transition-all shadow-sm"
+              >
+                <Icon icon="mdi:eye-outline" width={18} height={18} />
+                Preview
+              </button>
+              <button
+                onClick={async () => {
+                  if (!project) return;
+                  await downloadExecutiveSummary(project, execSummaryData);
+                }}
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#2e7d32] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1b5e20] transition-all shadow-md"
+              >
+                <Icon icon="mdi:download" width={18} height={18} />
+                Download DOCX
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Project Progress */}
         <div className="bg-white rounded-xl py-6 px-7 max-md:px-4 mb-2 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
           <div className="grid grid-cols-4 gap-6 max-md:grid-cols-2 max-md:gap-4">
@@ -1832,6 +2235,267 @@ export default function CestProfilePage() {
                   className="w-full py-2.5 bg-primary text-white border-none rounded-lg text-sm font-semibold cursor-pointer hover:bg-[#0d4a5f] transition-colors"
                 >
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Executive Summary Preview Modal - A4 Size */}
+        {showExecutiveSummaryPreview && project && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] p-4 overflow-auto" onClick={() => setShowExecutiveSummaryPreview(false)}>
+            <div className="bg-gray-200 rounded-xl overflow-hidden shadow-2xl flex flex-col max-h-[95vh]" onClick={(e) => e.stopPropagation()}>
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-[#1b5e20] to-[#2e7d32] px-6 py-3 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <Icon icon="mdi:file-document-outline" width={24} height={24} color="white" />
+                  <h3 className="text-white text-lg font-bold m-0">Executive Summary Preview (A4)</h3>
+                </div>
+                <button onClick={() => setShowExecutiveSummaryPreview(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors">
+                  <Icon icon="mdi:close" width={24} height={24} color="white" />
+                </button>
+              </div>
+
+              {/* A4 Paper Container */}
+              <div className="overflow-auto flex-1 p-6 flex justify-center">
+                <div
+                  className="bg-white shadow-xl"
+                  style={{
+                    width: '210mm',
+                    minHeight: '297mm',
+                    padding: '15mm 20mm',
+                    fontFamily: 'Calibri, Arial, sans-serif',
+                    fontSize: '11pt',
+                    lineHeight: '1.3',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  {/* Header - Logo floating left, Title truly centered */}
+                  <div style={{ position: 'relative', marginBottom: '15px' }}>
+                    {/* Logo positioned absolutely so it doesn't affect title centering */}
+                    <img
+                      src="/cest-logo-text.png"
+                      alt="CEST Logo"
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        height: '50px',
+                        width: 'auto',
+                        marginTop: '-10px'
+                      }}
+                    />
+                    {/* Title centered across full width */}
+                    <div style={{ width: '100%', textAlign: 'center', paddingTop: '10px', paddingBottom: '10px' }}>
+                      <span style={{ fontSize: '24pt', fontWeight: 'bold', letterSpacing: '1px' }}>EXECUTIVE SUMMARY</span>
+                    </div>
+                  </div>
+
+                  {/* Main Table */}
+                  <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
+                    <tbody>
+                      {/* Project Title */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', width: '35%' }}>Project Title:</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px' }} colSpan={2}>{project.projectTitle || ''}</td>
+                      </tr>
+                      {/* Proponent */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Proponent:</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px' }} colSpan={2}>{project.beneficiaries || ''}</td>
+                      </tr>
+                      {/* Requested Amount */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Requested Amount:</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px' }} colSpan={2}>
+                          <input type="text" value={execSummaryData.requestedAmount} onChange={(e) => updateExecSummaryField('requestedAmount', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* Owner's Equity */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Owner&apos;s Equity:</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px' }} colSpan={2}>
+                          <input type="text" value={execSummaryData.ownersEquity} onChange={(e) => updateExecSummaryField('ownersEquity', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* Total Project Cost */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Total Project Cost:</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px' }} colSpan={2}>
+                          <input type="text" value={execSummaryData.totalProjectCost} onChange={(e) => updateExecSummaryField('totalProjectCost', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* 1. DOST technology */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', verticalAlign: 'top' }}>1. DOST technology to be adopted and the mode of techno transfer.</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px' }} colSpan={2}>
+                          <textarea value={execSummaryData.dostTechnology} onChange={(e) => updateExecSummaryField('dostTechnology', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', resize: 'none', minHeight: '30px' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* 2. Income - Header row */}
+                      <tr>
+                        <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', verticalAlign: 'middle', width: '35%' }}>2. Income</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', width: '32.5%', textAlign: 'center', fontWeight: 'bold' }}>Present</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', width: '32.5%', textAlign: 'center', fontWeight: 'bold' }}>Additional (Y1)</td>
+                      </tr>
+                      {/* 2. Income - Value row */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
+                          <input type="text" value={execSummaryData.incomePresent} onChange={(e) => updateExecSummaryField('incomePresent', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', textAlign: 'center' }} placeholder="" />
+                        </td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
+                          <input type="text" value={execSummaryData.incomeAdditional} onChange={(e) => updateExecSummaryField('incomeAdditional', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', textAlign: 'center' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* 3. Jobs Created - Header row */}
+                      <tr>
+                        <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', verticalAlign: 'middle' }}>3. Jobs Created</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>Present</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>Additional (Y1)</td>
+                      </tr>
+                      {/* 3. Jobs Created - Value row */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
+                          <input type="text" value={execSummaryData.jobsCreatedPresent} onChange={(e) => updateExecSummaryField('jobsCreatedPresent', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', textAlign: 'center' }} placeholder="" />
+                        </td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
+                          <input type="text" value={execSummaryData.jobsCreatedAdditional} onChange={(e) => updateExecSummaryField('jobsCreatedAdditional', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', textAlign: 'center' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* 4. Productivity - Header row */}
+                      <tr>
+                        <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', verticalAlign: 'middle' }}>4. Productivity</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>Present</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>Increase (Y1)</td>
+                      </tr>
+                      {/* 4. Productivity - Value row */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
+                          <input type="text" value={execSummaryData.productivityPresent} onChange={(e) => updateExecSummaryField('productivityPresent', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', textAlign: 'center' }} placeholder="" />
+                        </td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
+                          <input type="text" value={execSummaryData.productivityIncrease} onChange={(e) => updateExecSummaryField('productivityIncrease', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', textAlign: 'center' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* 5. Market - Header row */}
+                      <tr>
+                        <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', verticalAlign: 'middle' }}>5. Market</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>Present</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>Additional (Y1)</td>
+                      </tr>
+                      {/* 5. Market - Value row */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
+                          <input type="text" value={execSummaryData.marketPresent} onChange={(e) => updateExecSummaryField('marketPresent', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', textAlign: 'center' }} placeholder="" />
+                        </td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
+                          <input type="text" value={execSummaryData.marketAdditional} onChange={(e) => updateExecSummaryField('marketAdditional', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', textAlign: 'center' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* 6. List of Products */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', verticalAlign: 'top' }}>6. List of Products</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px' }} colSpan={2}>
+                          <textarea value={execSummaryData.listOfProducts} onChange={(e) => updateExecSummaryField('listOfProducts', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', resize: 'none', minHeight: '30px' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* 7. With FDA-LTO? */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>7. With FDA-LTO?</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px' }} colSpan={2}>
+                          <input type="text" value={execSummaryData.withFdaLto} onChange={(e) => updateExecSummaryField('withFdaLto', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* 8. With CPRs? */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>8. With CPRs?</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px' }} colSpan={2}>
+                          <input type="text" value={execSummaryData.withCprs} onChange={(e) => updateExecSummaryField('withCprs', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* 9. Business plan paragraph */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', verticalAlign: 'top' }}>9. A short paragraph on the business plan answering the question, How will the enterprise earn income?</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', minHeight: '80px' }} colSpan={2}>
+                          <textarea value={execSummaryData.businessPlan} onChange={(e) => updateExecSummaryField('businessPlan', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', resize: 'none', minHeight: '60px' }} placeholder="" />
+                        </td>
+                      </tr>
+                      {/* 10. Plans */}
+                      <tr>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', verticalAlign: 'top' }}>10. Plans</td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', minHeight: '100px' }} colSpan={2}>
+                          <textarea value={execSummaryData.plans} onChange={(e) => updateExecSummaryField('plans', e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', resize: 'none', minHeight: '80px' }} placeholder="" />
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  {/* Footer - Prepared by / Reviewed by */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px' }}>
+                    {/* Prepared by */}
+                    <div style={{ width: '45%' }}>
+                      <div style={{ marginBottom: '8px' }}>Prepared by:</div>
+                      <div style={{ marginTop: '40px' }}>
+                        <input
+                          type="text"
+                          value={execSummaryData.preparedByName}
+                          onChange={(e) => updateExecSummaryField('preparedByName', e.target.value)}
+                          style={{ width: '100%', borderBottom: '1px solid #000', background: 'transparent', outline: 'none', textAlign: 'left', paddingBottom: '2px' }}
+                          placeholder=""
+                        />
+                      </div>
+                      <div style={{ marginTop: '2px' }}>
+                        <input
+                          type="text"
+                          value={execSummaryData.preparedByPosition}
+                          onChange={(e) => updateExecSummaryField('preparedByPosition', e.target.value)}
+                          style={{ width: '100%', background: 'transparent', outline: 'none', textAlign: 'left', fontSize: '10pt', border: 'none' }}
+                          placeholder=""
+                        />
+                      </div>
+                    </div>
+                    {/* Reviewed by */}
+                    <div style={{ width: '45%' }}>
+                      <div style={{ marginBottom: '8px' }}>Reviewed by</div>
+                      <div style={{ marginTop: '40px' }}>
+                        <input
+                          type="text"
+                          value={execSummaryData.reviewedByName}
+                          onChange={(e) => updateExecSummaryField('reviewedByName', e.target.value)}
+                          style={{ width: '100%', borderBottom: '1px solid #000', background: 'transparent', outline: 'none', textAlign: 'left', paddingBottom: '2px' }}
+                          placeholder=""
+                        />
+                      </div>
+                      <div style={{ marginTop: '2px' }}>
+                        <input
+                          type="text"
+                          value={execSummaryData.reviewedByPosition}
+                          onChange={(e) => updateExecSummaryField('reviewedByPosition', e.target.value)}
+                          style={{ width: '100%', background: 'transparent', outline: 'none', textAlign: 'left', fontSize: '10pt', border: 'none' }}
+                          placeholder=""
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-3 bg-gray-100 border-t border-gray-200 flex justify-end gap-3 shrink-0">
+                <button onClick={() => setShowExecutiveSummaryPreview(false)} className="px-5 py-2 bg-gray-300 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-400 transition-colors">
+                  Close
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!project) return;
+                    await downloadExecutiveSummary(project, execSummaryData);
+                    setShowExecutiveSummaryPreview(false);
+                  }}
+                  className="px-5 py-2 bg-[#2e7d32] text-white rounded-lg text-sm font-semibold hover:bg-[#1b5e20] transition-colors flex items-center gap-2"
+                >
+                  <Icon icon="mdi:download" width={18} height={18} />
+                  Download DOCX
                 </button>
               </div>
             </div>

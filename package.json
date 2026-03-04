@@ -16,6 +16,7 @@
     "@prisma/client": "^7.4.0",
     "@tailwindcss/postcss": "^4.1.18",
     "bcryptjs": "^3.0.3",
+    "docx": "^9.6.0",
     "dotenv": "^17.2.4",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.0",
@@ -51,6 +52,7 @@
     "wrangler": "^4.68.0"
   },
   "optionalDependencies": {
+    "@tailwindcss/oxide-win32-x64-msvc": "^4.1.18",
     "lightningcss-win32-x64-msvc": "^1.31.1"
   }
 }

@@ -48,21 +48,15 @@ if (lcssNestedVer) {
     pkg: 'lightningcss-win32-x64-msvc',
     version: lcssNestedVer,
     file: 'lightningcss.win32-x64-msvc.node',
-    dest: lcssNested,
-  });
-}
-
-// 3. @tailwindcss/oxide
-const oxideDir = path.join(nm, '@tailwindcss', 'oxide');
-const oxideVer = installedVersion(oxideDir);
-if (oxideVer) {
-  binaries.push({
+    dest: path.join(projectRoot, 'node_modules', 'lightningcss'),
+  },
+  {
     pkg: '@tailwindcss/oxide-win32-x64-msvc',
-    version: oxideVer,
+    version: '4.1.18',
     file: 'tailwindcss-oxide.win32-x64-msvc.node',
-    dest: oxideDir,
-  });
-}
+    dest: path.join(projectRoot, 'node_modules', '@tailwindcss', 'oxide'),
+  },
+];
 
 if (binaries.length === 0) {
   console.log('[fix-wsl-binaries] Nothing to fix.');
@@ -89,11 +83,11 @@ for (const bin of binaries) {
   console.log(`[fix-wsl-binaries] Downloading ${bin.pkg}@${bin.version}...`);
   try {
     execSync(`npm pack ${bin.pkg}@${bin.version}`, { cwd: tmpDir, stdio: 'pipe' });
-
-    // npm pack produces e.g. tailwindcss-oxide-win32-x64-msvc-4.2.1.tgz (strips @ and /)
-    const tgzName = bin.pkg.replace(/^@/, '').replace('/', '-') + '-' + bin.version + '.tgz';
+    // Handle scoped packages: @scope/name -> scope-name
+    const tgzName = bin.pkg.startsWith('@')
+      ? bin.pkg.slice(1).replace('/', '-') + `-${bin.version}.tgz`
+      : `${bin.pkg}-${bin.version}.tgz`;
     const tgz = path.join(tmpDir, tgzName);
-
     execSync(`tar xzf "${tgz}"`, { cwd: tmpDir, stdio: 'pipe' });
     const srcFile = path.join(tmpDir, 'package', bin.file);
     if (fs.existsSync(srcFile)) {
