@@ -211,6 +211,7 @@ function DocumentTable({
   initialDropdownData,
   isEditMode = true,
   isAssigneeEditMode = false,
+  isAssigneeUploadMode = false,
 }: {
   title: string;
   docs: DocRow[];
@@ -220,6 +221,7 @@ function DocumentTable({
   initialDropdownData?: Record<string, unknown> | null;
   isEditMode?: boolean;
   isAssigneeEditMode?: boolean;
+  isAssigneeUploadMode?: boolean;
 }) {
   const [expandedDropdowns, setExpandedDropdowns] = useState<Record<string, boolean>>({});
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
@@ -460,6 +462,11 @@ function DocumentTable({
     message: string;
   } | null>(null);
   const [savingData, setSavingData] = useState(false);
+  const [removeCustomRowConfirmModal, setRemoveCustomRowConfirmModal] = useState<{
+    show: boolean;
+    rowId: string;
+    rowName: string;
+  } | null>(null);
 
   // Initialize states from saved dropdownData
   useEffect(() => {
@@ -1003,16 +1010,16 @@ function DocumentTable({
     <div className="bg-white rounded-xl mb-8 shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-visible">
       <h2 className="text-base font-bold text-primary pt-5 px-7 m-0 mb-3">{title}</h2>
 
-      {/* View Mode Banner */}
-      {!isEditMode && (
+      {/* View Mode Banner - Only for non-assignees (assignees always have Upload/Edit Mode) */}
+      {!isEditMode && !isAssigneeUploadMode && !isAssigneeEditMode && (
         <div className="flex items-start gap-2 bg-[#fff3e0] border border-[#ffcc80] rounded-lg py-2.5 px-4 mx-7 mb-4 text-xs text-[#e65100] leading-[1.4]">
           <Icon icon="mdi:eye-outline" width={16} height={16} className="min-w-4 mt-px" />
-          <span><strong>View Mode:</strong> You are currently in view mode. Editing, uploading, and deleting are disabled. Click &quot;Upload Mode&quot; or &quot;Edit Mode&quot; button to enable editing.</span>
+          <span><strong>View Mode:</strong> You are currently in view mode. Editing, uploading, and deleting are disabled. Click &quot;Edit Mode&quot; button to enable editing.</span>
         </div>
       )}
 
       {/* Upload Mode Banner for Assignee */}
-      {isEditMode && !isAssigneeEditMode && (
+      {isAssigneeUploadMode && (
         <div className="flex items-start gap-2 bg-[#fff8e1] border border-[#ffecb3] rounded-lg py-2.5 px-4 mx-7 mb-4 text-xs text-[#f57f17] leading-[1.4]">
           <Icon icon="mdi:upload" width={16} height={16} className="min-w-4 mt-px" />
           <span><strong>Upload Mode:</strong> You can upload, download, and delete files. To add new rows or configure dropdowns, switch to &quot;Edit Mode&quot;.</span>
@@ -1024,6 +1031,14 @@ function DocumentTable({
         <div className="flex items-start gap-2 bg-[#e8f5e9] border border-[#a5d6a7] rounded-lg py-2.5 px-4 mx-7 mb-4 text-xs text-[#2e7d32] leading-[1.4]">
           <Icon icon="mdi:pencil-plus-outline" width={16} height={16} className="min-w-4 mt-px" />
           <span><strong>Edit Mode:</strong> You can add new rows, configure dropdowns, rename fields, and manage file uploads. Use the &quot;Add New Row&quot; button below the table to add custom fields.</span>
+        </div>
+      )}
+
+      {/* Edit Mode Banner for Non-Assignees */}
+      {isEditMode && !isAssigneeUploadMode && !isAssigneeEditMode && (
+        <div className="flex items-start gap-2 bg-[#e8f5e9] border border-[#a5d6a7] rounded-lg py-2.5 px-4 mx-7 mb-4 text-xs text-[#2e7d32] leading-[1.4]">
+          <Icon icon="mdi:pencil-outline" width={16} height={16} className="min-w-4 mt-px" />
+          <span><strong>Edit Mode:</strong> You can upload, download, and delete files. Click &quot;View Mode&quot; button to disable editing.</span>
         </div>
       )}
 
@@ -5563,7 +5578,7 @@ function DocumentTable({
                               >
                                 (edit)
                               </button>
-                              <button onClick={() => { if (confirm(`Delete "${customRow.name}" row?`)) { const updated = customRows.filter(r => r.id !== customRow.id); setCustomRows(updated); saveDropdownData({ customRows: updated }, `Row "${customRow.name}" deleted.`); } }} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
+                              <button onClick={() => setRemoveCustomRowConfirmModal({ show: true, rowId: customRow.id, rowName: customRow.name })} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
                             </>
                           )}
                         </div>
@@ -5613,7 +5628,7 @@ function DocumentTable({
                                 >
                                   (edit)
                                 </button>
-                                <button onClick={() => { if (confirm(`Delete "${customRow.name}" row?`)) { const updated = customRows.filter(r => r.id !== customRow.id); setCustomRows(updated); saveDropdownData({ customRows: updated }, `Row "${customRow.name}" deleted.`); } }} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
+                                <button onClick={() => setRemoveCustomRowConfirmModal({ show: true, rowId: customRow.id, rowName: customRow.name })} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
                               </div>
                             )}
                           </div>
@@ -6259,6 +6274,42 @@ function DocumentTable({
               onClick={() => {
                 setRefundDocumentRows(prev => prev.filter(r => r.id !== removeRefundDocConfirmModal.refundDocId));
                 setRemoveRefundDocConfirmModal(null);
+              }}
+              className="py-2.5 px-8 bg-[#c62828] text-white border-none rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#b71c1c]"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Remove Custom Row Confirmation Modal */}
+    {removeCustomRowConfirmModal && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]" onClick={() => setRemoveCustomRowConfirmModal(null)}>
+        <div className="bg-white rounded-2xl w-full max-w-[400px] py-8 px-10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] text-center" onClick={e => e.stopPropagation()}>
+          <div className="w-14 h-14 rounded-full bg-[#ffebee] flex items-center justify-center mx-auto mb-4">
+            <Icon icon="mdi:alert-circle-outline" width={36} height={36} color="#c62828" />
+          </div>
+          <h3 className="text-lg font-bold text-[#333] m-0 mb-3">Remove Custom Row?</h3>
+          <p className="text-[14px] text-[#666] m-0 mb-6">
+            Are you sure you want to remove <strong className="text-[#333]">{removeCustomRowConfirmModal.rowName}</strong>? This action cannot be undone.
+          </p>
+          <div className="flex gap-3 justify-center">
+            <button
+              type="button"
+              onClick={() => setRemoveCustomRowConfirmModal(null)}
+              className="py-2.5 px-8 bg-white text-[#333] border border-[#d0d0d0] rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#f5f5f5]"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const updated = customRows.filter(r => r.id !== removeCustomRowConfirmModal.rowId);
+                setCustomRows(updated);
+                saveDropdownData({ customRows: updated }, `Row "${removeCustomRowConfirmModal.rowName}" deleted.`);
+                setRemoveCustomRowConfirmModal(null);
               }}
               className="py-2.5 px-8 bg-[#c62828] text-white border-none rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#b71c1c]"
             >
@@ -7036,6 +7087,17 @@ export default function ProjectDetailPage() {
     }
   }, []);
 
+  // Auto-enable Upload Mode for assignees (assignees never see View Mode)
+  useEffect(() => {
+    if (currentUser && project && !loading) {
+      const userIsAssignee = project.assignee === currentUser.fullName;
+      if (userIsAssignee && !isEditMode) {
+        setIsEditMode(true);
+        setAssigneeMode('upload');
+      }
+    }
+  }, [currentUser, project, loading]);
+
   // Listen for openEditRequestModal custom event
   useEffect(() => {
     const handleOpenEditRequestModal = (e: CustomEvent) => {
@@ -7101,6 +7163,11 @@ export default function ProjectDetailPage() {
   // Check if assignee edit mode is active (allows adding new rows)
   const isAssigneeEditModeActive = (): boolean => {
     return isAssignee() && isEditMode && assigneeMode === 'edit';
+  };
+
+  // Check if assignee upload mode is active (can upload but not add rows)
+  const isAssigneeUploadModeActive = (): boolean => {
+    return isAssignee() && isEditMode && assigneeMode === 'upload';
   };
 
   // Check if current user is authorized to edit (includes granted permissions)
@@ -7474,37 +7541,23 @@ export default function ProjectDetailPage() {
 
   // Handle Edit Mode toggle
   const handleEditModeToggle = async () => {
-    // For assignees: cycle through Upload Mode -> Edit Mode -> View Mode (off)
+    // For assignees: toggle between Upload Mode <-> Edit Mode only (no View Mode)
     if (isAssignee()) {
-      if (isEditMode) {
-        if (assigneeMode === 'upload') {
-          // Upload Mode -> Edit Mode
-          setTransitioningTo('edit');
-          setModeTransitioning(true);
-          await new Promise(resolve => setTimeout(resolve, 300));
-          setAssigneeMode('edit');
-          setModeKey(prev => prev + 1);
-          await new Promise(resolve => setTimeout(resolve, 200));
-          setModeTransitioning(false);
-          setTransitioningTo(null);
-        } else {
-          // Edit Mode -> View Mode (off)
-          setTransitioningTo('view');
-          setModeTransitioning(true);
-          await new Promise(resolve => setTimeout(resolve, 300));
-          setIsEditMode(false);
-          setAssigneeMode('upload');
-          setModeKey(prev => prev + 1);
-          await new Promise(resolve => setTimeout(resolve, 200));
-          setModeTransitioning(false);
-          setTransitioningTo(null);
-        }
+      if (assigneeMode === 'upload') {
+        // Upload Mode -> Edit Mode
+        setTransitioningTo('edit');
+        setModeTransitioning(true);
+        await new Promise(resolve => setTimeout(resolve, 300));
+        setAssigneeMode('edit');
+        setModeKey(prev => prev + 1);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        setModeTransitioning(false);
+        setTransitioningTo(null);
       } else {
-        // Off -> Upload Mode
+        // Edit Mode -> Upload Mode
         setTransitioningTo('upload');
         setModeTransitioning(true);
         await new Promise(resolve => setTimeout(resolve, 300));
-        setIsEditMode(true);
         setAssigneeMode('upload');
         setModeKey(prev => prev + 1);
         await new Promise(resolve => setTimeout(resolve, 200));
@@ -7859,11 +7912,9 @@ export default function ProjectDetailPage() {
                       </>
                     )}
                   </button>
-                  {isEditMode && (
-                    <span className="text-[10px] text-[#666] bg-[#f0f0f0] px-2 py-1 rounded">
-                      {assigneeMode === 'upload' ? 'Click for Edit Mode' : 'Click for View Mode'}
-                    </span>
-                  )}
+                  <span className="text-[10px] text-[#666] bg-[#f0f0f0] px-2 py-1 rounded">
+                  {assigneeMode === 'upload' ? 'Click for Edit Mode' : 'Click for Upload Mode'}
+                </span>
                 </div>
               ) : (
                 // Non-assignee mode button (original)
@@ -8047,6 +8098,7 @@ export default function ProjectDetailPage() {
             initialDropdownData={project.dropdownData}
             isEditMode={isEditMode}
             isAssigneeEditMode={isAssigneeEditModeActive()}
+            isAssigneeUploadMode={isAssigneeUploadModeActive()}
           />
 
           {/* Project Implementation */}
@@ -8060,6 +8112,7 @@ export default function ProjectDetailPage() {
             initialDropdownData={project.dropdownData}
             isEditMode={isEditMode}
             isAssigneeEditMode={isAssigneeEditModeActive()}
+            isAssigneeUploadMode={isAssigneeUploadModeActive()}
           />
 
           {/* Project Management */}
@@ -8073,6 +8126,7 @@ export default function ProjectDetailPage() {
             initialDropdownData={project.dropdownData}
             isEditMode={isEditMode}
             isAssigneeEditMode={isAssigneeEditModeActive()}
+            isAssigneeUploadMode={isAssigneeUploadModeActive()}
           />
 
           {/* Project Monitoring */}
@@ -8086,6 +8140,7 @@ export default function ProjectDetailPage() {
             initialDropdownData={project.dropdownData}
             isEditMode={isEditMode}
             isAssigneeEditMode={isAssigneeEditModeActive()}
+            isAssigneeUploadMode={isAssigneeUploadModeActive()}
           />
 
           {/* Project Refund */}
@@ -8099,6 +8154,7 @@ export default function ProjectDetailPage() {
             initialDropdownData={project.dropdownData}
             isEditMode={isEditMode}
             isAssigneeEditMode={isAssigneeEditModeActive()}
+            isAssigneeUploadMode={isAssigneeUploadModeActive()}
           />
 
           {/* Communications */}
@@ -8112,6 +8168,7 @@ export default function ProjectDetailPage() {
             initialDropdownData={project.dropdownData}
             isEditMode={isEditMode}
             isAssigneeEditMode={isAssigneeEditModeActive()}
+            isAssigneeUploadMode={isAssigneeUploadModeActive()}
           />
 
         {/* Edit Request Modal */}
