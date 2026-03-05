@@ -210,6 +210,7 @@ function DocumentTable({
   onProgressUpdate,
   initialDropdownData,
   isEditMode = true,
+  isAssigneeEditMode = false,
 }: {
   title: string;
   docs: DocRow[];
@@ -218,6 +219,7 @@ function DocumentTable({
   onProgressUpdate?: (progress: number, uploaded: number, total: number) => void;
   initialDropdownData?: Record<string, unknown> | null;
   isEditMode?: boolean;
+  isAssigneeEditMode?: boolean;
 }) {
   const [expandedDropdowns, setExpandedDropdowns] = useState<Record<string, boolean>>({});
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
@@ -418,9 +420,23 @@ function DocumentTable({
   const [newRowName, setNewRowName] = useState('');
   const [newRowType, setNewRowType] = useState<'item' | 'dropdown' | 'textinput'>('item');
   const [newRowDropdownOptions, setNewRowDropdownOptions] = useState('');
+
+  // State for editing/renaming custom rows
+  const [editingRowId, setEditingRowId] = useState<string | null>(null);
+  const [editingRowName, setEditingRowName] = useState('');
+  const [showEditRowModal, setShowEditRowModal] = useState<{
+    show: boolean;
+    rowId: string;
+    currentName: string;
+    rowType: 'item' | 'dropdown' | 'textinput';
+    dropdownOptions?: string[];
+  } | null>(null);
+  const [editRowName, setEditRowName] = useState('');
+  const [editRowOptions, setEditRowOptions] = useState('');
   const [draggedRowId, setDraggedRowId] = useState<string | null>(null);
   const [dragOverRowId, setDragOverRowId] = useState<string | null>(null);
   const [acceptedLiquidationDate, setAcceptedLiquidationDate] = useState<string>('');
+  const [fileDragOverRowId, setFileDragOverRowId] = useState<string | null>(null);
 
   // Track current dropdown data for merging across saves
   const [currentDropdownData, setCurrentDropdownData] = useState<Record<string, unknown>>({});
@@ -767,6 +783,36 @@ function DocumentTable({
     fileInputRef.current?.click();
   };
 
+  // Handle file drop for drag and drop upload
+  const handleFileDrop = async (e: React.DragEvent<HTMLTableRowElement>, templateItemId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setFileDragOverRowId(null);
+
+    if (!isEditMode) return;
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+
+    setUploadingItemId(templateItemId);
+    try {
+      let last: { fileName: string; fileType: string; fileSize: string; date: string } | null = null;
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('phase', phase);
+        fd.append('templateItemId', templateItemId);
+        const res = await fetch(`/api/setup-projects/${projectId}/documents`, { method: 'POST', body: fd });
+        if (!res.ok) throw new Error('Upload failed');
+        const sz = file.size >= 1048576 ? `${(file.size / 1048576).toFixed(2)} MB` : `${(file.size / 1024).toFixed(1)} KB`;
+        last = { fileName: file.name, fileType: file.type.split('/').pop()?.toUpperCase() || 'FILE', fileSize: sz, date: new Date().toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) };
+      }
+      await fetchDocuments();
+      if (last) setUploadSuccess({ ...last, uploadedBy: 'User' });
+    } catch { alert('Failed to upload file. Please try again.'); }
+    finally { setUploadingItemId(null); }
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
     const tid = targetItemIdRef.current;
@@ -961,7 +1007,23 @@ function DocumentTable({
       {!isEditMode && (
         <div className="flex items-start gap-2 bg-[#fff3e0] border border-[#ffcc80] rounded-lg py-2.5 px-4 mx-7 mb-4 text-xs text-[#e65100] leading-[1.4]">
           <Icon icon="mdi:eye-outline" width={16} height={16} className="min-w-4 mt-px" />
-          <span><strong>View Mode:</strong> You are currently in view mode. Editing, uploading, and deleting are disabled. Click &quot;Edit Mode&quot; button to enable editing.</span>
+          <span><strong>View Mode:</strong> You are currently in view mode. Editing, uploading, and deleting are disabled. Click &quot;Upload Mode&quot; or &quot;Edit Mode&quot; button to enable editing.</span>
+        </div>
+      )}
+
+      {/* Upload Mode Banner for Assignee */}
+      {isEditMode && !isAssigneeEditMode && (
+        <div className="flex items-start gap-2 bg-[#fff8e1] border border-[#ffecb3] rounded-lg py-2.5 px-4 mx-7 mb-4 text-xs text-[#f57f17] leading-[1.4]">
+          <Icon icon="mdi:upload" width={16} height={16} className="min-w-4 mt-px" />
+          <span><strong>Upload Mode:</strong> You can upload, download, and delete files. To add new rows or configure dropdowns, switch to &quot;Edit Mode&quot;.</span>
+        </div>
+      )}
+
+      {/* Edit Mode Banner for Assignee */}
+      {isAssigneeEditMode && (
+        <div className="flex items-start gap-2 bg-[#e8f5e9] border border-[#a5d6a7] rounded-lg py-2.5 px-4 mx-7 mb-4 text-xs text-[#2e7d32] leading-[1.4]">
+          <Icon icon="mdi:pencil-plus-outline" width={16} height={16} className="min-w-4 mt-px" />
+          <span><strong>Edit Mode:</strong> You can add new rows, configure dropdowns, rename fields, and manage file uploads. Use the &quot;Add New Row&quot; button below the table to add custom fields.</span>
         </div>
       )}
 
@@ -1014,14 +1076,38 @@ function DocumentTable({
                   const hasFile = rowDocs.length > 0;
 
                   if (customRow.rowType === 'item') {
+                    const isFileDragOver = fileDragOverRowId === tid;
                     sectionElements.push(
                       <tr
                         key={`custom-${customRow.id}-${renderCallId}`}
-                        draggable={isEditMode}
-                        onDragStart={() => setDraggedRowId(customRow.id)}
+                        draggable={isAssigneeEditMode && !fileDragOverRowId}
+                        onDragStart={(e) => {
+                          if (!isAssigneeEditMode || e.dataTransfer.files.length > 0) return;
+                          setDraggedRowId(customRow.id);
+                        }}
                         onDragEnd={() => { setDraggedRowId(null); setDragOverRowId(null); }}
-                        onDragOver={(e) => { e.preventDefault(); setDragOverRowId(customRow.id); }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          // Check if dragging files (for file upload) or dragging rows (for reordering)
+                          if (e.dataTransfer.types.includes('Files')) {
+                            if (isEditMode) setFileDragOverRowId(tid);
+                          } else if (isAssigneeEditMode) {
+                            setDragOverRowId(customRow.id);
+                          }
+                        }}
+                        onDragLeave={(e) => {
+                          if (e.dataTransfer.types.includes('Files')) {
+                            setFileDragOverRowId(null);
+                          }
+                        }}
                         onDrop={(e) => {
+                          // Handle file drop
+                          if (e.dataTransfer.types.includes('Files') && e.dataTransfer.files.length > 0) {
+                            handleFileDrop(e, tid);
+                            return;
+                          }
+                          // Handle row reorder drop
+                          if (!isAssigneeEditMode) return;
                           e.preventDefault();
                           if (draggedRowId && draggedRowId !== customRow.id) {
                             const draggedIdx = customRows.findIndex(r => r.id === draggedRowId);
@@ -1036,24 +1122,48 @@ function DocumentTable({
                           setDraggedRowId(null);
                           setDragOverRowId(null);
                         }}
-                        className={`${draggedRowId === customRow.id ? 'opacity-50' : ''} ${dragOverRowId === customRow.id && draggedRowId !== customRow.id ? 'bg-[#e3f2fd]' : ''}`}
+                        className={`transition-all duration-150 ${draggedRowId === customRow.id ? 'opacity-50' : ''} ${dragOverRowId === customRow.id && draggedRowId !== customRow.id ? 'bg-[#e3f2fd]' : ''} ${isFileDragOver ? 'bg-[#e8f5e9] ring-2 ring-[#2e7d32] ring-inset' : ''}`}
                       >
                         <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#888] font-medium">
                           <div className="flex items-center gap-1">
-                            {isEditMode && <Icon icon="mdi:drag" width={16} height={16} className="cursor-grab text-[#999] hover:text-[#666]" />}
+                            {isAssigneeEditMode && <Icon icon="mdi:drag" width={16} height={16} className="cursor-grab text-[#999] hover:text-[#666]" />}
                             {customRowCounter}
                           </div>
                         </td>
                         <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#333]">
                           <div className="flex items-center gap-2">
-                            <span>{customRow.name}</span>
-                            {isEditMode && (
-                              <button onClick={() => { if (confirm(`Delete "${customRow.name}" row?`)) setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); }} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
+                            <span className="flex items-center gap-1">
+                              <Icon icon="mdi:file-document-outline" width={14} height={14} className="text-[#1976d2]" />
+                              {customRow.name}
+                            </span>
+                            {isAssigneeEditMode && (
+                              <>
+                                <button
+                                  onClick={() => setShowEditRowModal({ show: true, rowId: customRow.id, currentName: customRow.name, rowType: customRow.rowType, dropdownOptions: customRow.dropdownOptions })}
+                                  className="text-[#1976d2] hover:underline text-[10px]"
+                                  title="Edit row name"
+                                >
+                                  (edit)
+                                </button>
+                                <button onClick={() => { if (confirm(`Delete "${customRow.name}" row?`)) setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); }} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
+                              </>
                             )}
                           </div>
                         </td>
                         <td className="py-2.5 px-3 border-b border-[#eee] align-middle">
-                          {hasFile ? <span className="text-[10px] text-[#2e7d32] bg-[#e8f5e9] px-2 py-0.5 rounded">Uploaded</span> : <span className="text-[#bbb] italic text-xs">No file uploaded</span>}
+                          {isFileDragOver ? (
+                            <span className="text-[11px] text-[#2e7d32] font-semibold flex items-center gap-1">
+                              <Icon icon="mdi:file-upload-outline" width={14} height={14} />
+                              Drop file here to upload
+                            </span>
+                          ) : hasFile ? (
+                            renderFileChips(tid) ?? <span className="text-[10px] text-[#2e7d32] bg-[#e8f5e9] px-2 py-0.5 rounded">Uploaded</span>
+                          ) : (
+                            <span className="text-[#bbb] italic text-xs flex items-center gap-1">
+                              <Icon icon="mdi:upload" width={12} height={12} />
+                              {isEditMode ? 'Drag & drop or click upload' : 'No file uploaded'}
+                            </span>
+                          )}
                         </td>
                         <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#999] text-xs">
                           {hasFile ? new Date(latestDoc.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
@@ -1074,11 +1184,12 @@ function DocumentTable({
                     sectionElements.push(
                       <tr
                         key={`custom-${customRow.id}-${renderCallId}`}
-                        draggable={isEditMode}
-                        onDragStart={() => setDraggedRowId(customRow.id)}
+                        draggable={isAssigneeEditMode}
+                        onDragStart={() => isAssigneeEditMode && setDraggedRowId(customRow.id)}
                         onDragEnd={() => { setDraggedRowId(null); setDragOverRowId(null); }}
-                        onDragOver={(e) => { e.preventDefault(); setDragOverRowId(customRow.id); }}
+                        onDragOver={(e) => { if (isAssigneeEditMode) { e.preventDefault(); setDragOverRowId(customRow.id); } }}
                         onDrop={(e) => {
+                          if (!isAssigneeEditMode) return;
                           e.preventDefault();
                           if (draggedRowId && draggedRowId !== customRow.id) {
                             const draggedIdx = customRows.findIndex(r => r.id === draggedRowId);
@@ -1097,15 +1208,30 @@ function DocumentTable({
                       >
                         <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#888] font-medium">
                           <div className="flex items-center gap-1">
-                            {isEditMode && <Icon icon="mdi:drag" width={16} height={16} className="cursor-grab text-[#999] hover:text-[#666]" />}
+                            {isAssigneeEditMode && <Icon icon="mdi:drag" width={16} height={16} className="cursor-grab text-[#999] hover:text-[#666]" />}
                             {customRowCounter}
                           </div>
                         </td>
                         <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#333]">
                           <div className="flex items-center gap-2">
-                            <span>{customRow.name}</span>
-                            {isEditMode && (
-                              <button onClick={() => { if (confirm(`Delete "${customRow.name}" row?`)) setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); }} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
+                            <span className="flex items-center gap-1">
+                              <Icon icon="mdi:form-textbox" width={14} height={14} className="text-[#1976d2]" />
+                              {customRow.name}
+                            </span>
+                            {isAssigneeEditMode && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setShowEditRowModal({ show: true, rowId: customRow.id, currentName: customRow.name, rowType: customRow.rowType });
+                                    setEditRowName(customRow.name);
+                                  }}
+                                  className="text-[#1976d2] hover:underline text-[10px]"
+                                  title="Edit row name"
+                                >
+                                  (edit)
+                                </button>
+                                <button onClick={() => { if (confirm(`Delete "${customRow.name}" row?`)) setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); }} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
+                              </>
                             )}
                           </div>
                         </td>
@@ -1116,14 +1242,39 @@ function DocumentTable({
                     );
                   } else if (customRow.rowType === 'dropdown') {
                     const options = customRow.dropdownOptions || [];
+                    const selectedOption = customRow.textValue;
+                    const selectedOptionTid = selectedOption ? `${phase}-custom-${customRow.id}-opt-${selectedOption.replace(/\s+/g, '-').toLowerCase()}` : null;
+                    const selectedOptionDocs = selectedOptionTid ? getDocsForItem(selectedOptionTid) : [];
+                    const selectedOptionHasFile = selectedOptionDocs.length > 0;
+                    const selectedOptionLatestDoc = selectedOptionDocs[0];
+                    const isSelectedOptionUploading = selectedOptionTid ? uploadingItemId === selectedOptionTid : false;
+                    const isDropdownFileDragOver = selectedOptionTid && fileDragOverRowId === selectedOptionTid;
+
                     sectionElements.push(
                       <tr
                         key={`custom-${customRow.id}-${renderCallId}`}
-                        draggable={isEditMode}
-                        onDragStart={() => setDraggedRowId(customRow.id)}
+                        draggable={isAssigneeEditMode && !fileDragOverRowId}
+                        onDragStart={() => isAssigneeEditMode && setDraggedRowId(customRow.id)}
                         onDragEnd={() => { setDraggedRowId(null); setDragOverRowId(null); }}
-                        onDragOver={(e) => { e.preventDefault(); setDragOverRowId(customRow.id); }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          if (e.dataTransfer.types.includes('Files') && isEditMode && selectedOptionTid) {
+                            setFileDragOverRowId(selectedOptionTid);
+                          } else if (isAssigneeEditMode) {
+                            setDragOverRowId(customRow.id);
+                          }
+                        }}
+                        onDragLeave={(e) => {
+                          if (e.dataTransfer.types.includes('Files')) {
+                            setFileDragOverRowId(null);
+                          }
+                        }}
                         onDrop={(e) => {
+                          if (e.dataTransfer.types.includes('Files') && e.dataTransfer.files.length > 0 && selectedOptionTid) {
+                            handleFileDrop(e, selectedOptionTid);
+                            return;
+                          }
+                          if (!isAssigneeEditMode) return;
                           e.preventDefault();
                           if (draggedRowId && draggedRowId !== customRow.id) {
                             const draggedIdx = customRows.findIndex(r => r.id === draggedRowId);
@@ -1138,35 +1289,174 @@ function DocumentTable({
                           setDraggedRowId(null);
                           setDragOverRowId(null);
                         }}
-                        className={`${draggedRowId === customRow.id ? 'opacity-50' : ''} ${dragOverRowId === customRow.id && draggedRowId !== customRow.id ? 'bg-[#e3f2fd]' : ''}`}
+                        className={`transition-all duration-150 ${draggedRowId === customRow.id ? 'opacity-50' : ''} ${dragOverRowId === customRow.id && draggedRowId !== customRow.id ? 'bg-[#e3f2fd]' : ''} ${isDropdownFileDragOver ? 'bg-[#e8f5e9] ring-2 ring-[#2e7d32] ring-inset' : ''}`}
                       >
                         <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#888] font-medium">
                           <div className="flex items-center gap-1">
-                            {isEditMode && <Icon icon="mdi:drag" width={16} height={16} className="cursor-grab text-[#999] hover:text-[#666]" />}
+                            {isAssigneeEditMode && <Icon icon="mdi:drag" width={16} height={16} className="cursor-grab text-[#999] hover:text-[#666]" />}
                             {customRowCounter}
                           </div>
                         </td>
                         <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#333]">
                           <div className="flex items-center gap-2">
-                            <span>{customRow.name}</span>
-                            {isEditMode && (
-                              <button onClick={() => { if (confirm(`Delete "${customRow.name}" row?`)) setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); }} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
+                            <span className="flex items-center gap-1">
+                              <Icon icon="mdi:form-dropdown" width={14} height={14} className="text-[#1976d2]" />
+                              {customRow.name}
+                            </span>
+                            {isAssigneeEditMode && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setShowEditRowModal({ show: true, rowId: customRow.id, currentName: customRow.name, rowType: customRow.rowType, dropdownOptions: customRow.dropdownOptions });
+                                    setEditRowName(customRow.name);
+                                    setEditRowOptions(customRow.dropdownOptions?.join(', ') || '');
+                                  }}
+                                  className="text-[#1976d2] hover:underline text-[10px]"
+                                  title="Edit dropdown name and options"
+                                >
+                                  (edit)
+                                </button>
+                                <button onClick={() => { if (confirm(`Delete "${customRow.name}" row?`)) setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); }} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
+                              </>
                             )}
                           </div>
                         </td>
-                        <td colSpan={3} className="py-2.5 px-3 border-b border-[#eee] align-middle">
-                          <select value={customRow.textValue || ''} onChange={(e) => setCustomRows(prev => prev.map(r => r.id === customRow.id ? { ...r, textValue: e.target.value } : r))} className={`border border-[#ddd] rounded px-3 py-1.5 text-xs w-full max-w-[200px] ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`} disabled={!isEditMode}>
-                            <option value="">Select...</option>
-                            {options.map((opt, optIdx) => <option key={`${opt}-${optIdx}`} value={opt}>{opt}</option>)}
-                          </select>
+                        <td className="py-2.5 px-3 border-b border-[#eee] align-middle">
+                          <div className="flex items-center gap-3">
+                            <select
+                              value={customRow.textValue || ''}
+                              onChange={(e) => setCustomRows(prev => prev.map(r => r.id === customRow.id ? { ...r, textValue: e.target.value } : r))}
+                              className={`border border-[#ddd] rounded px-3 py-1.5 text-xs min-w-[150px] ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                              disabled={!isEditMode}
+                            >
+                              <option value="">Select option...</option>
+                              {options.map((opt, optIdx) => <option key={`${opt}-${optIdx}`} value={opt}>{opt}</option>)}
+                            </select>
+                            {selectedOption && (
+                              <div className="flex items-center gap-2">
+                                {isDropdownFileDragOver ? (
+                                  <span className="text-[11px] text-[#2e7d32] font-semibold flex items-center gap-1">
+                                    <Icon icon="mdi:file-upload-outline" width={14} height={14} />
+                                    Drop file here
+                                  </span>
+                                ) : selectedOptionHasFile ? (
+                                  renderFileChips(selectedOptionTid!)
+                                ) : (
+                                  <span className="text-[#bbb] italic text-[10px] flex items-center gap-1">
+                                    <Icon icon="mdi:upload" width={10} height={10} />
+                                    Upload for "{selectedOption}"
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#999] text-xs">
+                          {selectedOptionHasFile ? new Date(selectedOptionLatestDoc.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : selectedOption ? '—' : ''}
+                        </td>
+                        <td className="py-2.5 px-3 border-b border-[#eee] align-middle">
+                          {selectedOption && selectedOptionTid && (
+                            <div className="flex gap-1.5">
+                              <button
+                                className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                title={isEditMode ? `Upload for "${selectedOption}"` : "View mode - editing disabled"}
+                                onClick={() => handleUploadClick(selectedOptionTid)}
+                                disabled={isSelectedOptionUploading || !isEditMode}
+                              >
+                                {isSelectedOptionUploading ? <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" /> : <Icon icon="mdi:upload" width={14} height={14} />}
+                              </button>
+                              <button
+                                className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${selectedOptionHasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
+                                title={isEditMode ? "Delete" : "View mode - editing disabled"}
+                                onClick={() => selectedOptionHasFile && isEditMode && handleDeleteAll(selectedOptionTid)}
+                                disabled={!selectedOptionHasFile || !isEditMode}
+                              >
+                                <Icon icon="mdi:delete-outline" width={14} height={14} />
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     );
+
+                    // If dropdown has a selected value, show sub-rows for each option with file uploads
+                    if (isAssigneeEditMode && options.length > 0) {
+                      options.forEach((opt, optIdx) => {
+                        const optTid = `${phase}-custom-${customRow.id}-opt-${opt.replace(/\s+/g, '-').toLowerCase()}`;
+                        const optDocs = getDocsForItem(optTid);
+                        const optHasFile = optDocs.length > 0;
+                        const optLatestDoc = optDocs[0];
+                        const isOptUploading = uploadingItemId === optTid;
+                        const isOptFileDragOver = fileDragOverRowId === optTid;
+
+                        sectionElements.push(
+                          <tr
+                            key={`custom-${customRow.id}-opt-${optIdx}-${renderCallId}`}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              if (e.dataTransfer.types.includes('Files') && isEditMode) {
+                                setFileDragOverRowId(optTid);
+                              }
+                            }}
+                            onDragLeave={() => setFileDragOverRowId(null)}
+                            onDrop={(e) => {
+                              if (e.dataTransfer.types.includes('Files') && e.dataTransfer.files.length > 0) {
+                                handleFileDrop(e, optTid);
+                              }
+                            }}
+                            className={`bg-[#fafafa] transition-all duration-150 ${isOptFileDragOver ? 'bg-[#e8f5e9] ring-2 ring-[#2e7d32] ring-inset' : ''}`}
+                          >
+                            <td className="py-2 px-3 border-b border-[#eee]" />
+                            <td className="py-2 px-3 border-b border-[#eee] text-xs text-[#666] pl-8">
+                              <span className="flex items-center gap-1">
+                                <Icon icon="mdi:subdirectory-arrow-right" width={12} height={12} className="text-[#999]" />
+                                {opt}
+                              </span>
+                            </td>
+                            <td className="py-2 px-3 border-b border-[#eee]">
+                              {isOptFileDragOver ? (
+                                <span className="text-[10px] text-[#2e7d32] font-semibold flex items-center gap-1">
+                                  <Icon icon="mdi:file-upload-outline" width={12} height={12} />
+                                  Drop here
+                                </span>
+                              ) : optHasFile ? (
+                                renderFileChips(optTid)
+                              ) : (
+                                <span className="text-[#bbb] italic text-[10px]">No file</span>
+                              )}
+                            </td>
+                            <td className="py-2 px-3 border-b border-[#eee] text-[#999] text-xs">
+                              {optHasFile ? new Date(optLatestDoc.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
+                            </td>
+                            <td className="py-2 px-3 border-b border-[#eee]">
+                              <div className="flex gap-1.5">
+                                <button
+                                  className={`w-6 h-6 border-none rounded flex items-center justify-center text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50`}
+                                  title={`Upload for "${opt}"`}
+                                  onClick={() => handleUploadClick(optTid)}
+                                  disabled={isOptUploading || !isEditMode}
+                                >
+                                  {isOptUploading ? <Icon icon="mdi:loading" width={12} height={12} className="animate-spin" /> : <Icon icon="mdi:upload" width={12} height={12} />}
+                                </button>
+                                <button
+                                  className={`w-6 h-6 border-none rounded flex items-center justify-center text-white ${optHasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
+                                  title="Delete"
+                                  onClick={() => optHasFile && isEditMode && handleDeleteAll(optTid)}
+                                  disabled={!optHasFile || !isEditMode}
+                                >
+                                  <Icon icon="mdi:delete-outline" width={12} height={12} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      });
+                    }
                   }
                 });
 
-                // Add New Row button and Save button
-                if (isEditMode) {
+                // Add New Row button and Save button - Only visible in Assignee Edit Mode
+                if (isAssigneeEditMode) {
                   sectionElements.push(
                     <tr key={`add-row-btn-${sectionLabel}-${renderCallId}`}>
                       <td colSpan={5} className="py-2 px-3 border-b border-[#eee] bg-[#fafafa]">
@@ -5229,8 +5519,182 @@ function DocumentTable({
               return elements;
             })}
 
+            {/* Render custom rows added via external "Add New Row" button with sectionLabel matching title */}
+            {(() => {
+              const titleCustomRows = customRows.filter(r => r.sectionLabel === title);
+              let counter = docs.length;
+              return titleCustomRows.map((customRow) => {
+                counter++;
+                const tid = `${phase}-custom-${customRow.id}`;
+                const rowDocs = getDocsForItem(tid);
+                const latestDoc = rowDocs[0];
+                const isRowUploading = uploadingItemId === tid;
+                const hasFile = rowDocs.length > 0;
+                const isFileDragOver = fileDragOverRowId === tid;
+                const dropdownKey = `custom-dropdown-${customRow.id}`;
+
+                if (customRow.rowType === 'item') {
+                  return (
+                    <tr
+                      key={`title-custom-${customRow.id}`}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        if (e.dataTransfer.types.includes('Files') && isEditMode) {
+                          setFileDragOverRowId(tid);
+                        }
+                      }}
+                      onDragLeave={() => setFileDragOverRowId(null)}
+                      onDrop={(e) => {
+                        if (e.dataTransfer.types.includes('Files') && e.dataTransfer.files.length > 0) {
+                          handleFileDrop(e, tid);
+                        }
+                      }}
+                      className={`transition-all duration-150 ${isFileDragOver ? 'bg-[#e8f5e9]' : ''}`}
+                    >
+                      <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#888] font-medium">{counter}</td>
+                      <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#333]">
+                        <div className="flex items-center gap-2">
+                          {customRow.name}
+                          {isAssigneeEditMode && (
+                            <>
+                              <button
+                                onClick={() => setShowEditRowModal({ show: true, rowId: customRow.id, currentName: customRow.name, rowType: customRow.rowType, dropdownOptions: customRow.dropdownOptions })}
+                                className="text-[#1976d2] hover:underline text-[10px]"
+                              >
+                                (edit)
+                              </button>
+                              <button onClick={() => { if (confirm(`Delete "${customRow.name}" row?`)) { const updated = customRows.filter(r => r.id !== customRow.id); setCustomRows(updated); saveDropdownData({ customRows: updated }, `Row "${customRow.name}" deleted.`); } }} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3 border-b border-[#eee] align-middle">
+                        {hasFile ? renderFileChips(tid) : <span className="text-[#bbb] italic text-xs">No file uploaded</span>}
+                      </td>
+                      <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#999] text-xs">
+                        {hasFile ? new Date(latestDoc.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
+                      </td>
+                      <td className="py-2.5 px-3 border-b border-[#eee] align-middle">
+                        <div className="flex gap-1.5">
+                          <button className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`} title={isEditMode ? "Upload" : "View mode - editing disabled"} onClick={() => handleUploadClick(tid)} disabled={isRowUploading || !isEditMode}>
+                            {isRowUploading ? <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" /> : <Icon icon="mdi:upload" width={14} height={14} />}
+                          </button>
+                          <button className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`} title={isEditMode ? "Delete" : "View mode - editing disabled"} onClick={() => hasFile && isEditMode && handleDeleteAll(tid)} disabled={!hasFile || !isEditMode}>
+                            <Icon icon="mdi:delete-outline" width={14} height={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                } else if (customRow.rowType === 'dropdown') {
+                  const options = customRow.dropdownOptions || [];
+
+                  return (
+                    <React.Fragment key={`title-custom-${customRow.id}`}>
+                      <tr>
+                        <td colSpan={5} className="p-0 border-b border-[#eee]">
+                          <div className="flex items-center">
+                            <button
+                              className="flex items-center gap-1.5 bg-[#fffff] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer flex-1 transition-colors duration-200 hover:bg-[#c8e6c9]"
+                              onClick={() => toggleDropdown(dropdownKey)}
+                            >
+                              <Icon icon={expandedDropdowns[dropdownKey] ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                              <span>{customRow.name}</span>
+                            </button>
+                            {isAssigneeEditMode && (
+                              <div className="flex items-center gap-2 pr-3">
+                                <button
+                                  onClick={() => {
+                                    setShowEditRowModal({ show: true, rowId: customRow.id, currentName: customRow.name, rowType: customRow.rowType, dropdownOptions: customRow.dropdownOptions });
+                                    setEditRowName(customRow.name);
+                                    setEditRowOptions(customRow.dropdownOptions?.join(', ') || '');
+                                  }}
+                                  className="text-[#1976d2] hover:underline text-[10px]"
+                                >
+                                  (edit)
+                                </button>
+                                <button onClick={() => { if (confirm(`Delete "${customRow.name}" row?`)) { const updated = customRows.filter(r => r.id !== customRow.id); setCustomRows(updated); saveDropdownData({ customRows: updated }, `Row "${customRow.name}" deleted.`); } }} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                      {expandedDropdowns[dropdownKey] && options.length > 0 && (
+                        <tr>
+                          <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                            <div className="space-y-2">
+                              {options.map((option, optIdx) => {
+                                const optTid = `${phase}-custom-${customRow.id}-opt-${option.replace(/\s+/g, '-').toLowerCase()}`;
+                                const optDocs = getDocsForItem(optTid);
+                                const optHasFile = optDocs.length > 0;
+                                const isOptUploading = uploadingItemId === optTid;
+
+                                return (
+                                  <div key={optIdx} className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                    <span className="flex-1 text-xs text-[#333]">{option}</span>
+                                    {optHasFile && renderFileChips(optTid)}
+                                    <div className="flex gap-1.5">
+                                      <button
+                                        className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        title={isEditMode ? "Upload" : "View mode - editing disabled"}
+                                        onClick={() => handleUploadClick(optTid)}
+                                        disabled={isOptUploading || !isEditMode}
+                                      >
+                                        {isOptUploading ? <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" /> : <Icon icon="mdi:upload" width={14} height={14} />}
+                                      </button>
+                                      <button
+                                        className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${optHasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
+                                        title="View"
+                                        onClick={() => optHasFile && optDocs[0] && setPreviewDoc(optDocs[0])}
+                                        disabled={!optHasFile}
+                                      >
+                                        <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                      </button>
+                                      <button
+                                        className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${optHasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
+                                        title={isEditMode ? "Delete" : "View mode - editing disabled"}
+                                        onClick={() => optHasFile && isEditMode && handleDeleteAll(optTid)}
+                                        disabled={!optHasFile || !isEditMode}
+                                      >
+                                        <Icon icon="mdi:delete-outline" width={14} height={14} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      {expandedDropdowns[dropdownKey] && options.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                            <p className="text-xs text-[#999] italic text-center">No options configured. {isAssigneeEditMode && 'Click (edit) to add options.'}</p>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                }
+                return null;
+              });
+            })()}
+
           </tbody>
         </table>
+
+        {/* Add New Row Button - Only visible in Assignee Edit Mode */}
+        {isAssigneeEditMode && (
+          <div className="mt-4 flex justify-center">
+            <button
+              onClick={() => setShowAddRowModal({ show: true, sectionLabel: title })}
+              className="flex items-center gap-2 px-5 py-2.5 bg-[#e8f5e9] text-[#2e7d32] border-2 border-dashed border-[#2e7d32] rounded-lg text-sm font-semibold hover:bg-[#c8e6c9] transition-colors"
+            >
+              <Icon icon="mdi:plus-circle-outline" width={20} height={20} />
+              Add New Row
+            </button>
+          </div>
+        )}
       </div>
       <div className="py-5"/>
     </div>
@@ -6065,50 +6529,120 @@ function DocumentTable({
     {/* Add New Row Modal */}
     {showAddRowModal?.show && (
       <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1200]">
-        <div className="bg-white rounded-lg w-full max-w-[400px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
-          <h3 className="text-base font-bold text-primary mb-4">Add New Row to {showAddRowModal.sectionLabel}</h3>
+        <div className="bg-white rounded-lg w-full max-w-[480px] shadow-[0_4px_20px_rgba(0,0,0,0.2)] overflow-hidden">
+          {/* Modal Header */}
+          <div className="bg-gradient-to-r from-[#2e7d32] to-[#388e3c] px-5 py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                <Icon icon="mdi:plus-circle" width={24} height={24} color="white" />
+              </div>
+              <div>
+                <h3 className="text-white text-base font-bold m-0">Add New Row</h3>
+                <p className="text-white/80 text-xs m-0">to {showAddRowModal.sectionLabel}</p>
+              </div>
+            </div>
+          </div>
 
-          <div className="space-y-4">
+          {/* Modal Body */}
+          <div className="p-5 space-y-4">
+            {/* Row Name */}
             <div>
-              <label className="block text-xs font-semibold text-[#555] mb-1">Row Name</label>
+              <label className="block text-xs font-semibold text-[#555] mb-1.5">
+                <Icon icon="mdi:form-textbox" width={14} height={14} className="inline mr-1" />
+                Row Name
+              </label>
               <input
                 type="text"
                 value={newRowName}
                 onChange={(e) => setNewRowName(e.target.value)}
-                placeholder="Enter document/field name"
-                className="w-full px-3 py-2 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                placeholder="e.g., Additional Document, Custom Field"
+                className="w-full px-3 py-2.5 border border-[#d0d0d0] rounded-lg text-sm focus:outline-none focus:border-[#2e7d32] focus:ring-1 focus:ring-[#2e7d32]/20"
                 autoFocus
               />
             </div>
 
+            {/* Row Type Selection */}
             <div>
-              <label className="block text-xs font-semibold text-[#555] mb-1">Row Type</label>
-              <select
-                value={newRowType}
-                onChange={(e) => setNewRowType(e.target.value as 'item' | 'dropdown' | 'textinput')}
-                className="w-full px-3 py-2 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
-              >
-                <option value="item">File Upload</option>
-                <option value="textinput">Text Input</option>
-                <option value="dropdown">Dropdown</option>
-              </select>
+              <label className="block text-xs font-semibold text-[#555] mb-2">
+                <Icon icon="mdi:format-list-bulleted-type" width={14} height={14} className="inline mr-1" />
+                Row Type
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setNewRowType('item')}
+                  className={`flex flex-col items-center gap-2 p-4 border-2 rounded-lg transition-all ${
+                    newRowType === 'item'
+                      ? 'border-[#2e7d32] bg-[#e8f5e9]'
+                      : 'border-[#e0e0e0] hover:border-[#999]'
+                  }`}
+                >
+                  <Icon icon="mdi:file-upload-outline" width={32} height={32} className={newRowType === 'item' ? 'text-[#2e7d32]' : 'text-[#666]'} />
+                  <span className={`text-sm font-semibold ${newRowType === 'item' ? 'text-[#2e7d32]' : 'text-[#666]'}`}>File Upload</span>
+                  <span className="text-[10px] text-[#888] text-center">Upload single or multiple files with drag & drop</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewRowType('dropdown')}
+                  className={`flex flex-col items-center gap-2 p-4 border-2 rounded-lg transition-all ${
+                    newRowType === 'dropdown'
+                      ? 'border-[#2e7d32] bg-[#e8f5e9]'
+                      : 'border-[#e0e0e0] hover:border-[#999]'
+                  }`}
+                >
+                  <Icon icon="mdi:form-dropdown" width={32} height={32} className={newRowType === 'dropdown' ? 'text-[#2e7d32]' : 'text-[#666]'} />
+                  <span className={`text-sm font-semibold ${newRowType === 'dropdown' ? 'text-[#2e7d32]' : 'text-[#666]'}`}>Dropdown</span>
+                  <span className="text-[10px] text-[#888] text-center">Selection options with file upload per option</span>
+                </button>
+              </div>
             </div>
 
+            {/* Dropdown Options - Only shown when dropdown is selected */}
             {newRowType === 'dropdown' && (
-              <div>
-                <label className="block text-xs font-semibold text-[#555] mb-1">Dropdown Options (comma-separated)</label>
-                <input
-                  type="text"
+              <div className="bg-[#f5f5f5] rounded-lg p-4 border border-[#e0e0e0]">
+                <label className="block text-xs font-semibold text-[#555] mb-2">
+                  <Icon icon="mdi:playlist-plus" width={14} height={14} className="inline mr-1" />
+                  Dropdown Options
+                </label>
+                <p className="text-[10px] text-[#888] mb-2">Enter options separated by commas. Each option can have its own file upload.</p>
+                <textarea
                   value={newRowDropdownOptions}
                   onChange={(e) => setNewRowDropdownOptions(e.target.value)}
                   placeholder="Option 1, Option 2, Option 3"
-                  className="w-full px-3 py-2 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                  className="w-full px-3 py-2 border border-[#d0d0d0] rounded-lg text-sm focus:outline-none focus:border-[#2e7d32] resize-none"
+                  rows={2}
                 />
+                {newRowDropdownOptions && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {newRowDropdownOptions.split(',').map((opt, i) => opt.trim() && (
+                      <span key={i} className="text-[10px] bg-[#2e7d32] text-white px-2 py-0.5 rounded-full">
+                        {opt.trim()}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* File Upload Preview - Only shown when file upload is selected */}
+            {newRowType === 'item' && (
+              <div className="bg-[#fff8e1] rounded-lg p-4 border border-[#ffecb3]">
+                <div className="flex items-center gap-2 text-[#f57f17]">
+                  <Icon icon="mdi:information-outline" width={16} height={16} />
+                  <span className="text-xs font-semibold">File Upload Features</span>
+                </div>
+                <ul className="mt-2 text-[11px] text-[#666] space-y-1 pl-5">
+                  <li className="list-disc">Drag and drop files directly onto the row</li>
+                  <li className="list-disc">Upload multiple files at once</li>
+                  <li className="list-disc">Preview files before downloading</li>
+                  <li className="list-disc">Supports PDF, DOCX, images, and more</li>
+                </ul>
               </div>
             )}
           </div>
 
-          <div className="flex justify-end gap-2 mt-5">
+          {/* Modal Footer */}
+          <div className="flex justify-end gap-2 px-5 py-4 bg-[#f9f9f9] border-t border-[#eee]">
             <button
               type="button"
               onClick={() => {
@@ -6117,7 +6651,7 @@ function DocumentTable({
                 setNewRowType('item');
                 setNewRowDropdownOptions('');
               }}
-              className="px-4 py-2 bg-gray-200 text-gray-600 rounded text-sm font-medium hover:bg-gray-300"
+              className="px-5 py-2 bg-white text-[#666] border border-[#d0d0d0] rounded-lg text-sm font-medium hover:bg-[#f5f5f5]"
             >
               Cancel
             </button>
@@ -6165,9 +6699,146 @@ function DocumentTable({
                 setNewRowType('item');
                 setNewRowDropdownOptions('');
               }}
-              className="px-4 py-2 bg-primary text-white rounded text-sm font-medium hover:opacity-90"
+              className="px-5 py-2 bg-[#2e7d32] text-white rounded-lg text-sm font-semibold hover:bg-[#1b5e20] flex items-center gap-2"
             >
+              <Icon icon="mdi:plus" width={16} height={16} />
               Add Row
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Edit Row Modal */}
+    {showEditRowModal?.show && (
+      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1200]">
+        <div className="bg-white rounded-lg w-full max-w-[450px] shadow-[0_4px_20px_rgba(0,0,0,0.2)] overflow-hidden">
+          {/* Modal Header */}
+          <div className="bg-gradient-to-r from-[#1976d2] to-[#2196f3] px-5 py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                <Icon icon="mdi:pencil" width={24} height={24} color="white" />
+              </div>
+              <div>
+                <h3 className="text-white text-base font-bold m-0">Edit Row</h3>
+                <p className="text-white/80 text-xs m-0">Rename or modify options</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Modal Body */}
+          <div className="p-5 space-y-4">
+            {/* Row Name */}
+            <div>
+              <label className="block text-xs font-semibold text-[#555] mb-1.5">
+                <Icon icon="mdi:form-textbox" width={14} height={14} className="inline mr-1" />
+                Row Name
+              </label>
+              <input
+                type="text"
+                value={editRowName || showEditRowModal.currentName}
+                onChange={(e) => setEditRowName(e.target.value)}
+                placeholder="Enter row name"
+                className="w-full px-3 py-2.5 border border-[#d0d0d0] rounded-lg text-sm focus:outline-none focus:border-[#1976d2] focus:ring-1 focus:ring-[#1976d2]/20"
+              />
+            </div>
+
+            {/* Dropdown Options - Only for dropdown type */}
+            {showEditRowModal.rowType === 'dropdown' && (
+              <div className="bg-[#f5f5f5] rounded-lg p-4 border border-[#e0e0e0]">
+                <label className="block text-xs font-semibold text-[#555] mb-2">
+                  <Icon icon="mdi:playlist-edit" width={14} height={14} className="inline mr-1" />
+                  Dropdown Options
+                </label>
+                <p className="text-[10px] text-[#888] mb-2">Edit options separated by commas.</p>
+                <textarea
+                  value={editRowOptions || showEditRowModal.dropdownOptions?.join(', ') || ''}
+                  onChange={(e) => setEditRowOptions(e.target.value)}
+                  placeholder="Option 1, Option 2, Option 3"
+                  className="w-full px-3 py-2 border border-[#d0d0d0] rounded-lg text-sm focus:outline-none focus:border-[#1976d2] resize-none"
+                  rows={2}
+                />
+                {(editRowOptions || showEditRowModal.dropdownOptions?.join(', ')) && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {(editRowOptions || showEditRowModal.dropdownOptions?.join(', ') || '').split(',').map((opt, i) => opt.trim() && (
+                      <span key={i} className="text-[10px] bg-[#1976d2] text-white px-2 py-0.5 rounded-full">
+                        {opt.trim()}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Info for file upload type */}
+            {showEditRowModal.rowType === 'item' && (
+              <div className="bg-[#e3f2fd] rounded-lg p-4 border border-[#bbdefb]">
+                <div className="flex items-center gap-2 text-[#1565c0]">
+                  <Icon icon="mdi:information-outline" width={16} height={16} />
+                  <span className="text-xs font-semibold">File Upload Row</span>
+                </div>
+                <p className="mt-1 text-[11px] text-[#666]">
+                  This row allows file uploads. Uploaded files will be preserved when you rename the row.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Modal Footer */}
+          <div className="flex justify-end gap-2 px-5 py-4 bg-[#f9f9f9] border-t border-[#eee]">
+            <button
+              type="button"
+              onClick={() => {
+                setShowEditRowModal(null);
+                setEditRowName('');
+                setEditRowOptions('');
+              }}
+              className="px-5 py-2 bg-white text-[#666] border border-[#d0d0d0] rounded-lg text-sm font-medium hover:bg-[#f5f5f5]"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                const newName = editRowName.trim() || showEditRowModal.currentName;
+                const newOptions = showEditRowModal.rowType === 'dropdown'
+                  ? (editRowOptions || showEditRowModal.dropdownOptions?.join(', ') || '').split(',').map(o => o.trim()).filter(o => o)
+                  : undefined;
+
+                const updatedCustomRows = customRows.map(r =>
+                  r.id === showEditRowModal.rowId
+                    ? { ...r, name: newName, dropdownOptions: newOptions }
+                    : r
+                );
+                setCustomRows(updatedCustomRows);
+
+                // Save to database
+                try {
+                  const mergedData = {
+                    ...currentDropdownData,
+                    customRows: updatedCustomRows,
+                  };
+                  setCurrentDropdownData(mergedData);
+
+                  await fetch(`/api/setup-projects/${projectId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dropdownData: mergedData }),
+                  });
+
+                  setSaveSuccessModal({ show: true, message: `Row updated successfully!` });
+                } catch (error) {
+                  console.error('Error updating custom row:', error);
+                }
+
+                setShowEditRowModal(null);
+                setEditRowName('');
+                setEditRowOptions('');
+              }}
+              className="px-5 py-2 bg-[#1976d2] text-white rounded-lg text-sm font-semibold hover:bg-[#1565c0] flex items-center gap-2"
+            >
+              <Icon icon="mdi:check" width={16} height={16} />
+              Save Changes
             </button>
           </div>
         </div>
@@ -6282,13 +6953,16 @@ export default function ProjectDetailPage() {
   // Edit Mode states
   const [isEditMode, setIsEditMode] = useState(false);
   const [modeTransitioning, setModeTransitioning] = useState(false);
-  const [transitioningTo, setTransitioningTo] = useState<'edit' | 'view' | null>(null);
+  const [transitioningTo, setTransitioningTo] = useState<'edit' | 'view' | 'upload' | null>(null);
   const [modeKey, setModeKey] = useState(0); // Key to force re-render of DocumentTable
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [editRequestPending, setEditRequestPending] = useState(false);
   const [editRequestModal, setEditRequestModal] = useState(false);
   const [editRequestSent, setEditRequestSent] = useState(false);
   const [sendingRequest, setSendingRequest] = useState(false);
+
+  // Assignee-specific modes: 'upload' allows file uploads, 'edit' allows adding new rows
+  const [assigneeMode, setAssigneeMode] = useState<'upload' | 'edit'>('upload');
 
   // Edit Request Permission Modal states (for assignee/owner)
   const [editPermissionModal, setEditPermissionModal] = useState(false);
@@ -6416,6 +7090,17 @@ export default function ProjectDetailPage() {
     const isAdmin = currentUser.role === 'ADMIN';
 
     return isAssignee || isAdmin;
+  };
+
+  // Check if current user is specifically the assignee (not admin)
+  const isAssignee = (): boolean => {
+    if (!currentUser || !project) return false;
+    return project.assignee === currentUser.fullName;
+  };
+
+  // Check if assignee edit mode is active (allows adding new rows)
+  const isAssigneeEditModeActive = (): boolean => {
+    return isAssignee() && isEditMode && assigneeMode === 'edit';
   };
 
   // Check if current user is authorized to edit (includes granted permissions)
@@ -6789,6 +7474,47 @@ export default function ProjectDetailPage() {
 
   // Handle Edit Mode toggle
   const handleEditModeToggle = async () => {
+    // For assignees: cycle through Upload Mode -> Edit Mode -> View Mode (off)
+    if (isAssignee()) {
+      if (isEditMode) {
+        if (assigneeMode === 'upload') {
+          // Upload Mode -> Edit Mode
+          setTransitioningTo('edit');
+          setModeTransitioning(true);
+          await new Promise(resolve => setTimeout(resolve, 300));
+          setAssigneeMode('edit');
+          setModeKey(prev => prev + 1);
+          await new Promise(resolve => setTimeout(resolve, 200));
+          setModeTransitioning(false);
+          setTransitioningTo(null);
+        } else {
+          // Edit Mode -> View Mode (off)
+          setTransitioningTo('view');
+          setModeTransitioning(true);
+          await new Promise(resolve => setTimeout(resolve, 300));
+          setIsEditMode(false);
+          setAssigneeMode('upload');
+          setModeKey(prev => prev + 1);
+          await new Promise(resolve => setTimeout(resolve, 200));
+          setModeTransitioning(false);
+          setTransitioningTo(null);
+        }
+      } else {
+        // Off -> Upload Mode
+        setTransitioningTo('upload');
+        setModeTransitioning(true);
+        await new Promise(resolve => setTimeout(resolve, 300));
+        setIsEditMode(true);
+        setAssigneeMode('upload');
+        setModeKey(prev => prev + 1);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        setModeTransitioning(false);
+        setTransitioningTo(null);
+      }
+      return;
+    }
+
+    // For non-assignees: original logic
     if (isEditMode) {
       // Switching to View Mode - always allowed
       setTransitioningTo('view');
@@ -7093,30 +7819,79 @@ export default function ProjectDetailPage() {
               )}
 
               {/* Edit Mode Button */}
-              <button
-                onClick={handleEditModeToggle}
-                disabled={modeTransitioning}
-                className={`flex items-center gap-1.5 border-none rounded-[20px] py-2 px-5 text-[13px] font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed ${
-                  isEditMode
-                    ? 'bg-[#2e7d32] text-white hover:bg-[#1b5e20]'
-                    : 'bg-accent text-white hover:bg-accent-hover'
-                }`}
-              >
-                {modeTransitioning ? (
-                  <>
-                    <Icon icon="mdi:loading" width={16} height={16} className="animate-spin" />
-                    Switching...
-                  </>
-                ) : (
-                  <>
-                    <Icon icon={isEditMode ? 'mdi:eye-outline' : 'mdi:pencil-outline'} width={16} height={16} />
-                    {isEditMode ? 'View Mode' : 'Edit Mode'}
-                    {hasPendingRequest() && !isAuthorizedToEdit() && (
-                      <span className="ml-1 text-[10px] bg-yellow-500 text-white px-1.5 py-0.5 rounded-full">Pending</span>
+              {isAssignee() ? (
+                // Assignee-specific mode buttons
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleEditModeToggle}
+                    disabled={modeTransitioning}
+                    className={`flex items-center gap-1.5 border-none rounded-[20px] py-2 px-5 text-[13px] font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed ${
+                      isEditMode && assigneeMode === 'upload'
+                        ? 'bg-[#f5a623] text-white hover:bg-[#e09000]'
+                        : isEditMode && assigneeMode === 'edit'
+                        ? 'bg-[#2e7d32] text-white hover:bg-[#1b5e20]'
+                        : 'bg-gray-400 text-white hover:bg-gray-500'
+                    }`}
+                  >
+                    {modeTransitioning ? (
+                      <>
+                        <Icon icon="mdi:loading" width={16} height={16} className="animate-spin" />
+                        Switching...
+                      </>
+                    ) : (
+                      <>
+                        <Icon
+                          icon={
+                            isEditMode && assigneeMode === 'edit'
+                              ? 'mdi:pencil-plus-outline'
+                              : isEditMode && assigneeMode === 'upload'
+                              ? 'mdi:upload'
+                              : 'mdi:eye-outline'
+                          }
+                          width={16}
+                          height={16}
+                        />
+                        {isEditMode && assigneeMode === 'edit'
+                          ? 'Edit Mode'
+                          : isEditMode && assigneeMode === 'upload'
+                          ? 'Upload Mode'
+                          : 'View Mode'}
+                      </>
                     )}
-                  </>
-                )}
-              </button>
+                  </button>
+                  {isEditMode && (
+                    <span className="text-[10px] text-[#666] bg-[#f0f0f0] px-2 py-1 rounded">
+                      {assigneeMode === 'upload' ? 'Click for Edit Mode' : 'Click for View Mode'}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                // Non-assignee mode button (original)
+                <button
+                  onClick={handleEditModeToggle}
+                  disabled={modeTransitioning}
+                  className={`flex items-center gap-1.5 border-none rounded-[20px] py-2 px-5 text-[13px] font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed ${
+                    isEditMode
+                      ? 'bg-[#2e7d32] text-white hover:bg-[#1b5e20]'
+                      : 'bg-accent text-white hover:bg-accent-hover'
+                  }`}
+                >
+                  {modeTransitioning ? (
+                    <>
+                      <Icon icon="mdi:loading" width={16} height={16} className="animate-spin" />
+                      Switching...
+                    </>
+                  ) : (
+                    <>
+                      <Icon icon={isEditMode ? 'mdi:eye-outline' : 'mdi:pencil-outline'} width={16} height={16} />
+                      {isEditMode ? 'View Mode' : 'Edit Mode'}
+                      {hasPendingRequest() && !isAuthorizedToEdit() && (
+                        <span className="ml-1 text-[10px] bg-yellow-500 text-white px-1.5 py-0.5 rounded-full">Pending</span>
+                      )}
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
           <div className="flex gap-5 items-start">
@@ -7252,7 +8027,9 @@ export default function ProjectDetailPage() {
             <div className="bg-white rounded-xl py-6 px-8 shadow-lg flex flex-col items-center gap-3">
               <Icon icon="mdi:loading" width={40} height={40} className="animate-spin text-[#1976d2]" />
               <span className="text-sm font-semibold text-[#333]">
-                {transitioningTo === 'view' ? 'Switching to View Mode...' : 'Switching to Edit Mode...'}
+                {transitioningTo === 'view' ? 'Switching to View Mode...' :
+                 transitioningTo === 'upload' ? 'Switching to Upload Mode...' :
+                 'Switching to Edit Mode...'}
               </span>
               <span className="text-xs text-[#666]">Please wait while the page updates</span>
             </div>
@@ -7269,6 +8046,7 @@ export default function ProjectDetailPage() {
             onProgressUpdate={(p, u, t) => { setInitiationProgress(p); setInitiationFiles({ uploaded: u, total: t }); }}
             initialDropdownData={project.dropdownData}
             isEditMode={isEditMode}
+            isAssigneeEditMode={isAssigneeEditModeActive()}
           />
 
           {/* Project Implementation */}
@@ -7281,6 +8059,7 @@ export default function ProjectDetailPage() {
             onProgressUpdate={(p, u, t) => { setImplementationProgress(p); setImplementationFiles({ uploaded: u, total: t }); }}
             initialDropdownData={project.dropdownData}
             isEditMode={isEditMode}
+            isAssigneeEditMode={isAssigneeEditModeActive()}
           />
 
           {/* Project Management */}
@@ -7293,6 +8072,7 @@ export default function ProjectDetailPage() {
             onProgressUpdate={(p, u, t) => { setManagementProgress(p); setManagementFiles({ uploaded: u, total: t }); }}
             initialDropdownData={project.dropdownData}
             isEditMode={isEditMode}
+            isAssigneeEditMode={isAssigneeEditModeActive()}
           />
 
           {/* Project Monitoring */}
@@ -7305,6 +8085,7 @@ export default function ProjectDetailPage() {
             onProgressUpdate={(p, u, t) => { setMonitoringProgress(p); setMonitoringFiles({ uploaded: u, total: t }); }}
             initialDropdownData={project.dropdownData}
             isEditMode={isEditMode}
+            isAssigneeEditMode={isAssigneeEditModeActive()}
           />
 
           {/* Project Refund */}
@@ -7317,6 +8098,7 @@ export default function ProjectDetailPage() {
             onProgressUpdate={(p, u, t) => { setRefundProgress(p); setRefundFiles({ uploaded: u, total: t }); }}
             initialDropdownData={project.dropdownData}
             isEditMode={isEditMode}
+            isAssigneeEditMode={isAssigneeEditModeActive()}
           />
 
           {/* Communications */}
@@ -7329,6 +8111,7 @@ export default function ProjectDetailPage() {
             onProgressUpdate={(p, u, t) => { setCommunicationsProgress(p); setCommunicationsFiles({ uploaded: u, total: t }); }}
             initialDropdownData={project.dropdownData}
             isEditMode={isEditMode}
+            isAssigneeEditMode={isAssigneeEditModeActive()}
           />
 
         {/* Edit Request Modal */}
