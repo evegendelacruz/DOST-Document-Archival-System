@@ -3,9 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { Icon } from '@iconify/react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx-js-style';
+// jsPDF, autoTable, XLSX are dynamically imported inside export handlers
 import DashboardLayout from '../components/DashboardLayout';
 import 'leaflet/dist/leaflet.css';
 import Image from 'next/image';
@@ -509,12 +507,16 @@ export default function SetupPage() {
     }
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     const projectsToExport = selectedProjects.length > 0
       ? filteredProjects.filter(p => selectedProjects.includes(p.id))
       : filteredProjects;
     if (projectsToExport.length === 0) return;
 
+    const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ]);
     // A4 portrait: 210 x 297 mm
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageWidth = 210;
@@ -560,12 +562,13 @@ export default function SetupPage() {
     doc.save(`SETUP_Masterlist_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
   const projectsToExport = selectedProjects.length > 0
     ? filteredProjects.filter(p => selectedProjects.includes(p.id))
     : filteredProjects;
   if (projectsToExport.length === 0) return;
 
+  const XLSX = await import('xlsx-js-style');
   const wb = XLSX.utils.book_new();
 
   // Title row + metadata
@@ -749,7 +752,11 @@ export default function SetupPage() {
                 <span className={`text-[13px] max-md:text-[11px] font-medium leading-none ${activeFilter === tab.id ? 'text-white' : 'text-[#666]'}`}>{tab.label}</span>
                 <span className="w-1.5 h-1.5 rounded-full inline-block align-middle" style={{ backgroundColor: tab.color }}></span>
               </div>
-              <span className={`text-[32px] max-md:text-2xl font-bold ${activeFilter === tab.id ? 'text-white' : 'text-primary'}`}>{statusCounts[tab.id] || 0}</span>
+              {loading ? (
+                <div className="h-8 w-10 bg-gray-200 rounded animate-pulse mt-1" />
+              ) : (
+                <span className={`text-[32px] max-md:text-2xl font-bold ${activeFilter === tab.id ? 'text-white' : 'text-primary'}`}>{statusCounts[tab.id] || 0}</span>
+              )}
             </button>
           ))}
         </div>
@@ -845,7 +852,15 @@ export default function SetupPage() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={16} className="py-8 text-center text-[#999] text-sm">Loading projects...</td></tr>
+                  [...Array(5)].map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="py-3 px-2 border-b border-[#e0e0e0]"><div className="h-4 w-4 bg-gray-200 rounded mx-auto" /></td>
+                      <td className="py-3 px-2 border-b border-[#e0e0e0]"><div className="h-4 w-16 bg-gray-200 rounded" /></td>
+                      <td className="py-3 px-2 border-b border-[#e0e0e0]"><div className="h-4 w-40 bg-gray-200 rounded" /></td>
+                      <td className="py-3 px-2 border-b border-[#e0e0e0]"><div className="h-4 w-28 bg-gray-200 rounded" /></td>
+                      {[...Array(12)].map((_, j) => <td key={j} className="py-3 px-2 border-b border-[#e0e0e0]"><div className="h-4 bg-gray-100 rounded" /></td>)}
+                    </tr>
+                  ))
                 ) : filteredProjects.length === 0 ? (
                   <tr><td colSpan={16} className="py-8 text-center text-[#999] text-sm">No projects found</td></tr>
                 ) : filteredProjects.map((project) => (

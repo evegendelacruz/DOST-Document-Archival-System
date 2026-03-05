@@ -18,7 +18,8 @@
       "Bash(ls:*)",
       "Bash(wc:*)",
       "Bash(curl:*)",
-      "Bash(git diff:*)"
+      "Bash(git diff:*)",
+      "Bash(npm uninstall:*)"
     ]
   }
 }

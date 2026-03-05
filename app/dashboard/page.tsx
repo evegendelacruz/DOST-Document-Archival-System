@@ -164,6 +164,7 @@ export default function DashboardPage() {
   const [serviceOptions, setServiceOptions] = useState<string[]>(['Transportation', 'Catering', 'Equipment', 'Venue']);
   const [showAddService, setShowAddService] = useState(false);
   const [newServiceName, setNewServiceName] = useState('');
+  const [eventsLoading, setEventsLoading] = useState(true);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showEventDetailModal, setShowEventDetailModal] = useState(false);
@@ -227,23 +228,25 @@ export default function DashboardPage() {
 
   // Fetch all projects once for suggestions
   useEffect(() => {
-    fetch('/api/setup-projects').then(r => r.json()).then(setAllProjects).catch(() => {});
+    fetch('/api/setup-projects').then(r => r.json()).then(d => { if (Array.isArray(d)) setAllProjects(d); }).catch(() => {});
   }, []);
 
   // Fetch all users for personnel dropdown
   useEffect(() => {
     fetch('/api/users')
       .then(r => r.json())
-      .then(setAllUsers)
+      .then(d => { if (Array.isArray(d)) setAllUsers(d); })
       .catch(() => {});
   }, []);
 
   // Fetch calendar events from API
   const fetchEvents = useCallback(() => {
+    setEventsLoading(true);
     fetch('/api/calendar-events')
       .then(r => r.json())
-      .then(setEvents)
-      .catch(() => {});
+      .then(d => { if (Array.isArray(d)) setEvents(d); })
+      .catch(() => {})
+      .finally(() => setEventsLoading(false));
   }, []);
 
   useEffect(() => {
@@ -383,7 +386,7 @@ export default function DashboardPage() {
         bookedById: currentUser?.id || undefined,
         bookedService: bookingForm.bookedService || 'N/A',
         bookedPersonnel: bookingForm.bookedPersonnelId
-          ? allUsers.find(u => u.id === bookingForm.bookedPersonnelId)?.fullName || 'N/A'
+          ? (Array.isArray(allUsers) ? allUsers : []).find(u => u.id === bookingForm.bookedPersonnelId)?.fullName || 'N/A'
           : 'N/A',
         bookedPersonnelId: bookingForm.bookedPersonnelId || undefined,
         priority: bookingForm.priorityLevel,
@@ -430,7 +433,8 @@ export default function DashboardPage() {
 };
 
   // Sort events: Today first, then Urgent/High/Normal for future dates, Done at bottom
-  const sortedEvents = [...events].sort((a, b) => {
+  const safeEvents = Array.isArray(events) ? events : [];
+  const sortedEvents = [...safeEvents].sort((a, b) => {
     const isADone = a.priority === 'Done';
     const isBDone = b.priority === 'Done';
     const isAUrgent = a.priority === 'Urgent';
@@ -476,14 +480,16 @@ export default function DashboardPage() {
     return { month: m - 1, day: d }; // month is 0-indexed to match currentMonth
   };
 
+  const safeUsers = Array.isArray(allUsers) ? allUsers : [];
+
   const getBirthdaysForDate = (month: number, day: number) =>
-    allUsers.filter(u => {
+    safeUsers.filter(u => {
       if (!u.birthday) return false;
       const b = parseBirthday(u.birthday);
       return b.month === month && b.day === day;
     });
 
-  const birthdaysThisMonth = allUsers
+  const birthdaysThisMonth = safeUsers
     .filter(u => u.birthday && parseBirthday(u.birthday).month === currentMonth)
     .sort((a, b) => parseBirthday(a.birthday!).day - parseBirthday(b.birthday!).day);
 
@@ -687,7 +693,7 @@ export default function DashboardPage() {
                 </div>
                <div className="grid grid-cols-7 border border-[#e0e0e0] border-r-0 border-b-0">
                 {calendarDays.map((day, index) => {
-                  const dayEvents = day.currentMonth ? getEventsForDate(currentYear, currentMonth, day.day, events) : [];
+                  const dayEvents = day.currentMonth ? getEventsForDate(currentYear, currentMonth, day.day, safeEvents) : [];
                   const dayBirthdays = day.currentMonth ? getBirthdaysForDate(currentMonth, day.day) : [];
                   const totalItems = dayEvents.length + dayBirthdays.length;
                   const eventSlots = Math.min(dayEvents.length, 2);
@@ -796,7 +802,17 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 )}
-                {sortedEvents.length === 0 ? (
+                {eventsLoading ? (
+                  <div className="animate-pulse space-y-3">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="border-l-4 border-gray-200 rounded-r-lg p-3 bg-white shadow-sm">
+                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                        <div className="h-3 bg-gray-100 rounded w-1/2 mb-1" />
+                        <div className="h-3 bg-gray-100 rounded w-2/3" />
+                      </div>
+                    ))}
+                  </div>
+                ) : sortedEvents.length === 0 ? (
                   <p className="text-sm text-[#999] italic">No upcoming events yet...</p>
                 ) : (
                   sortedEvents.map((event) => (
@@ -929,7 +945,7 @@ export default function DashboardPage() {
               {/* Day cells */}
               <div className="grid grid-cols-7 px-2 pb-3 gap-y-1">
                 {calendarDays.map((day, index) => {
-                  const dayEvts = day.currentMonth ? getEventsForDate(currentYear, currentMonth, day.day, events) : [];
+                  const dayEvts = day.currentMonth ? getEventsForDate(currentYear, currentMonth, day.day, safeEvents) : [];
                   const dayBdays = day.currentMonth ? getBirthdaysForDate(currentMonth, day.day) : [];
                   const isTodayDate = day.currentMonth && isToday(currentYear, currentMonth, day.day);
                   const isSelected = selectedDay === day.day && day.currentMonth;
@@ -976,7 +992,7 @@ export default function DashboardPage() {
                 </div>
                 {(() => {
                   const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
-                  const dayEvts = events.filter(e => e.date === dateStr);
+                  const dayEvts = safeEvents.filter(e => e.date === dateStr);
                   const dayBdays = getBirthdaysForDate(currentMonth, selectedDay);
                   if (dayEvts.length === 0 && dayBdays.length === 0) {
                     return (
@@ -1035,7 +1051,17 @@ export default function DashboardPage() {
                     ))}
                   </div>
                 )}
-                {sortedEvents.length === 0 && birthdaysThisMonth.length === 0 ? (
+                {eventsLoading ? (
+                  <div className="animate-pulse space-y-2">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="bg-white rounded-2xl p-3 shadow-sm border-l-4 border-gray-200">
+                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                        <div className="h-3 bg-gray-100 rounded w-1/2 mb-1" />
+                        <div className="h-3 bg-gray-100 rounded w-2/3" />
+                      </div>
+                    ))}
+                  </div>
+                ) : sortedEvents.length === 0 && birthdaysThisMonth.length === 0 ? (
                   <div className="bg-white rounded-2xl p-5 text-center shadow-sm">
                     <p className="text-sm text-gray-400 italic">No upcoming events</p>
                   </div>
@@ -1615,7 +1641,7 @@ export default function DashboardPage() {
                   <UserMentionInput
                     selectedUserIds={editingEvent.bookedPersonnelId ? [editingEvent.bookedPersonnelId] : []}
                     onSelectionChange={(ids) => {
-                      const selectedUser = allUsers.find(u => u.id === ids[0]);
+                      const selectedUser = safeUsers.find(u => u.id === ids[0]);
                       setEditingEvent({
                         ...editingEvent,
                         bookedPersonnelId: ids[0] || null,

@@ -82,8 +82,8 @@ export default function Sidebar({ activePath, items, mobileOpen, onClose }: Side
     };
 
     fetchPermissions();
-    const pollInterval = setInterval(fetchPermissions, 3000);
-    return () => clearInterval(pollInterval);
+    window.addEventListener('userUpdated', fetchPermissions);
+    return () => window.removeEventListener('userUpdated', fetchPermissions);
   }, []);
 
   // Close mobile sidebar when navigating

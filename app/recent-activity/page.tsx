@@ -294,11 +294,10 @@ export default function RecentActivity() {
 
   return (
     <DashboardLayout activePath="/recent-activity">
-    <div style={{
+    <div className="p-3 md:p-8" style={{
       fontFamily: "'Clear Sans', 'Segoe UI', system-ui, sans-serif",
       background: "#f4f6f8",
       minHeight: "100vh",
-      padding: "32px",
       boxSizing: "border-box",
     }}>
       {/* Header */}
@@ -315,6 +314,7 @@ export default function RecentActivity() {
         padding: "12px 16px",
         marginBottom: 16,
         display: "flex",
+        flexWrap: "wrap",
         gap: 8,
       }}>
         <span style={{ fontSize: 13, color: "#555", alignSelf: "center", marginRight: 8 }}>View:</span>
@@ -340,34 +340,25 @@ export default function RecentActivity() {
       </div>
 
       {/* Stats Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
-        {[
-          { label: "Total Activities", value: stats.total },
-          { label: "Today", value: stats.today },
-          { label: "This Week", value: stats.thisWeek },
-        ].map(({ label, value }) => (
-          <div key={label} style={{
-            background: "#fff",
-            border: "1px solid #e2e8f0",
-            borderRadius: 8,
-            padding: "20px 24px",
-          }}>
+      <div className="grid grid-cols-3 max-md:grid-cols-1 gap-4 mb-4" style={{ marginBottom: 16 }}>
+        {["Total Activities", "Today", "This Week"].map((label) => (
+          <div key={label} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: "20px 24px" }}>
             <div style={{ fontSize: 12, color: "#888", marginBottom: 6 }}>{label}</div>
-            <div style={{ fontSize: 32, fontWeight: 700, color: "#1a6b7a" }}>{value}</div>
+            {loading ? (
+              <div className="h-8 w-16 bg-gray-200 rounded animate-pulse mt-1" />
+            ) : (
+              <div style={{ fontSize: 32, fontWeight: 700, color: "#1a6b7a" }}>
+                {label === "Total Activities" ? stats.total : label === "Today" ? stats.today : stats.thisWeek}
+              </div>
+            )}
           </div>
         ))}
       </div>
 
       {/* Filters */}
-      <div style={{
-        display: "flex",
-        gap: 12,
-        marginBottom: 16,
-        alignItems: "center",
-      }}>
+      <div className="flex flex-wrap gap-3 mb-4" style={{ alignItems: "center" }}>
         {/* Search */}
-        <div style={{
-          flex: 1,
+        <div className="w-full md:flex-1" style={{
           position: "relative",
           display: "flex",
           alignItems: "center",
@@ -487,7 +478,18 @@ export default function RecentActivity() {
         padding: "16px 20px",
       }}>
         {loading && activities.length === 0 && (
-          <div style={{ textAlign: "center", color: "#aaa", padding: "32px 0" }}>Loading activities...</div>
+          <div className="animate-pulse space-y-3 py-2">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="flex items-center gap-3 py-2 border-b border-gray-100">
+                <div className="w-8 h-8 rounded-full bg-gray-200 shrink-0" />
+                <div className="flex-1">
+                  <div className="h-3 bg-gray-200 rounded w-3/4 mb-2" />
+                  <div className="h-3 bg-gray-100 rounded w-1/3" />
+                </div>
+                <div className="h-3 bg-gray-100 rounded w-16" />
+              </div>
+            ))}
+          </div>
         )}
         {!loading && dates.length === 0 && (
           <div style={{ textAlign: "center", color: "#aaa", padding: "32px 0" }}>No activities found.</div>
@@ -577,6 +579,7 @@ export default function RecentActivity() {
           onClick={() => setViewModal(null)}
         >
           <div
+            className="mx-3 md:mx-0"
             style={{
               background: "#fff",
               borderRadius: 16,

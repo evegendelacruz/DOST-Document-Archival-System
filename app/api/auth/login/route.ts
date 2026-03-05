@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import { logActivity } from '@/lib/activity-log';
+import { signJwt, SESSION_COOKIE, getSessionCookieOptions } from '@/lib/session';
 
 
 export async function POST(req: NextRequest) {
@@ -30,7 +31,10 @@ export async function POST(req: NextRequest) {
     resourceTitle: 'User Login',
   });
 
-  return NextResponse.json({
+  const token = await signJwt({ sub: user.id, role: user.role });
+  const opts = getSessionCookieOptions();
+
+  const response = NextResponse.json({
     id: user.id,
     email: user.email,
     fullName: user.fullName,
@@ -39,4 +43,7 @@ export async function POST(req: NextRequest) {
     birthday: user.birthday,
     profileImageUrl: user.profileImageUrl,
   });
+
+  response.cookies.set(SESSION_COOKIE, token, opts);
+  return response;
 }

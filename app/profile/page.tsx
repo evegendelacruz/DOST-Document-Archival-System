@@ -86,9 +86,9 @@ const ProfilePage = () => {
 
   return (
     <DashboardLayout activePath="/profile">
-      <div className="flex gap-6 p-6 bg-gray-50 min-h-screen">
+      <div className="flex flex-col md:flex-row gap-3 md:gap-6 p-3 md:p-6 bg-gray-50 min-h-screen">
         {/* Left Panel - Profile Card */}
-        <div className="w-72 bg-white rounded-lg shadow-sm p-6 h-fit">
+        <div className="w-full md:w-72 bg-white rounded-lg shadow-sm p-4 md:p-6 h-fit">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-gray-700">Profile</h2>
             <span className="bg-green-500 text-white text-xs font-medium px-4 py-1.5 rounded-full">
@@ -144,10 +144,10 @@ const ProfilePage = () => {
             </p>
           </div>
 
-          <nav className="space-y-2">
+          <nav className="flex md:flex-col gap-1 md:space-y-2 overflow-x-auto pb-1 md:pb-0">
             <button
               onClick={() => setCurrentView('account-settings')}
-              className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors text-sm ${
+              className={`flex-shrink-0 md:w-full flex items-center px-3 md:px-4 py-2.5 md:py-3 rounded-lg transition-colors text-sm whitespace-nowrap ${
                 currentView === 'account-settings'
                   ? 'bg-cyan-50 text-cyan-600 font-medium'
                   : 'text-gray-600 hover:bg-gray-50'
@@ -163,7 +163,7 @@ const ProfilePage = () => {
             {user?.role === 'ADMIN' && (
               <button
                 onClick={() => setCurrentView('user-management')}
-                className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors text-sm ${
+                className={`flex-shrink-0 md:w-full flex items-center px-3 md:px-4 py-2.5 md:py-3 rounded-lg transition-colors text-sm whitespace-nowrap ${
                   currentView === 'user-management'
                     ? 'bg-cyan-50 text-cyan-600 font-medium'
                     : 'text-gray-600 hover:bg-gray-50'
@@ -178,7 +178,7 @@ const ProfilePage = () => {
 
             <button
               onClick={() => setCurrentView('user-log')}
-              className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors text-sm ${
+              className={`flex-shrink-0 md:w-full flex items-center px-3 md:px-4 py-2.5 md:py-3 rounded-lg transition-colors text-sm whitespace-nowrap ${
                 currentView === 'user-log'
                   ? 'bg-cyan-50 text-cyan-600 font-medium'
                   : 'text-gray-600 hover:bg-gray-50'
@@ -332,14 +332,14 @@ const AccountSettings = ({ user, onSave }: { user: UserData; onSave: () => void 
   const inputDisabledClass = `${inputBaseClass} bg-gray-100 text-gray-500 cursor-not-allowed`;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
+    <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
       <h2 className="text-xl font-semibold text-cyan-600 mb-6">Account Settings</h2>
 
       {error && (
         <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded">{error}</div>
       )}
 
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <div>
           <label className="block text-xs text-gray-600 mb-1.5">Full Name</label>
           <input
@@ -377,7 +377,7 @@ const AccountSettings = ({ user, onSave }: { user: UserData; onSave: () => void 
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div>
           <label className="block text-xs text-gray-600 mb-1.5">Email</label>
           <input
@@ -641,12 +641,12 @@ const UserManagement = ({ currentUserId }: { currentUserId: string }) => {
   );
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
+    <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
       <h2 className="text-xl font-semibold text-cyan-600 mb-4">User Management</h2>
 
       {/* Search Bar */}
       <div className="mb-6">
-        <div className="relative w-72">
+        <div className="relative w-full md:w-72">
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
             fill="none"
@@ -1505,14 +1505,14 @@ const UserLog = ({ currentUserId, currentUserRole, currentUserName }: UserLogPro
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
+    <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
       <h2 className="text-xl font-semibold text-cyan-600 mb-4">
         {isAdmin ? 'User Log' : 'My Time Record'}
       </h2>
 
       {/* Time In/Time Out Section */}
       <div className="mb-4 p-4 bg-gradient-to-r from-cyan-50 to-blue-50 rounded-lg border border-cyan-100">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
           <div>
             <h3 className="text-sm font-semibold text-cyan-700">Today's Attendance</h3>
             <div className="text-xs text-gray-500">
@@ -1570,9 +1570,9 @@ const UserLog = ({ currentUserId, currentUserRole, currentUserName }: UserLogPro
 
       {/* Admin: Search + Filter + Download */}
       {isAdmin && (
-        <div className="mb-6 flex flex-wrap items-end gap-3">
+        <div className="mb-6 flex flex-wrap items-end gap-2 md:gap-3">
           {/* Search */}
-          <div className="relative w-56">
+          <div className="relative w-full md:w-56">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
@@ -1638,7 +1638,7 @@ const UserLog = ({ currentUserId, currentUserRole, currentUserName }: UserLogPro
           {/* Download PDF */}
           <button
             onClick={handleDownloadPDF}
-            className="ml-auto flex items-center gap-2 px-4 py-2.5 text-sm bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+            className="md:ml-auto flex items-center gap-2 px-4 py-2.5 text-sm bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />

@@ -25,9 +25,10 @@ export async function GET(req: NextRequest) {
     where.action = action.toUpperCase();
   }
 
-  // Filter by resource type
+  // Filter by resource type (supports comma-separated values)
   if (resourceType && resourceType !== 'all') {
-    where.resourceType = resourceType.toUpperCase();
+    const types = resourceType.split(',').map((t) => t.trim().toUpperCase()).filter(Boolean);
+    where.resourceType = types.length === 1 ? types[0] : { in: types };
   }
 
   // Search in resourceTitle and user name

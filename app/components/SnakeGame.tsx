@@ -107,7 +107,8 @@ export default function SnakeGame({ onClose }: { onClose: () => void }) {
       setMeUser(me);
       if (me.profileImageUrl) loadImg(me.profileImageUrl).then(i => imgCache.current.set(me.profileImageUrl!, i)).catch(() => imgCache.current.set(me.profileImageUrl!, null));
     }
-    fetch('/api/users').then(r => r.json()).then((users: GUser[]) => {
+    fetch('/api/users').then(r => r.json()).then((users: GUser[] | unknown) => {
+      if (!Array.isArray(users)) return;
       const stored2 = localStorage.getItem('user');
       const myId = stored2 ? JSON.parse(stored2).id : null;
       const rest = users.filter(u => u.id !== myId);

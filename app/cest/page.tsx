@@ -3,9 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Icon } from '@iconify/react';
 import Link from 'next/link';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx-js-style';
+// jsPDF, autoTable, XLSX are dynamically imported inside export handlers
 import 'leaflet/dist/leaflet.css';
 import Image from 'next/image';
 import DashboardLayout from '../components/DashboardLayout';
@@ -544,12 +542,13 @@ export default function CestPage() {
     }
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const projectsToExport = selectedProjects.length > 0
       ? filteredProjects.filter(p => selectedProjects.includes(p.id))
       : filteredProjects;
     if (projectsToExport.length === 0) return;
 
+    const XLSX = await import('xlsx-js-style');
     const wb = XLSX.utils.book_new();
 
     // Title row + metadata
@@ -701,12 +700,16 @@ export default function CestPage() {
     XLSX.writeFile(wb, `CEST_Masterlist_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     const projectsToExport = selectedProjects.length > 0
       ? filteredProjects.filter(p => selectedProjects.includes(p.id))
       : filteredProjects;
     if (projectsToExport.length === 0) return;
 
+    const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ]);
     // A4 landscape for more columns
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const pageWidth = 297;
@@ -945,7 +948,11 @@ export default function CestPage() {
           {filterCards.map(card => (
             <div key={card.id} className="flex-1 flex flex-col items-center justify-center py-5 px-[15px] max-md:py-3 max-md:px-2 bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
               <span className="text-[11px] text-[#666] mb-2 font-medium text-center max-md:text-[10px]">{card.label}</span>
+              {loading ? (
+                <div className="h-7 w-24 bg-gray-200 rounded animate-pulse" />
+              ) : (
               <span className={`font-bold ${card.isAmount ? 'text-xl max-md:text-base text-[#2e7d32]' : 'text-[28px] max-md:text-2xl text-primary'}`}>{card.value}</span>
+              )}
             </div>
           ))}
         </div>
@@ -1044,7 +1051,16 @@ export default function CestPage() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={17} className="text-center py-8 text-[#999]">Loading projects...</td></tr>
+                  [...Array(5)].map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="py-3 px-2 border-b border-[#e0e0e0]"><div className="h-4 w-4 bg-gray-200 rounded mx-auto" /></td>
+                      <td className="py-3 px-2 border-b border-[#e0e0e0]"><div className="h-4 w-16 bg-gray-200 rounded" /></td>
+                      <td className="py-3 px-2 border-b border-[#e0e0e0]"><div className="h-4 w-40 bg-gray-200 rounded" /></td>
+                      <td className="py-3 px-2 border-b border-[#e0e0e0]"><div className="h-4 w-28 bg-gray-200 rounded" /></td>
+                      <td className="py-3 px-2 border-b border-[#e0e0e0]"><div className="h-4 w-20 bg-gray-200 rounded" /></td>
+                      {[...Array(12)].map((_, j) => <td key={j} className="py-3 px-2 border-b border-[#e0e0e0]"><div className="h-4 bg-gray-100 rounded" /></td>)}
+                    </tr>
+                  ))
                 ) : filteredProjects.length === 0 ? (
                   <tr><td colSpan={17} className="text-center py-8 text-[#999]">No projects found</td></tr>
                 ) : filteredProjects.map((project) => (

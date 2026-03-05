@@ -275,13 +275,14 @@ export default function NotificationDropdown() {
   }, []);
 
   // Fetch notifications from API
-  const fetchNotifications = useCallback(async () => {
+  const fetchNotifications = useCallback(async (signal?: AbortSignal) => {
     const userId = getUserId();
     if (!userId) return;
 
     try {
       const res = await fetch('/api/notifications', {
         headers: { 'x-user-id': userId },
+        signal,
       });
       if (res.ok) {
         const data = await res.json();
@@ -328,15 +329,20 @@ export default function NotificationDropdown() {
         isInitialLoad.current = false;
       }
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return;
       console.error('Failed to fetch notifications:', error);
     }
   }, [playNotificationSound]);
 
   // Fetch notifications on mount and poll every 5 seconds
   useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 5000);
-    return () => clearInterval(interval);
+    const controller = new AbortController();
+    fetchNotifications(controller.signal);
+    const interval = setInterval(() => fetchNotifications(controller.signal), 20000);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
   }, [fetchNotifications]);
 
   // Close dropdown when clicking outside

@@ -115,10 +115,12 @@ export default function Header({ onMenuToggle }: HeaderProps) {
   };
 
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsDropdownOpen(false);
+    await fetch('/api/auth/logout', { method: 'POST' });
     localStorage.removeItem('user');
-    router.push('/');
+    router.refresh(); // clear Next.js router cache
+    router.replace('/');
   };
 
 

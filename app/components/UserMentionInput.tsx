@@ -35,7 +35,7 @@ export default function UserMentionInput({
     fetch('/api/users')
       .then((res) => res.json())
       .then((data) => {
-        setUsers(data);
+        if (Array.isArray(data)) setUsers(data);
       })
       .catch(() => {});
   }, []);
