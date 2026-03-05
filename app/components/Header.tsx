@@ -149,7 +149,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
           className="flex items-center justify-center w-8 h-8 rounded-full text-gray-500 transition-all duration-300 hover:bg-accent hover:text-white hover:scale-115 hover:shadow-[0_4px_14px_rgba(0,174,239,0.4)] active:scale-90 active:transition-all active:duration-100"
           title="Snake Game"
         >
-          <Icon icon="mdi:gamepad-variant" width={24} height={24} />
+          <Icon icon="mdi:gamepad-variant-outline" width={24} height={24} />
         </button>
 
         {(!permissions || permissions.canAccessMaps) && (
