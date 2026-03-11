@@ -254,11 +254,16 @@ function DocumentTable({
     name: string;
   }>>([]);
   const [abstractQuotationTypeOptions, setAbstractQuotationTypeOptions] = useState<string[]>(['Equipment', 'Non-equipment']);
+  const [abstractQuotationTypeDropdownOpen, setAbstractQuotationTypeDropdownOpen] = useState<number | null>(null);
+  const [abstractQuotationTypeDropdownPos, setAbstractQuotationTypeDropdownPos] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
   const [showAddTypeModal, setShowAddTypeModal] = useState(false);
   const [newTypeName, setNewTypeName] = useState<string>('');
-  const [interventionStatusOptions, setInterventionStatusOptions] = useState<string[]>(['Procured', 'Pulled Out']);
+  const [interventionStatusOptions, setInterventionStatusOptions] = useState<string[]>(['For Procurement', 'Pulled Out']);
   const [showAddStatusModal, setShowAddStatusModal] = useState(false);
   const [newStatusName, setNewStatusName] = useState<string>('');
+  const [interventionStatusDropdownOpen, setInterventionStatusDropdownOpen] = useState<number | null>(null);
+  const [interventionStatusDropdownPos, setInterventionStatusDropdownPos] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
+  const interventionStatusDropdownRef = useRef<HTMLDivElement>(null);
   const [othersOptions, setOthersOptions] = useState<string[]>(['Withdrawal Request', 'Withdrawal Approval', 'Photo(s) During Implementation']);
   const [showAddOthersModal, setShowAddOthersModal] = useState(false);
   const [newOthersName, setNewOthersName] = useState<string>('');
@@ -467,6 +472,14 @@ function DocumentTable({
     show: boolean;
     rowId: string;
     rowName: string;
+  } | null>(null);
+
+  // Generic confirmation modal for all remove actions
+  const [genericConfirmModal, setGenericConfirmModal] = useState<{
+    show: boolean;
+    title: string;
+    itemName: string;
+    onConfirm: () => void;
   } | null>(null);
 
   // Initialize states from saved dropdownData
@@ -751,16 +764,25 @@ function DocumentTable({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close Refund Documents dropdown when clicking outside
+  // Close Refund Documents dropdown when clicking outside or scrolling
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (refundDropdownRef.current && !refundDropdownRef.current.contains(event.target as Node)) {
         setRefundDropdownOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    const handleScroll = () => {
+      setRefundDropdownOpen(false);
+    };
+    if (refundDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScroll, true);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        window.removeEventListener('scroll', handleScroll, true);
+      };
+    }
+  }, [refundDropdownOpen]);
 
   // Close Management Report dropdown when clicking outside
   useEffect(() => {
@@ -773,16 +795,67 @@ function DocumentTable({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close Communication dropdown when clicking outside
+  // Close Communication dropdown when clicking outside or scrolling
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (communicationDropdownRef.current && !communicationDropdownRef.current.contains(event.target as Node)) {
         setCommunicationDropdownOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    const handleScroll = () => {
+      setCommunicationDropdownOpen(false);
+    };
+    if (communicationDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScroll, true);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        window.removeEventListener('scroll', handleScroll, true);
+      };
+    }
+  }, [communicationDropdownOpen]);
+
+  // Close Abstract Quotation type dropdown when clicking outside or scrolling
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('[data-abstract-type-dropdown]')) {
+        setAbstractQuotationTypeDropdownOpen(null);
+      }
+    };
+    const handleScroll = () => {
+      setAbstractQuotationTypeDropdownOpen(null);
+    };
+    if (abstractQuotationTypeDropdownOpen !== null) {
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScroll, true);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        window.removeEventListener('scroll', handleScroll, true);
+      };
+    }
+  }, [abstractQuotationTypeDropdownOpen]);
+
+  // Close Intervention Status dropdown when clicking outside or scrolling
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('[data-intervention-status-dropdown]')) {
+        setInterventionStatusDropdownOpen(null);
+      }
+    };
+    const handleScroll = () => {
+      setInterventionStatusDropdownOpen(null);
+    };
+    if (interventionStatusDropdownOpen !== null) {
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScroll, true);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        window.removeEventListener('scroll', handleScroll, true);
+      };
+    }
+  }, [interventionStatusDropdownOpen]);
 
   const toggleDropdown = (key: string) => setExpandedDropdowns(prev => ({ ...prev, [key]: !prev[key] }));
 
@@ -1162,7 +1235,7 @@ function DocumentTable({
                                 >
                                   (edit)
                                 </button>
-                                <button onClick={() => { if (confirm(`Delete "${customRow.name}" row?`)) setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); }} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
+                                <button onClick={() => setGenericConfirmModal({ show: true, title: 'Remove Row', itemName: customRow.name, onConfirm: () => { setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); setGenericConfirmModal(null); } })} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
                               </>
                             )}
                           </div>
@@ -1247,7 +1320,7 @@ function DocumentTable({
                                 >
                                   (edit)
                                 </button>
-                                <button onClick={() => { if (confirm(`Delete "${customRow.name}" row?`)) setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); }} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
+                                <button onClick={() => setGenericConfirmModal({ show: true, title: 'Remove Row', itemName: customRow.name, onConfirm: () => { setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); setGenericConfirmModal(null); } })} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
                               </>
                             )}
                           </div>
@@ -1333,7 +1406,7 @@ function DocumentTable({
                                 >
                                   (edit)
                                 </button>
-                                <button onClick={() => { if (confirm(`Delete "${customRow.name}" row?`)) setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); }} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
+                                <button onClick={() => setGenericConfirmModal({ show: true, title: 'Remove Row', itemName: customRow.name, onConfirm: () => { setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); setGenericConfirmModal(null); } })} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
                               </>
                             )}
                           </div>
@@ -1680,31 +1753,98 @@ function DocumentTable({
                                               className={`w-full border border-[#ddd] rounded px-3 py-2 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                             />
                                           </div>
-                                          <div>
+                                          <div className="relative" data-intervention-status-dropdown>
                                             <label className="block text-xs text-[#555] mb-1">Status</label>
-                                            <select
-                                              value={interventionData.status || ''}
-                                              onChange={(e) => {
-                                                if (e.target.value === '__add_new__') {
-                                                  setShowAddStatusModal(true);
-                                                } else {
-                                                  const updated = [...interventionInputs];
-                                                  if (!updated[rowIdx]) {
-                                                    updated[rowIdx] = { type: row.type?.toLowerCase() as 'equipment' | 'non-equipment' };
-                                                  }
-                                                  updated[rowIdx].status = e.target.value;
-                                                  setInterventionInputs(updated);
-                                                }
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                if (!isEditMode) return;
+                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                setInterventionStatusDropdownPos({
+                                                  top: rect.bottom + 4,
+                                                  left: rect.left,
+                                                  width: rect.width
+                                                });
+                                                setInterventionStatusDropdownOpen(interventionStatusDropdownOpen === rowIdx ? null : rowIdx);
                                               }}
                                               disabled={!isEditMode}
-                                              className={`w-full border border-[#ddd] rounded px-3 py-2 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                              className={`w-full border border-[#ddd] rounded px-3 py-2 text-xs text-left flex items-center justify-between ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : 'bg-white cursor-pointer'}`}
                                             >
-                                              <option value="">Select...</option>
-                                              {interventionStatusOptions.map(opt => (
-                                                <option key={opt} value={opt}>{opt}</option>
-                                              ))}
-                                              <option value="__add_new__" className="text-primary font-bold">+ Add new option</option>
-                                            </select>
+                                              <span className={interventionData.status ? 'text-[#333]' : 'text-[#999]'}>
+                                                {interventionData.status || 'Select...'}
+                                              </span>
+                                              <Icon icon={interventionStatusDropdownOpen === rowIdx ? 'mdi:chevron-up' : 'mdi:chevron-down'} width={16} height={16} className="text-[#666]" />
+                                            </button>
+                                            {interventionStatusDropdownOpen === rowIdx && typeof window !== 'undefined' && createPortal(
+                                              <div
+                                                ref={interventionStatusDropdownRef}
+                                                data-intervention-status-dropdown
+                                                className="bg-white border border-[#ddd] rounded shadow-lg z-[1100] max-h-[200px] overflow-y-auto"
+                                                style={{
+                                                  position: 'fixed',
+                                                  top: interventionStatusDropdownPos.top,
+                                                  left: interventionStatusDropdownPos.left,
+                                                  width: interventionStatusDropdownPos.width,
+                                                }}
+                                              >
+                                                {interventionStatusOptions.map(opt => {
+                                                  const isDefault = ['Procured', 'Pulled Out'].includes(opt);
+                                                  return (
+                                                    <div
+                                                      key={opt}
+                                                      className="flex items-center justify-between px-3 py-2 hover:bg-[#f5f5f5] cursor-pointer text-xs group"
+                                                      onClick={() => {
+                                                        const updated = [...interventionInputs];
+                                                        if (!updated[rowIdx]) {
+                                                          updated[rowIdx] = { type: row.type?.toLowerCase() as 'equipment' | 'non-equipment' };
+                                                        }
+                                                        updated[rowIdx].status = opt;
+                                                        setInterventionInputs(updated);
+                                                        setInterventionStatusDropdownOpen(null);
+                                                      }}
+                                                    >
+                                                      <span>{opt}</span>
+                                                      {!isDefault && isEditMode && (
+                                                        <button
+                                                          type="button"
+                                                          className="opacity-0 group-hover:opacity-100 text-[#c62828] hover:text-[#b71c1c] transition-opacity"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setGenericConfirmModal({
+                                                              show: true,
+                                                              title: 'Remove Status Option',
+                                                              itemName: opt,
+                                                              onConfirm: () => {
+                                                                const updated = interventionStatusOptions.filter(o => o !== opt);
+                                                                setInterventionStatusOptions(updated);
+                                                                saveDropdownData(
+                                                                  { interventionStatusOptions: updated },
+                                                                  `Status option "${opt}" removed successfully!`
+                                                                );
+                                                                setGenericConfirmModal(null);
+                                                                setInterventionStatusDropdownOpen(null);
+                                                              }
+                                                            });
+                                                          }}
+                                                        >
+                                                          <Icon icon="mdi:close" width={14} height={14} />
+                                                        </button>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })}
+                                                <div
+                                                  className="px-3 py-2 hover:bg-[#f5f5f5] cursor-pointer text-xs text-[#1976d2] font-semibold border-t border-[#eee]"
+                                                  onClick={() => {
+                                                    setShowAddStatusModal(true);
+                                                    setInterventionStatusDropdownOpen(null);
+                                                  }}
+                                                >
+                                                  + Add new option
+                                                </div>
+                                              </div>,
+                                              document.body
+                                            )}
                                           </div>
                                           <div>
                                             <label className="block text-xs text-[#555] mb-1">Equipment Property Code</label>
@@ -1965,31 +2105,100 @@ function DocumentTable({
                                 const isUploading = uploadingItemId === templateItemId;
                                 const hasFile = !!uploadedDoc;
 
+                                const defaultTypeOptions = ['Equipment', 'Non-equipment'];
+                                const isCustomTypeOption = (opt: string) => !defaultTypeOptions.includes(opt);
+
                                 return (
-                                  <div key={rowIdx} className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
-                                    <span className="text-xs font-semibold text-[#333] min-w-[60px]">
-                                      Item #{rowIdx + 1}
-                                    </span>
-                                    <select
-                                      value={row.type}
-                                      onChange={(e) => {
-                                        if (e.target.value === '__add_new__') {
-                                          setShowAddTypeModal(true);
-                                        } else {
-                                          const updated = [...abstractQuotationRows];
-                                          updated[rowIdx].type = e.target.value;
-                                          setAbstractQuotationRows(updated);
-                                        }
-                                      }}
-                                      disabled={!isEditMode}
-                                      className={`border border-[#ddd] rounded px-3 py-2 text-xs min-w-[140px] ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                    >
-                                      <option value="">Select type...</option>
-                                      {abstractQuotationTypeOptions.map(opt => (
-                                        <option key={opt} value={opt}>{opt}</option>
-                                      ))}
-                                      <option value="__add_new__" className="text-primary font-bold">+ Add new option</option>
-                                    </select>
+                                  <div key={rowIdx} className="bg-white border border-[#ddd] rounded p-3">
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-xs font-semibold text-[#333] min-w-[60px]">
+                                        Item #{rowIdx + 1}
+                                      </span>
+                                      {/* Custom Type Dropdown */}
+                                    <div className="relative" data-abstract-type-dropdown>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          if (!isEditMode) return;
+                                          const rect = e.currentTarget.getBoundingClientRect();
+                                          setAbstractQuotationTypeDropdownPos({
+                                            top: rect.bottom + window.scrollY,
+                                            left: rect.left + window.scrollX,
+                                            width: rect.width
+                                          });
+                                          setAbstractQuotationTypeDropdownOpen(abstractQuotationTypeDropdownOpen === rowIdx ? null : rowIdx);
+                                        }}
+                                        disabled={!isEditMode}
+                                        className={`border border-[#ddd] rounded px-3 py-2 text-xs min-w-[140px] text-left flex items-center justify-between ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : 'bg-white cursor-pointer hover:border-[#aaa]'}`}
+                                      >
+                                        <span className={row.type ? 'text-[#333]' : 'text-[#999]'}>
+                                          {row.type || 'Select type...'}
+                                        </span>
+                                        <Icon icon="mdi:chevron-down" width={16} height={16} className="text-[#666]" />
+                                      </button>
+                                      {abstractQuotationTypeDropdownOpen === rowIdx && (
+                                        <div
+                                          data-abstract-type-dropdown
+                                          className="fixed bg-white border border-[#ddd] rounded shadow-lg max-h-[200px] overflow-y-auto z-[99999]"
+                                          style={{
+                                            top: abstractQuotationTypeDropdownPos.top,
+                                            left: abstractQuotationTypeDropdownPos.left,
+                                            minWidth: abstractQuotationTypeDropdownPos.width,
+                                          }}
+                                        >
+                                          {abstractQuotationTypeOptions.map(opt => (
+                                            <div
+                                              key={opt}
+                                              className="group px-3 py-2 text-xs cursor-pointer flex items-center justify-between hover:bg-[#f5f5f5] text-[#333]"
+                                              onClick={() => {
+                                                const updated = [...abstractQuotationRows];
+                                                updated[rowIdx].type = opt;
+                                                setAbstractQuotationRows(updated);
+                                                setAbstractQuotationTypeDropdownOpen(null);
+                                              }}
+                                            >
+                                              <span>{opt}</span>
+                                              {isCustomTypeOption(opt) && (
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setGenericConfirmModal({
+                                                      show: true,
+                                                      title: 'Remove Type Option',
+                                                      itemName: opt,
+                                                      onConfirm: () => {
+                                                        const newTypes = abstractQuotationTypeOptions.filter(t => t !== opt);
+                                                        setAbstractQuotationTypeOptions(newTypes);
+                                                        saveDropdownData(
+                                                          { abstractQuotationTypeOptions: newTypes },
+                                                          `Type "${opt}" removed successfully!`
+                                                        );
+                                                        setGenericConfirmModal(null);
+                                                        setAbstractQuotationTypeDropdownOpen(null);
+                                                      }
+                                                    });
+                                                  }}
+                                                  className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center text-[#c62828] hover:bg-[#ffebee] rounded transition-opacity"
+                                                  title={`Remove "${opt}"`}
+                                                >
+                                                  <Icon icon="mdi:close" width={14} height={14} />
+                                                </button>
+                                              )}
+                                            </div>
+                                          ))}
+                                          <div
+                                            className="px-3 py-2 text-xs text-[#1976d2] font-semibold hover:bg-[#e3f2fd] cursor-pointer border-t border-[#eee]"
+                                            onClick={() => {
+                                              setShowAddTypeModal(true);
+                                              setAbstractQuotationTypeDropdownOpen(null);
+                                            }}
+                                          >
+                                            <Icon icon="mdi:plus" width={14} height={14} className="inline mr-1" />
+                                            Add new type
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
                                     <input
                                       type="text"
                                       value={row.name}
@@ -2000,12 +2209,13 @@ function DocumentTable({
                                       }}
                                       placeholder={row.type ? `Enter ${row.type.toLowerCase()} name...` : "Enter name..."}
                                       disabled={!isEditMode}
-                                      className={`border border-[#ddd] rounded px-3 py-2 text-xs flex-1 min-w-[150px] ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                      className={`border border-[#ddd] rounded px-3 py-2 text-xs w-[180px] ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                     />
-                                    {hasFile && (
-                                      <span className="text-[10px] text-[#2e7d32] bg-[#e8f5e9] px-2 py-0.5 rounded">Uploaded</span>
-                                    )}
-                                    <div className="flex gap-1.5 ml-auto">
+                                    {/* File display inline */}
+                                    <div className="flex-1 min-w-0">
+                                      {renderFileChips(templateItemId) ?? <span className="text-[#bbb] italic text-xs">No file</span>}
+                                    </div>
+                                    <div className="flex gap-1.5">
                                       <button
                                         className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode && row.type ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
                                         title={!row.type ? "Select type first" : isEditMode ? "Upload" : "View mode - editing disabled"}
@@ -2020,16 +2230,6 @@ function DocumentTable({
                                       </button>
                                       <button
                                         className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
-                                          hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
-                                        }`}
-                                        title="View"
-                                        onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
-                                        disabled={!hasFile}
-                                      >
-                                        <Icon icon="mdi:eye-outline" width={14} height={14} />
-                                      </button>
-                                      <button
-                                        className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
                                           hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
                                         }`}
                                         title={isEditMode ? "Delete file" : "View mode - editing disabled"}
@@ -2041,9 +2241,15 @@ function DocumentTable({
                                       <button
                                         onClick={() => {
                                           if (!isEditMode) return;
-                                          if (confirm(`Remove Item #${rowIdx + 1}?`)) {
-                                            setAbstractQuotationRows(abstractQuotationRows.filter((_, i) => i !== rowIdx));
-                                          }
+                                          setGenericConfirmModal({
+                                            show: true,
+                                            title: 'Remove Item',
+                                            itemName: `Item #${rowIdx + 1}`,
+                                            onConfirm: () => {
+                                              setAbstractQuotationRows(abstractQuotationRows.filter((_, i) => i !== rowIdx));
+                                              setGenericConfirmModal(null);
+                                            }
+                                          });
                                         }}
                                         disabled={!isEditMode}
                                         className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#757575] hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
@@ -2052,6 +2258,7 @@ function DocumentTable({
                                         <Icon icon="mdi:minus" width={14} height={14} />
                                       </button>
                                     </div>
+                                  </div>
                                   </div>
                                 );
                               })}
@@ -2123,16 +2330,6 @@ function DocumentTable({
                                           </button>
                                           <button
                                             className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
-                                              hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
-                                            }`}
-                                            title="View"
-                                            onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
-                                            disabled={!hasFile}
-                                          >
-                                            <Icon icon="mdi:eye-outline" width={14} height={14} />
-                                          </button>
-                                          <button
-                                            className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
                                               hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
                                             }`}
                                             title={isEditMode ? "Delete" : "View mode - editing disabled"}
@@ -2197,16 +2394,6 @@ function DocumentTable({
                                             </button>
                                             <button
                                               className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
-                                                hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
-                                              }`}
-                                              title="View"
-                                              onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
-                                              disabled={!hasFile}
-                                            >
-                                              <Icon icon="mdi:eye-outline" width={14} height={14} />
-                                            </button>
-                                            <button
-                                              className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
                                                 hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
                                               }`}
                                               title={isEditMode ? "Delete" : "View mode - editing disabled"}
@@ -2221,14 +2408,20 @@ function DocumentTable({
                                               disabled={!isEditMode}
                                               onClick={() => {
                                                 if (!isEditMode) return;
-                                                if (confirm(`Remove Supplemental MOA #${idx + 1} slot?`)) {
-                                                  const newCount = Math.max(0, moaSupplementalCount - 1);
-                                                  setMoaSupplementalCount(newCount);
-                                                  saveDropdownData(
-                                                    { moaSupplementalCount: newCount },
-                                                    `Supplemental MOA slot removed!`
-                                                  );
-                                                }
+                                                setGenericConfirmModal({
+                                                  show: true,
+                                                  title: 'Remove Supplemental MOA',
+                                                  itemName: `Supplemental MOA #${idx + 1}`,
+                                                  onConfirm: () => {
+                                                    const newCount = Math.max(0, moaSupplementalCount - 1);
+                                                    setMoaSupplementalCount(newCount);
+                                                    saveDropdownData(
+                                                      { moaSupplementalCount: newCount },
+                                                      `Supplemental MOA slot removed!`
+                                                    );
+                                                    setGenericConfirmModal(null);
+                                                  }
+                                                });
                                               }}
                                             >
                                               <Icon icon="mdi:minus" width={14} height={14} />
@@ -2313,9 +2506,15 @@ function DocumentTable({
                                     {fundReleaseDateRows.length > 1 && (
                                       <button
                                         onClick={() => {
-                                          if (confirm(`Remove Fund Release #${rowIdx + 1}?`)) {
-                                            setFundReleaseDateRows(fundReleaseDateRows.filter((_, i) => i !== rowIdx));
-                                          }
+                                          setGenericConfirmModal({
+                                            show: true,
+                                            title: 'Remove Fund Release',
+                                            itemName: `Fund Release #${rowIdx + 1}`,
+                                            onConfirm: () => {
+                                              setFundReleaseDateRows(fundReleaseDateRows.filter((_, i) => i !== rowIdx));
+                                              setGenericConfirmModal(null);
+                                            }
+                                          });
                                         }}
                                         disabled={!isEditMode}
                                         className={`w-6 h-6 border-none rounded flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#c62828] hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
@@ -2888,10 +3087,33 @@ function DocumentTable({
                                     return (
                                       <div key={idx} className="border border-[#eee] rounded p-3 bg-[#fafafa]">
                                         <div className="flex items-center justify-between mb-3">
-                                          <span className="text-xs font-semibold text-[#2e7d32]">{getOrdinal(idx + 1)} Untagging &amp; Amount</span>
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-xs font-semibold text-[#2e7d32]">{getOrdinal(idx + 1)} Untagging &amp; Amount</span>
+                                            <span className="text-[#999]">|</span>
+                                            <span className="text-xs text-[#555]">Approved Date:</span>
+                                            <input
+                                              type="date"
+                                              value={clearanceData.date}
+                                              onChange={(e) => {
+                                                const updated = [...clearanceUntagRows];
+                                                updated[idx].date = e.target.value;
+                                                setClearanceUntagRows(updated);
+                                              }}
+                                              disabled={!isEditMode}
+                                              className={`border border-[#ddd] rounded px-2 py-1 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                            />
+                                          </div>
                                           {isEditMode && (
                                             <button
-                                              onClick={() => setClearanceUntagRows(clearanceUntagRows.filter((_, i) => i !== idx))}
+                                              onClick={() => setGenericConfirmModal({
+                                                show: true,
+                                                title: 'Remove Clearance',
+                                                itemName: `${getOrdinal(idx + 1)} Untagging`,
+                                                onConfirm: () => {
+                                                  setClearanceUntagRows(clearanceUntagRows.filter((_, i) => i !== idx));
+                                                  setGenericConfirmModal(null);
+                                                }
+                                              })}
                                               className="text-[#c62828] hover:bg-[#ffebee] p-1 rounded transition-colors"
                                               title="Remove this row"
                                             >
@@ -2922,8 +3144,8 @@ function DocumentTable({
                                           </select>
                                         </div>
 
-                                        {/* Amount, Supplier, Date inputs */}
-                                        <div className="grid grid-cols-3 gap-3 mb-3">
+                                        {/* Amount and Supplier inputs */}
+                                        <div className="grid grid-cols-2 gap-3 mb-3">
                                           <div>
                                             <label className="block text-xs text-[#555] mb-1">Amount</label>
                                             <div className="relative">
@@ -2958,20 +3180,6 @@ function DocumentTable({
                                               className={`w-full border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                             />
                                           </div>
-                                          <div>
-                                            <label className="block text-xs text-[#555] mb-1">Approved Date</label>
-                                            <input
-                                              type="date"
-                                              value={clearanceData.date}
-                                              onChange={(e) => {
-                                                const updated = [...clearanceUntagRows];
-                                                updated[idx].date = e.target.value;
-                                                setClearanceUntagRows(updated);
-                                              }}
-                                              disabled={!isEditMode}
-                                              className={`w-full border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                            />
-                                          </div>
                                         </div>
 
                                         {/* File upload section */}
@@ -2991,16 +3199,6 @@ function DocumentTable({
                                               {isUploadingItem
                                                 ? <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
                                                 : <Icon icon="mdi:upload" width={14} height={14} />}
-                                            </button>
-
-                                            {/* View */}
-                                            <button
-                                              className={`w-7 h-7 border-none rounded-md flex items-center justify-center text-white ${hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
-                                              title="View"
-                                              onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
-                                              disabled={!hasFile}
-                                            >
-                                              <Icon icon="mdi:eye" width={14} height={14} />
                                             </button>
 
                                             {/* Delete File */}
@@ -3238,9 +3436,15 @@ function DocumentTable({
                                     disabled={!isEditMode}
                                     onClick={() => {
                                       if (!isEditMode) return;
-                                      if (confirm(`Remove this Annual PIS?`)) {
-                                        setAnnualPISRows(annualPISRows.filter((_, i) => i !== rowIdx));
-                                      }
+                                      setGenericConfirmModal({
+                                        show: true,
+                                        title: 'Remove Annual PIS',
+                                        itemName: `Annual PIS #${rowIdx + 1}`,
+                                        onConfirm: () => {
+                                          setAnnualPISRows(annualPISRows.filter((_, i) => i !== rowIdx));
+                                          setGenericConfirmModal(null);
+                                        }
+                                      });
                                     }}
                                   >
                                     <Icon icon="mdi:close" width={14} height={14} />
@@ -3326,9 +3530,15 @@ function DocumentTable({
                                   <button
                                     onClick={() => {
                                       if (!isEditMode) return;
-                                      if (confirm(`Remove QPR #${rowIdx + 1}?`)) {
-                                        setQprRows(qprRows.filter((_, i) => i !== rowIdx));
-                                      }
+                                      setGenericConfirmModal({
+                                        show: true,
+                                        title: 'Remove QPR',
+                                        itemName: `QPR #${rowIdx + 1}`,
+                                        onConfirm: () => {
+                                          setQprRows(qprRows.filter((_, i) => i !== rowIdx));
+                                          setGenericConfirmModal(null);
+                                        }
+                                      });
                                     }}
                                     disabled={!isEditMode}
                                     className={`w-6 h-6 border-none rounded flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#c62828] hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
@@ -3536,9 +3746,15 @@ function DocumentTable({
                                           disabled={!isEditMode}
                                           onClick={() => {
                                             if (!isEditMode) return;
-                                            if (confirm(`Remove this ${option}?`)) {
-                                              setCompletionReportRows(completionReportRows.filter((_, i) => i !== rowIdx));
-                                            }
+                                            setGenericConfirmModal({
+                                              show: true,
+                                              title: `Remove ${option}`,
+                                              itemName: `${option} #${rowIdx + 1}`,
+                                              onConfirm: () => {
+                                                setCompletionReportRows(completionReportRows.filter((_, i) => i !== rowIdx));
+                                                setGenericConfirmModal(null);
+                                              }
+                                            });
                                           }}
                                         >
                                           <Icon icon="mdi:close" width={14} height={14} />
@@ -4037,14 +4253,20 @@ function DocumentTable({
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
-                                                  if (confirm(`Remove "${type}" from available options?`)) {
-                                                    const newTypes = refundDocumentsOptions.filter(t => t !== type);
-                                                    setRefundDocumentsOptions(newTypes);
-                                                    saveDropdownData(
-                                                      { refundDocumentsOptions: newTypes },
-                                                      `Refund document type "${type}" removed successfully!`
-                                                    );
-                                                  }
+                                                  setGenericConfirmModal({
+                                                    show: true,
+                                                    title: 'Remove Option',
+                                                    itemName: type,
+                                                    onConfirm: () => {
+                                                      const newTypes = refundDocumentsOptions.filter(t => t !== type);
+                                                      setRefundDocumentsOptions(newTypes);
+                                                      saveDropdownData(
+                                                        { refundDocumentsOptions: newTypes },
+                                                        `Refund document type "${type}" removed successfully!`
+                                                      );
+                                                      setGenericConfirmModal(null);
+                                                    }
+                                                  });
                                                 }}
                                                 className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center text-[#c62828] hover:bg-[#ffebee] rounded transition-opacity"
                                                 title={`Remove "${type}"`}
@@ -4303,7 +4525,7 @@ function DocumentTable({
                                           left: communicationDropdownPos.left,
                                           width: communicationDropdownPos.width,
                                           transform: 'translateY(calc(-100% - 4px))',
-                                          zIndex: 99999,
+                                          zIndex: 100,
                                         }}
                                         className="bg-white border border-[#ddd] rounded shadow-lg max-h-[300px] overflow-y-auto"
                                       >
@@ -4329,14 +4551,20 @@ function DocumentTable({
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
-                                                  if (confirm(`Remove "${type}" from available options?`)) {
-                                                    const newTypes = communicationTypes.filter(t => t !== type);
-                                                    setCommunicationTypes(newTypes);
-                                                    saveDropdownData(
-                                                      { communicationTypes: newTypes },
-                                                      `Communication type "${type}" removed successfully!`
-                                                    );
-                                                  }
+                                                  setGenericConfirmModal({
+                                                    show: true,
+                                                    title: 'Remove Option',
+                                                    itemName: type,
+                                                    onConfirm: () => {
+                                                      const newTypes = communicationTypes.filter(t => t !== type);
+                                                      setCommunicationTypes(newTypes);
+                                                      saveDropdownData(
+                                                        { communicationTypes: newTypes },
+                                                        `Communication type "${type}" removed successfully!`
+                                                      );
+                                                      setGenericConfirmModal(null);
+                                                    }
+                                                  });
                                                 }}
                                                 className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center text-[#c62828] hover:bg-[#ffebee] rounded transition-opacity"
                                                 title={`Remove "${type}"`}
@@ -4786,14 +5014,20 @@ function DocumentTable({
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
-                                                  if (confirm(`Remove "${type}" from available options?`)) {
-                                                    const newTypes = managementReportTypes.filter(t => t !== type);
-                                                    setManagementReportTypes(newTypes);
-                                                    saveDropdownData(
-                                                      { managementReportTypes: newTypes },
-                                                      `Report type "${type}" removed successfully!`
-                                                    );
-                                                  }
+                                                  setGenericConfirmModal({
+                                                    show: true,
+                                                    title: 'Remove Option',
+                                                    itemName: type,
+                                                    onConfirm: () => {
+                                                      const newTypes = managementReportTypes.filter(t => t !== type);
+                                                      setManagementReportTypes(newTypes);
+                                                      saveDropdownData(
+                                                        { managementReportTypes: newTypes },
+                                                        `Report type "${type}" removed successfully!`
+                                                      );
+                                                      setGenericConfirmModal(null);
+                                                    }
+                                                  });
                                                 }}
                                                 className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center text-[#c62828] hover:bg-[#ffebee] rounded transition-opacity"
                                                 title={`Remove "${type}"`}
@@ -6372,6 +6606,37 @@ function DocumentTable({
               className="py-2.5 px-8 bg-[#1976d2] text-white border-none rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#1565c0]"
             >
               Save
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Generic Confirmation Modal */}
+    {genericConfirmModal && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]" onClick={() => setGenericConfirmModal(null)}>
+        <div className="bg-white rounded-2xl w-full max-w-[400px] py-8 px-10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] text-center" onClick={e => e.stopPropagation()}>
+          <div className="w-14 h-14 rounded-full bg-[#ffebee] flex items-center justify-center mx-auto mb-4">
+            <Icon icon="mdi:alert-circle-outline" width={36} height={36} color="#c62828" />
+          </div>
+          <h3 className="text-lg font-bold text-[#333] m-0 mb-3">{genericConfirmModal.title}?</h3>
+          <p className="text-[14px] text-[#666] m-0 mb-6">
+            Are you sure you want to remove <strong className="text-[#333]">{genericConfirmModal.itemName}</strong>? This action cannot be undone.
+          </p>
+          <div className="flex gap-3 justify-center">
+            <button
+              type="button"
+              onClick={() => setGenericConfirmModal(null)}
+              className="py-2.5 px-8 bg-white text-[#333] border border-[#d0d0d0] rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#f5f5f5]"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={genericConfirmModal.onConfirm}
+              className="py-2.5 px-8 bg-[#c62828] text-white border-none rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#b71c1c]"
+            >
+              Remove
             </button>
           </div>
         </div>
