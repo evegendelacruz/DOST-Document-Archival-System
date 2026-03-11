@@ -4,9 +4,16 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
 export default function DOSTLoader() {
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches
+      || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+
+    if (!isPWA && !isMobile) return;
+
+    setVisible(true);
     const t = setTimeout(() => setVisible(false), 2000);
     return () => clearTimeout(t);
   }, []);
