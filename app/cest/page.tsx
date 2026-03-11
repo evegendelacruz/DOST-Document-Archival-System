@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Icon } from '@iconify/react';
 import Link from 'next/link';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx-js-style';
 import 'leaflet/dist/leaflet.css';
 import Image from 'next/image';
 import DashboardLayout from '../components/DashboardLayout';
@@ -117,6 +120,19 @@ const modalInputCls = "w-full py-2 px-3 border border-[#d0d0d0] rounded-lg text-
 const modalSelectCls = `${modalInputCls} modal-select`;
 const errCls = "border-[#dc3545]! focus:border-[#dc3545]! focus:shadow-[0_0_0_3px_rgba(220,53,69,0.1)]!";
 
+const sortFilterCategories = [
+  { key: 'projectTitle', label: 'Project Title' },
+  { key: 'code', label: 'Project Code' },
+  { key: 'year', label: 'Year' },
+  { key: 'location', label: 'Location' },
+  { key: 'beneficiaries', label: 'Beneficiaries' },
+  { key: 'typeOfBeneficiary', label: 'Type of Beneficiary' },
+  { key: 'programFunding', label: 'Program/Funding' },
+  { key: 'status', label: 'Status' },
+  { key: 'staffAssigned', label: 'Assignee' },
+  { key: 'approvedAmount', label: 'Approved Amount' },
+];
+
 export default function CestPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [projects, setProjects] = useState<CestProject[]>([]);
@@ -139,6 +155,16 @@ export default function CestPage() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState('');
   const [savingOption, setSavingOption] = useState(false);
+
+  // Sort and filter state
+  const [sortField, setSortField] = useState('code');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [filterCategory, setFilterCategory] = useState('');
+  const [filterValue, setFilterValue] = useState('');
+  const sortRef = useRef<HTMLDivElement>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
 
   // ── Dual scrollbar refs (same pattern as SETUP) ──
   const tableScrollRef = useRef<HTMLDivElement>(null);
@@ -411,7 +437,17 @@ export default function CestPage() {
     const observer = new ResizeObserver(update);
     observer.observe(tableEl);
     return () => observer.disconnect();
-  }, [projects, searchQuery]);
+  }, [projects, searchQuery, filterCategory, filterValue]);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) setShowSortDropdown(false);
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setShowFilterDropdown(false);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleTableScroll = useCallback(() => {
     if (isSyncingScroll.current) return;
@@ -431,14 +467,49 @@ export default function CestPage() {
     isSyncingScroll.current = false;
   }, []);
 
-  const filteredProjects = projects.filter(p => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return p.code.toLowerCase().includes(q) ||
-      p.projectTitle.toLowerCase().includes(q) ||
-      (p.location?.toLowerCase().includes(q) ?? false) ||
-      (p.staffAssigned?.toLowerCase().includes(q) ?? false);
-  });
+  // Filter projects by search query, column filter, then sort
+  const filteredProjects = projects
+    .filter(p => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return p.code.toLowerCase().includes(q) ||
+        p.projectTitle.toLowerCase().includes(q) ||
+        (p.location?.toLowerCase().includes(q) ?? false) ||
+        (p.staffAssigned?.toLowerCase().includes(q) ?? false) ||
+        (p.beneficiaries?.toLowerCase().includes(q) ?? false) ||
+        (p.typeOfBeneficiary?.toLowerCase().includes(q) ?? false) ||
+        (p.programFunding?.toLowerCase().includes(q) ?? false) ||
+        (p.status?.toLowerCase().includes(q) ?? false);
+    })
+    .filter(p => {
+      if (!filterCategory || !filterValue.trim()) return true;
+      const v = filterValue.toLowerCase();
+      if (filterCategory === 'year') {
+        return p.year ? p.year.toLowerCase().includes(v) : false;
+      }
+      if (filterCategory === 'approvedAmount') {
+        return p.approvedAmount != null ? p.approvedAmount.toString().includes(v) : false;
+      }
+      const fieldVal = (p as unknown as Record<string, unknown>)[filterCategory];
+      return typeof fieldVal === 'string' && fieldVal.toLowerCase().includes(v);
+    })
+    .sort((a, b) => {
+      const dir = sortDirection === 'asc' ? 1 : -1;
+      if (sortField === 'approvedAmount' || sortField === 'releasedAmount' || sortField === 'counterpartAmount') {
+        const valA = (a as unknown as Record<string, number | null>)[sortField] ?? 0;
+        const valB = (b as unknown as Record<string, number | null>)[sortField] ?? 0;
+        return dir * (valA - valB);
+      }
+      if (sortField === 'code') {
+        // Extract numeric part for proper sorting
+        const numA = parseInt(a.code.replace(/\D/g, '')) || 0;
+        const numB = parseInt(b.code.replace(/\D/g, '')) || 0;
+        return dir * (numA - numB);
+      }
+      const valA = ((a as unknown as Record<string, string>)[sortField]) || '';
+      const valB = ((b as unknown as Record<string, string>)[sortField]) || '';
+      return dir * valA.localeCompare(valB);
+    });
 
   const totalApproved = projects.reduce((sum, p) => sum + (p.approvedAmount ?? 0), 0);
   const totalReleased = projects.reduce((sum, p) => sum + (p.releasedAmount ?? 0), 0);
@@ -471,6 +542,216 @@ export default function CestPage() {
     } finally {
       setDeleting(false);
     }
+  };
+
+  const handleExportExcel = () => {
+    const projectsToExport = selectedProjects.length > 0
+      ? filteredProjects.filter(p => selectedProjects.includes(p.id))
+      : filteredProjects;
+    if (projectsToExport.length === 0) return;
+
+    const wb = XLSX.utils.book_new();
+
+    // Title row + metadata
+    const titleRows = [
+      ['CEST — Project Masterlist'],
+      [`Exported: ${new Date().toLocaleDateString()} | ${projectsToExport.length} project(s)`],
+      [], // blank spacer
+      ['#', 'Code', 'Project Title', 'Location', 'Beneficiaries', 'Type of Beneficiary', 'Program/Funding', 'Status', 'Entry Point', 'Approved Amount', 'Released Amount', 'Counterpart Amount', 'Project Duration', 'Year', 'Date of Approval', 'Assignee', 'Partner LGUs', 'Contact No.', 'Email'],
+      ...projectsToExport.map((p, i) => [
+        i + 1,
+        p.code,
+        p.projectTitle,
+        p.location || '—',
+        p.beneficiaries || '—',
+        p.typeOfBeneficiary || '—',
+        p.programFunding || '—',
+        p.status || '—',
+        p.categories?.join(', ') || '—',
+        p.approvedAmount != null ? p.approvedAmount : '—',
+        p.releasedAmount != null ? p.releasedAmount : '—',
+        p.counterpartAmount != null ? p.counterpartAmount : '—',
+        p.projectDuration || '—',
+        p.year || '—',
+        p.dateOfApproval || '—',
+        p.staffAssigned || '—',
+        p.partnerLGUs?.map(l => l.name).join(', ') || '—',
+        p.contactNumbers?.join(', ') || '—',
+        p.emails?.join(', ') || '—',
+      ]),
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(titleRows);
+
+    const totalCols = 19;
+
+    // Merge title across all columns
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }, // Title
+      { s: { r: 1, c: 0 }, e: { r: 1, c: totalCols - 1 } }, // Subtitle
+    ];
+
+    // Column widths
+    ws['!cols'] = [
+      { wch: 4 },  // #
+      { wch: 12 }, // Code
+      { wch: 40 }, // Project Title
+      { wch: 28 }, // Location
+      { wch: 25 }, // Beneficiaries
+      { wch: 18 }, // Type of Beneficiary
+      { wch: 14 }, // Program/Funding
+      { wch: 12 }, // Status
+      { wch: 20 }, // Entry Point
+      { wch: 14 }, // Approved Amount
+      { wch: 14 }, // Released Amount
+      { wch: 14 }, // Counterpart Amount
+      { wch: 16 }, // Project Duration
+      { wch: 7 },  // Year
+      { wch: 14 }, // Date of Approval
+      { wch: 18 }, // Assignee
+      { wch: 22 }, // Partner LGUs
+      { wch: 16 }, // Contact No.
+      { wch: 26 }, // Email
+    ];
+
+    // Row heights
+    ws['!rows'] = [
+      { hpt: 28 }, // Title
+      { hpt: 16 }, // Subtitle
+      { hpt: 8 },  // Spacer
+      { hpt: 20 }, // Header
+      ...projectsToExport.map(() => ({ hpt: 16 })),
+    ];
+
+    // Style helpers
+    const titleStyle = {
+      font: { bold: true, sz: 16, color: { rgb: 'FFFFFF' } },
+      fill: { fgColor: { rgb: '146184' } },
+      alignment: { horizontal: 'left', vertical: 'center' },
+    };
+    const subtitleStyle = {
+      font: { sz: 10, color: { rgb: 'FFFFFF' }, italic: true },
+      fill: { fgColor: { rgb: '1a7a9a' } },
+      alignment: { horizontal: 'left', vertical: 'center' },
+    };
+    const headerStyle = {
+      font: { bold: true, sz: 10, color: { rgb: 'FFFFFF' } },
+      fill: { fgColor: { rgb: '1a6b7a' } },
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+      border: {
+        top: { style: 'thin', color: { rgb: 'FFFFFF' } },
+        bottom: { style: 'thin', color: { rgb: 'FFFFFF' } },
+        left: { style: 'thin', color: { rgb: 'FFFFFF' } },
+        right: { style: 'thin', color: { rgb: 'FFFFFF' } },
+      },
+    };
+    const evenRowStyle = {
+      font: { sz: 9 },
+      fill: { fgColor: { rgb: 'F0F8FA' } },
+      alignment: { vertical: 'center', wrapText: false },
+      border: {
+        bottom: { style: 'hair', color: { rgb: 'D0E8EE' } },
+      },
+    };
+    const oddRowStyle = {
+      font: { sz: 9 },
+      fill: { fgColor: { rgb: 'FFFFFF' } },
+      alignment: { vertical: 'center', wrapText: false },
+      border: {
+        bottom: { style: 'hair', color: { rgb: 'D0E8EE' } },
+      },
+    };
+
+    // Apply title styles
+    const titleCell = XLSX.utils.encode_cell({ r: 0, c: 0 });
+    if (!ws[titleCell]) ws[titleCell] = {};
+    ws[titleCell].s = titleStyle;
+
+    const subtitleCell = XLSX.utils.encode_cell({ r: 1, c: 0 });
+    if (!ws[subtitleCell]) ws[subtitleCell] = {};
+    ws[subtitleCell].s = subtitleStyle;
+
+    // Fill title/subtitle bg across all merged cols
+    for (let c = 1; c < totalCols; c++) {
+      const r0 = XLSX.utils.encode_cell({ r: 0, c });
+      const r1 = XLSX.utils.encode_cell({ r: 1, c });
+      ws[r0] = { s: { fill: { fgColor: { rgb: '146184' } } } };
+      ws[r1] = { s: { fill: { fgColor: { rgb: '1a7a9a' } } } };
+    }
+
+    // Apply header row styles (row index 3)
+    for (let c = 0; c < totalCols; c++) {
+      const cellRef = XLSX.utils.encode_cell({ r: 3, c });
+      if (!ws[cellRef]) ws[cellRef] = {};
+      ws[cellRef].s = headerStyle;
+    }
+
+    // Apply data row styles
+    projectsToExport.forEach((_, i) => {
+      const rowIdx = 4 + i;
+      const style = i % 2 === 0 ? evenRowStyle : oddRowStyle;
+      for (let c = 0; c < totalCols; c++) {
+        const cellRef = XLSX.utils.encode_cell({ r: rowIdx, c });
+        if (!ws[cellRef]) ws[cellRef] = { v: '', t: 's' };
+        ws[cellRef].s = { ...style };
+      }
+    });
+
+    XLSX.utils.book_append_sheet(wb, ws, 'CEST Masterlist');
+    XLSX.writeFile(wb, `CEST_Masterlist_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
+  const handleExportPDF = () => {
+    const projectsToExport = selectedProjects.length > 0
+      ? filteredProjects.filter(p => selectedProjects.includes(p.id))
+      : filteredProjects;
+    if (projectsToExport.length === 0) return;
+
+    // A4 landscape for more columns
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageWidth = 297;
+    const marginLeft = 10;
+    const marginRight = 10;
+    const tableWidth = pageWidth - marginLeft - marginRight; // 277mm
+
+    doc.setFontSize(14);
+    doc.setTextColor(20, 97, 132);
+    doc.text('CEST — Project Masterlist', marginLeft, 14);
+    doc.setFontSize(8);
+    doc.setTextColor(100);
+    doc.text(`Exported: ${new Date().toLocaleDateString()} | ${projectsToExport.length} project(s)`, marginLeft, 19);
+
+    // Column widths proportional to tableWidth
+    const colWidths = [6, 12, 35, 30, 25, 18, 15, 22, 22, 22, 20, 10, 20, 20].map(w => w / 277 * tableWidth);
+
+    autoTable(doc, {
+      startY: 23,
+      head: [['#', 'Code', 'Project Title', 'Location', 'Beneficiaries', 'Program', 'Status', 'Approved Amt', 'Released Amt', 'Counterpart', 'Duration', 'Year', 'Date Approved', 'Assignee']],
+      body: projectsToExport.map((p, i) => [
+        i + 1,
+        p.code,
+        p.projectTitle,
+        p.location || '—',
+        p.beneficiaries || '—',
+        p.programFunding || '—',
+        p.status || '—',
+        p.approvedAmount != null ? formatCurrency(p.approvedAmount) : '—',
+        p.releasedAmount != null ? formatCurrency(p.releasedAmount) : '—',
+        p.counterpartAmount != null ? formatCurrency(p.counterpartAmount) : '—',
+        p.projectDuration || '—',
+        p.year || '—',
+        p.dateOfApproval || '—',
+        p.staffAssigned || '—',
+      ]),
+      styles: { fontSize: 5.5, cellPadding: 1.5, overflow: 'linebreak' },
+      headStyles: { fillColor: [20, 97, 132], textColor: 255, fontStyle: 'bold', fontSize: 5.5 },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      margin: { left: marginLeft, right: marginRight },
+      tableWidth: tableWidth,
+      columnStyles: Object.fromEntries(colWidths.map((w, i) => [i, { cellWidth: w }])),
+    });
+
+    doc.save(`CEST_Masterlist_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
   const municipalities = formData.province && addressData[formData.province] ? Object.keys(addressData[formData.province]) : [];
@@ -672,18 +953,55 @@ export default function CestPage() {
         {/* Masterlist Table */}
         <div className="bg-white rounded-[15px] p-5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
           <div className="flex justify-between items-center mb-5 pb-[15px] border-b border-[#e0e0e0]">
-            <h2 className="text-lg font-bold text-primary m-0 flex items-center gap-2.5">
-              APPROVED
-            </h2>
+            <h2 className="text-lg font-bold text-primary m-0">MASTERLIST</h2>
             <div className="flex gap-2.5">
-              <button className="flex items-center gap-[5px] py-2 px-[15px] bg-white border border-[#d0d0d0] rounded-lg text-[13px] text-[#333] cursor-pointer transition-all duration-200 hover:bg-[#f5f5f5] hover:border-primary">
-                <Icon icon="mdi:sort" width={16} height={16} /> Sort
-              </button>
-              <button className="flex items-center gap-[5px] py-2 px-[15px] bg-white border border-[#d0d0d0] rounded-lg text-[13px] text-[#333] cursor-pointer transition-all duration-200 hover:bg-[#f5f5f5] hover:border-primary">
-                <Icon icon="mdi:filter-variant" width={16} height={16} /> Filter
-              </button>
-              <button className="flex items-center gap-[5px] py-2 px-[15px] bg-[#dc3545] text-white border border-[#dc3545] rounded-lg text-[13px] cursor-pointer transition-all duration-200 hover:bg-[#c82333]">
+              {/* Sort Dropdown */}
+              <div className="relative" ref={sortRef}>
+                <button className="flex items-center gap-[5px] py-2 px-[15px] bg-white border border-[#d0d0d0] rounded-lg text-[13px] text-[#333] cursor-pointer transition-all duration-200 hover:bg-[#f5f5f5] hover:border-primary" onClick={() => { setShowSortDropdown(v => !v); setShowFilterDropdown(false); }}>
+                  <Icon icon="mdi:sort" width={16} height={16} /> Sort
+                </button>
+                {showSortDropdown && (
+                  <div className="absolute right-0 top-full mt-1 w-[200px] bg-white border border-[#e0e0e0] rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.12)] z-50 py-1">
+                    {sortFilterCategories.map(cat => (
+                      <button key={cat.key} className={`w-full flex items-center justify-between py-2 px-3 text-[13px] text-left border-none bg-transparent cursor-pointer transition-colors duration-150 hover:bg-[#f0f8ff] ${sortField === cat.key ? 'text-primary font-semibold' : 'text-[#333]'}`} onClick={() => { if (sortField === cat.key) { setSortDirection(d => d === 'asc' ? 'desc' : 'asc'); } else { setSortField(cat.key); setSortDirection('asc'); } setShowSortDropdown(false); }}>
+                        <span>{cat.label}</span>
+                        {sortField === cat.key && <Icon icon={sortDirection === 'asc' ? 'mdi:arrow-up' : 'mdi:arrow-down'} width={14} height={14} />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Filter Dropdown */}
+              <div className="relative" ref={filterRef}>
+                <button className={`flex items-center gap-[5px] py-2 px-[15px] border rounded-lg text-[13px] cursor-pointer transition-all duration-200 hover:bg-[#f5f5f5] hover:border-primary ${filterCategory && filterValue ? 'bg-[#e3f2fd] border-primary text-primary font-semibold' : 'bg-white border-[#d0d0d0] text-[#333]'}`} onClick={() => { setShowFilterDropdown(v => !v); setShowSortDropdown(false); }}>
+                  <Icon icon="mdi:filter-variant" width={16} height={16} /> Filter
+                  {filterCategory && filterValue && <span className="ml-1 w-[6px] h-[6px] rounded-full bg-primary inline-block" />}
+                </button>
+                {showFilterDropdown && (
+                  <div className="absolute right-0 top-full mt-1 w-[260px] bg-white border border-[#e0e0e0] rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.12)] z-50 p-3 flex flex-col gap-2">
+                    <label className="text-[12px] font-semibold text-[#555]">Category</label>
+                    <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="w-full py-1.5 px-2 border border-[#d0d0d0] rounded text-[13px] bg-white focus:outline-none focus:border-primary">
+                      <option value="">Select category</option>
+                      {sortFilterCategories.map(cat => (
+                        <option key={cat.key} value={cat.key}>{cat.label}</option>
+                      ))}
+                    </select>
+                    <label className="text-[12px] font-semibold text-[#555]">Value</label>
+                    <input type="text" placeholder="Type to filter..." value={filterValue} onChange={e => setFilterValue(e.target.value)} className="w-full py-1.5 px-2 border border-[#d0d0d0] rounded text-[13px] bg-white focus:outline-none focus:border-primary placeholder:text-[#aaa]" />
+                    <div className="flex gap-2 mt-1">
+                      <button className="flex-1 py-1.5 bg-accent text-white border-none rounded text-[12px] font-semibold cursor-pointer hover:bg-accent-hover" onClick={() => setShowFilterDropdown(false)}>Apply</button>
+                      <button className="flex-1 py-1.5 bg-[#f5f5f5] text-[#333] border border-[#d0d0d0] rounded text-[12px] font-semibold cursor-pointer hover:bg-[#e8e8e8]" onClick={() => { setFilterCategory(''); setFilterValue(''); }}>Clear</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button className="flex items-center gap-[5px] py-2 px-[15px] bg-[#dc3545] text-white border border-[#dc3545] rounded-lg text-[13px] cursor-pointer transition-all duration-200 hover:bg-[#c82333]" onClick={handleExportPDF}>
                 <Icon icon="mdi:file-pdf-box" width={16} height={16} /> Export PDF
+              </button>
+              <button className="flex items-center gap-[5px] py-2 px-[15px] bg-[#217346] text-white border border-[#217346] rounded-lg text-[13px] cursor-pointer transition-all duration-200 hover:bg-[#1a5c38]" onClick={handleExportExcel}>
+                <Icon icon="mdi:file-excel-box" width={16} height={16} /> Export Excel
               </button>
             </div>
           </div>

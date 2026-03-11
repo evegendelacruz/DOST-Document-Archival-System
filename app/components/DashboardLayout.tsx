@@ -2,7 +2,7 @@
 
 import Header from './Header';
 import Sidebar, { NavItem } from './Sidebar';
-import Messenger from './Messenger';
+// import Messenger from './Messenger'; // temporarily disabled
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -20,7 +20,7 @@ export default function DashboardLayout({ children, activePath, sidebarItems }: 
           {children}
         </div>
       </div>
-      <Messenger />
+      {/* <Messenger /> */}{/* temporarily disabled */}
     </div>
   );
 }

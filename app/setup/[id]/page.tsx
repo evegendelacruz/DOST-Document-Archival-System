@@ -99,8 +99,18 @@ const initiationDocs: DocRow[] = [
   { id: 13, label: 'TNA Form 2', type: 'item' },
   { id: 0, label: 'Abstract of Quotation', type: 'dropdown', options: ['Equipment', 'Non-equipment'] },
   { id: 14, label: 'Project Proposal', type: 'item' },
-  { id: 15, label: 'Internal Evaluation (Date, PPT Presentation, Compliance Report)', type: 'item' },
-  { id: 16, label: 'External Evaluation (Date, PPT Presentation, Compliance Report)', type: 'item' },
+  { 
+    id: 3, 
+    label: 'Internal Evaluation', 
+    type: 'dropdown',
+    options: ['Date', 'PPT Presentation', 'Compliance Report']
+  },
+  { 
+    id: 3, 
+    label: 'External Evaluation', 
+    type: 'dropdown',
+    options: ['Date', 'PPT Presentation', 'Compliance Report']
+  },
   { id: 17, label: 'Hazard Hunter PH Assessment', type: 'item' },
   { id: 18, label: 'GAD Assessment', type: 'item' },
   { id: 19, label: 'Executive Summary (word template for input)', type: 'item' },
@@ -108,42 +118,52 @@ const initiationDocs: DocRow[] = [
 ];
 
 const implementationDocs: DocRow[] = [
-  { id: 1, label: 'Pre-PIS', type: 'item' },
-  { id: 2, label: 'Approval Letter', type: 'item' },
-  { id: 3, label: 'Memorandum of Agreement', type: 'dropdown', options: ['Main MOA', 'Supplemental MOA'] },
-  { id: 0, label: 'PHASE 1', type: 'section' },
-  { id: 4, label: 'Approved Amount for Release', type: 'dropdown' },
+  { id: 0, label: 'IMPLEMENTATION RECORDS (F1)', type: 'section' },
+  { id: 1, label: 'Approval Letter', type: 'item' },
+  { id: 2, label: 'Memorandum of Agreement', type: 'dropdown', options: ['Main MOA', 'Supplemental MOA'] },
   { 
-    id: 5, 
+    id: 3, 
     label: 'Fund Release Date', 
     type: 'dropdown',
     options: ['DV', 'ORS']
   },
-  { id: 7, label: 'Authority to Tag', type: 'dropdown', options: ['Tagging of Account', 'Tagging of Funds'] },
-  { id: 8, label: 'Official Receipt of DOST Financial Assistance', type: 'item' },
-  { id: 9, label: 'Untagging Requirement', type: 'item' },
-  { id: 0, label: '1ST', type: 'section' },
-  { id: 12, label: 'Untagging Amount', type: 'dropdown' },
-  { id: 13, label: 'Clearance to Untag', type: 'dropdown' },
+  { id: 4, label: 'Official Receipt of Technology Assistance', type: 'item' },
+  { id: 0, label: 'ALL AMENDMENTS TO THE MOA', type: 'section' },
+  { id: 5, label: 'Tagging Letters', type: 'item' },
+  { id: 6, label: 'Purchase Orders', type: 'item' },
+  { id: 7, label: 'Untagging Letters', type: 'item' },
+  { id: 9, label: 'Amendments to the MOA', type: 'dropdown', options: ['Change in Project Duration - Annex C', 'Extension of Project Duration - Annex C', 'Change in LIB or LIB-realignment - Annex B', 'Refund Restructuring - Annex D'] },
+  { id: 8, label: 'Others', type: 'dropdown', options: ['Withdrawal Request', 'Approval'] },
+  { id: 0, label: 'MANAGEMENT REPORTS (F2)', type: 'section' },
+  { id: 12, label: 'Withdrawal Report', type: 'item' },
+  { id: 11, label: 'Liquidation Report', type: 'dropdown', options: ['Liquidation Report', 'Audited Financial Report', 'List of Equipment Purchased'] },
+  { id: 12, label: 'Completion Report', type: 'dropdown', options: ['Completion Report', 'Financial Report', 'Acknowledgement Receipt of Equipment', 'Inventory of Equipment'] },
+  { id: 13, label: 'Terminal or Graduation Report', type: 'dropdown', options: ['Terminal Report', 'Copy of Issued Report of Ownership (if applicable)', 'Certificate of Full Refund from Accountant'] },
+  { id: 14, label: 'Termination Report', type: 'dropdown', options: ['Letter Recommending Termination by the PSTD', 'Latest Status Report', 'Audited (by CPA) Financial Report', 'Computation of Financial Accountability', 'Proofs',  'Documents to Support Majeure (if requested for relief from accountability upon approval of termination', 'Termination Report', 'Proof of conforme by proponent of final accountability and mechanism for refund of remaining accounts'] },
+  { id: 0, label: 'MONITORING REPORTS (F3)', type: 'section' },
+  { id: 15, label: 'Pre-Project Information Sheet (PIS)',type: 'dropdown', options: ['Withdrawal Request', 'Approval']},
+  { id: 25, label: 'Annual PIS', type: 'dropdown', options: ['2024', '2025', '2026', '2027', '2028'] },
+  { id: 26, label: 'Quarterly Project Status Reports', type: 'dropdown', options: ['Q1', 'Q2', 'Q3', 'Q4'] },
+  { id: 17, label: 'Project Profile with pictures from that start of project and every semester thereafter to document project improvement', type: 'item' },
+  { id: 0, label: 'REFUND RECORDS (F4)', type: 'section' },
+  { id: 22, label: 'Letter in acknowledgement of PDCs', type: 'item' },
+  { id: 23, label: 'Receipt of PDC form', type: 'item' },
+  { id: 24, label: 'Photocopy of Official Receipt (ORs)', type: 'item' },
+  { id: 25, label: 'Letter of Endorsement of ORs', type: 'item' },
+  { id: 26, label: 'Notice of Dishonor', type: 'item' },
+  { id: 0, label: 'COMMUNICATION RECORDS', type: 'section' },
+  { id: 20, label: 'Incoming', type: 'item' },
+  { id: 21, label: 'Outgoing', type: 'item' },
+  { id: 0, label: 'UNTAGGING REQUIREMENTS', type: 'section' },
+  { id: 18, label: 'Approved Amount for Release', type: 'dropdown' },
+  { id: 20, label: 'Untagging Amount', type: 'dropdown' },
+  { id: 21, label: 'Clearance to Untag', type: 'dropdown' },
   { id: 0, label: '2ND', type: 'section' },
-  { id: 14, label: 'AR', type: 'item' },
-  { id: 15, label: 'IAR', type: 'item' },
-  { id: 16, label: 'Receipt of Downpayment', type: 'item' },
-  { id: 17, label: 'Clearance to Untag', type: 'item' },
-  { id: 18, label: 'List of Inventory of Equipment', type: 'item' },
-  { id: 0, label: 'LIQUIDATION', type: 'section' },
+  { id: 24, label: 'List of Inventory of Equipment', type: 'item' },
   { id: 19, label: 'Accepted Liquidation', type: 'item' },
   { id: 20, label: 'Annex E', type: 'item' },
-  { id: 21, label: 'Annex F', type: 'item' },
-  { id: 22, label: 'Liquidation Report', type: 'item' },
+  
   { id: 23, label: 'Property Acknowledgement Receipt', type: 'item' },
-  { id: 24, label: 'Completion Report', type: 'dropdown', options: ['Termination/Withdrawal Report', 'Completion Report'] },
-  { id: 0, label: 'PHASE 2', type: 'section' },
-  { id: 25, label: 'Annual PIS', type: 'dropdown', options: ['2024', '2025', '2026', '2027', '2028'] },
-  { id: 26, label: 'QPR', type: 'dropdown', options: ['Q1', 'Q2', 'Q3', 'Q4'] },
-  { id: 27, label: 'Receipt of PDC', type: 'item' },
-  { id: 28, label: 'Graduation Report', type: 'dropdown', options: ['Termination/Withdrawal Report', 'Graduation Report'] },
-  { id: 29, label: 'Scan copy of Certificate of Ownership', type: 'item' },
 ];
 
 // ── Shared upload/delete button pair ───────────────────────────────────────
@@ -236,10 +256,21 @@ function DocumentTable({
   const [qprQuarter, setQPRQuarter] = useState<string>('');
   const [graduationReportType, setGraduationReportType] = useState<string>('');
   const [approvedAmount, setApprovedAmount] = useState<string>('');
+  const [approvedAmountDate, setApprovedAmountDate] = useState<string>('');
   const [untaggingAmount, setUntaggingAmount] = useState<string>('');
   const [moaSupplementalCount, setMoaSupplementalCount] = useState<number>(0);
   const [dropdownSelections, setDropdownSelections] = useState<Record<string, string>>({});
   const [abstractQuotationType, setAbstractQuotationType] = useState<string>('');
+  const [abstractQuotationRows, setAbstractQuotationRows] = useState<Array<{
+    type: string;
+    name: string;
+  }>>([]);
+  const [abstractQuotationTypeOptions, setAbstractQuotationTypeOptions] = useState<string[]>(['Equipment', 'Non-equipment']);
+  const [showAddTypeModal, setShowAddTypeModal] = useState(false);
+  const [newTypeName, setNewTypeName] = useState<string>('');
+  const [interventionStatusOptions, setInterventionStatusOptions] = useState<string[]>(['Procured', 'Pulled Out']);
+  const [showAddStatusModal, setShowAddStatusModal] = useState(false);
+  const [newStatusName, setNewStatusName] = useState<string>('');
   const [interventionInputs, setInterventionInputs] = useState<Array<{
     type: 'equipment' | 'non-equipment';
     name?: string;
@@ -247,15 +278,17 @@ function DocumentTable({
     status?: string;
     propertyCode?: string;
     serviceType?: string;
+    specification?: string;
   }>>([]);
   const [clearanceUntagRows, setClearanceUntagRows] = useState<Array<{
     amount: string;
-    equipment: string;
     supplier: string;
-  }>>([{ amount: '', equipment: '', supplier: '' }]);
+    date: string;
+  }>>([]);
   const [untaggingAmountRows, setUntaggingAmountRows] = useState<Array<{
     amount: string;
-  }>>([{ amount: '' }]);
+    date: string;
+  }>>([{ amount: '', date: '' }]);
   const [completionReportRows, setCompletionReportRows] = useState<Array<{
     type: string;
   }>>([]);
@@ -269,6 +302,32 @@ function DocumentTable({
     quarter: string;
     year: string;
   }>>([]);
+  const [internalEvalRows, setInternalEvalRows] = useState<Array<{
+    date: string;
+  }>>([{ date: '' }]);
+  const [externalEvalRows, setExternalEvalRows] = useState<Array<{
+    date: string;
+  }>>([{ date: '' }]);
+
+  // Custom rows per section
+  const [customRows, setCustomRows] = useState<Array<{
+    id: string;
+    sectionLabel: string;
+    name: string;
+    rowType: 'item' | 'dropdown' | 'textinput';
+    dropdownOptions?: string[];
+    textValue?: string;
+  }>>([]);
+  const [showAddRowModal, setShowAddRowModal] = useState<{
+    show: boolean;
+    sectionLabel: string;
+  } | null>(null);
+  const [newRowName, setNewRowName] = useState('');
+  const [newRowType, setNewRowType] = useState<'item' | 'dropdown' | 'textinput'>('item');
+  const [newRowDropdownOptions, setNewRowDropdownOptions] = useState('');
+  const [draggedRowId, setDraggedRowId] = useState<string | null>(null);
+  const [dragOverRowId, setDragOverRowId] = useState<string | null>(null);
+  const [acceptedLiquidationDate, setAcceptedLiquidationDate] = useState<string>('');
 
   // Track current dropdown data for merging across saves
   const [currentDropdownData, setCurrentDropdownData] = useState<Record<string, unknown>>({});
@@ -312,6 +371,21 @@ function DocumentTable({
         setAbstractQuotationType(data.abstractQuotationType as string);
       }
 
+      // Restore abstract quotation rows
+      if (data.abstractQuotationRows) {
+        setAbstractQuotationRows(data.abstractQuotationRows as Array<{ type: string; name: string }>);
+      }
+
+      // Restore custom abstract quotation type options
+      if (data.abstractQuotationTypeOptions) {
+        setAbstractQuotationTypeOptions(data.abstractQuotationTypeOptions as string[]);
+      }
+
+      // Restore custom intervention status options
+      if (data.interventionStatusOptions) {
+        setInterventionStatusOptions(data.interventionStatusOptions as string[]);
+      }
+
       // Restore intervention items
       if (data.interventionItems) {
         setInterventionInputs(data.interventionItems as Array<{
@@ -328,14 +402,14 @@ function DocumentTable({
       if (data.clearanceUntagRows) {
         setClearanceUntagRows(data.clearanceUntagRows as Array<{
           amount: string;
-          equipment: string;
           supplier: string;
+          date: string;
         }>);
       }
 
       // Restore untagging amount rows
       if (data.untaggingAmountRows) {
-        setUntaggingAmountRows(data.untaggingAmountRows as Array<{ amount: string }>);
+        setUntaggingAmountRows(data.untaggingAmountRows as Array<{ amount: string; date: string }>);
       }
 
       // Restore completion report rows
@@ -366,6 +440,38 @@ function DocumentTable({
       // Restore approved amount for release
       if (data.approvedAmountForRelease) {
         setApprovedAmount(data.approvedAmountForRelease as string);
+      }
+
+      // Restore approved amount date
+      if (data.approvedAmountDate) {
+        setApprovedAmountDate(data.approvedAmountDate as string);
+      }
+
+      // Restore accepted liquidation date
+      if (data.acceptedLiquidationDate) {
+        setAcceptedLiquidationDate(data.acceptedLiquidationDate as string);
+      }
+
+      // Restore internal evaluation rows
+      if (data.internalEvalRows) {
+        setInternalEvalRows(data.internalEvalRows as Array<{ date: string }>);
+      }
+
+      // Restore external evaluation rows
+      if (data.externalEvalRows) {
+        setExternalEvalRows(data.externalEvalRows as Array<{ date: string }>);
+      }
+
+      // Restore custom rows
+      if (data.customRows) {
+        setCustomRows(data.customRows as Array<{
+          id: string;
+          sectionLabel: string;
+          name: string;
+          rowType: 'item' | 'dropdown' | 'textinput';
+          dropdownOptions?: string[];
+          textValue?: string;
+        }>);
       }
     }
   }, [initialDropdownData]);
@@ -710,16 +816,243 @@ function DocumentTable({
             </tr>
           </thead>
           <tbody>
-            {docs.map((doc, idx) => {
+            {docs.flatMap((doc, idx) => {
+              const elements: React.ReactNode[] = [];
+              const nextDoc = docs[idx + 1];
+              const isLastBeforeSection = nextDoc?.type === 'section';
+              const isLastDoc = idx === docs.length - 1;
+
+              // Determine current section label
+              let currentSectionLabel = title;
+              for (let i = idx; i >= 0; i--) {
+                if (docs[i].type === 'section') {
+                  currentSectionLabel = docs[i].label;
+                  break;
+                }
+              }
+
+              // Helper to render custom rows and add button for a section
+              const renderSectionCustomRows = (sectionLabel: string, renderCallId: string) => {
+                const sectionElements: React.ReactNode[] = [];
+                const sectionCustomRows = customRows.filter(r => r.sectionLabel === sectionLabel);
+                let customRowCounter = itemCounter;
+
+                sectionCustomRows.forEach((customRow) => {
+                  customRowCounter++;
+                  const tid = `${phase}-custom-${customRow.id}`;
+                  const rowDocs = getDocsForItem(tid);
+                  const latestDoc = rowDocs[0];
+                  const isRowUploading = uploadingItemId === tid;
+                  const hasFile = rowDocs.length > 0;
+
+                  if (customRow.rowType === 'item') {
+                    sectionElements.push(
+                      <tr
+                        key={`custom-${customRow.id}-${renderCallId}`}
+                        draggable={isEditMode}
+                        onDragStart={() => setDraggedRowId(customRow.id)}
+                        onDragEnd={() => { setDraggedRowId(null); setDragOverRowId(null); }}
+                        onDragOver={(e) => { e.preventDefault(); setDragOverRowId(customRow.id); }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (draggedRowId && draggedRowId !== customRow.id) {
+                            const draggedIdx = customRows.findIndex(r => r.id === draggedRowId);
+                            const targetIdx = customRows.findIndex(r => r.id === customRow.id);
+                            if (draggedIdx !== -1 && targetIdx !== -1) {
+                              const newRows = [...customRows];
+                              const [removed] = newRows.splice(draggedIdx, 1);
+                              newRows.splice(targetIdx, 0, removed);
+                              setCustomRows(newRows);
+                            }
+                          }
+                          setDraggedRowId(null);
+                          setDragOverRowId(null);
+                        }}
+                        className={`${draggedRowId === customRow.id ? 'opacity-50' : ''} ${dragOverRowId === customRow.id && draggedRowId !== customRow.id ? 'bg-[#e3f2fd]' : ''}`}
+                      >
+                        <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#888] font-medium">
+                          <div className="flex items-center gap-1">
+                            {isEditMode && <Icon icon="mdi:drag" width={16} height={16} className="cursor-grab text-[#999] hover:text-[#666]" />}
+                            {customRowCounter}
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#333]">
+                          <div className="flex items-center gap-2">
+                            <span>{customRow.name}</span>
+                            {isEditMode && (
+                              <button onClick={() => { if (confirm(`Delete "${customRow.name}" row?`)) setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); }} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3 border-b border-[#eee] align-middle">
+                          {hasFile ? <span className="text-[10px] text-[#2e7d32] bg-[#e8f5e9] px-2 py-0.5 rounded">Uploaded</span> : <span className="text-[#bbb] italic text-xs">No file uploaded</span>}
+                        </td>
+                        <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#999] text-xs">
+                          {hasFile ? new Date(latestDoc.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
+                        </td>
+                        <td className="py-2.5 px-3 border-b border-[#eee] align-middle">
+                          <div className="flex gap-1.5">
+                            <button className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`} title={isEditMode ? "Upload" : "View mode - editing disabled"} onClick={() => handleUploadClick(tid)} disabled={isRowUploading || !isEditMode}>
+                              {isRowUploading ? <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" /> : <Icon icon="mdi:upload" width={14} height={14} />}
+                            </button>
+                            <button className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`} title={isEditMode ? "Delete" : "View mode - editing disabled"} onClick={() => hasFile && isEditMode && handleDeleteAll(tid)} disabled={!hasFile || !isEditMode}>
+                              <Icon icon="mdi:delete-outline" width={14} height={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  } else if (customRow.rowType === 'textinput') {
+                    sectionElements.push(
+                      <tr
+                        key={`custom-${customRow.id}-${renderCallId}`}
+                        draggable={isEditMode}
+                        onDragStart={() => setDraggedRowId(customRow.id)}
+                        onDragEnd={() => { setDraggedRowId(null); setDragOverRowId(null); }}
+                        onDragOver={(e) => { e.preventDefault(); setDragOverRowId(customRow.id); }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (draggedRowId && draggedRowId !== customRow.id) {
+                            const draggedIdx = customRows.findIndex(r => r.id === draggedRowId);
+                            const targetIdx = customRows.findIndex(r => r.id === customRow.id);
+                            if (draggedIdx !== -1 && targetIdx !== -1) {
+                              const newRows = [...customRows];
+                              const [removed] = newRows.splice(draggedIdx, 1);
+                              newRows.splice(targetIdx, 0, removed);
+                              setCustomRows(newRows);
+                            }
+                          }
+                          setDraggedRowId(null);
+                          setDragOverRowId(null);
+                        }}
+                        className={`${draggedRowId === customRow.id ? 'opacity-50' : ''} ${dragOverRowId === customRow.id && draggedRowId !== customRow.id ? 'bg-[#e3f2fd]' : ''}`}
+                      >
+                        <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#888] font-medium">
+                          <div className="flex items-center gap-1">
+                            {isEditMode && <Icon icon="mdi:drag" width={16} height={16} className="cursor-grab text-[#999] hover:text-[#666]" />}
+                            {customRowCounter}
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#333]">
+                          <div className="flex items-center gap-2">
+                            <span>{customRow.name}</span>
+                            {isEditMode && (
+                              <button onClick={() => { if (confirm(`Delete "${customRow.name}" row?`)) setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); }} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
+                            )}
+                          </div>
+                        </td>
+                        <td colSpan={3} className="py-2.5 px-3 border-b border-[#eee] align-middle">
+                          <input type="text" value={customRow.textValue || ''} onChange={(e) => setCustomRows(prev => prev.map(r => r.id === customRow.id ? { ...r, textValue: e.target.value } : r))} placeholder="Enter text..." className={`border border-[#ddd] rounded px-3 py-1.5 text-xs w-full max-w-[300px] ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`} disabled={!isEditMode} />
+                        </td>
+                      </tr>
+                    );
+                  } else if (customRow.rowType === 'dropdown') {
+                    const options = customRow.dropdownOptions || [];
+                    sectionElements.push(
+                      <tr
+                        key={`custom-${customRow.id}-${renderCallId}`}
+                        draggable={isEditMode}
+                        onDragStart={() => setDraggedRowId(customRow.id)}
+                        onDragEnd={() => { setDraggedRowId(null); setDragOverRowId(null); }}
+                        onDragOver={(e) => { e.preventDefault(); setDragOverRowId(customRow.id); }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (draggedRowId && draggedRowId !== customRow.id) {
+                            const draggedIdx = customRows.findIndex(r => r.id === draggedRowId);
+                            const targetIdx = customRows.findIndex(r => r.id === customRow.id);
+                            if (draggedIdx !== -1 && targetIdx !== -1) {
+                              const newRows = [...customRows];
+                              const [removed] = newRows.splice(draggedIdx, 1);
+                              newRows.splice(targetIdx, 0, removed);
+                              setCustomRows(newRows);
+                            }
+                          }
+                          setDraggedRowId(null);
+                          setDragOverRowId(null);
+                        }}
+                        className={`${draggedRowId === customRow.id ? 'opacity-50' : ''} ${dragOverRowId === customRow.id && draggedRowId !== customRow.id ? 'bg-[#e3f2fd]' : ''}`}
+                      >
+                        <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#888] font-medium">
+                          <div className="flex items-center gap-1">
+                            {isEditMode && <Icon icon="mdi:drag" width={16} height={16} className="cursor-grab text-[#999] hover:text-[#666]" />}
+                            {customRowCounter}
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#333]">
+                          <div className="flex items-center gap-2">
+                            <span>{customRow.name}</span>
+                            {isEditMode && (
+                              <button onClick={() => { if (confirm(`Delete "${customRow.name}" row?`)) setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); }} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
+                            )}
+                          </div>
+                        </td>
+                        <td colSpan={3} className="py-2.5 px-3 border-b border-[#eee] align-middle">
+                          <select value={customRow.textValue || ''} onChange={(e) => setCustomRows(prev => prev.map(r => r.id === customRow.id ? { ...r, textValue: e.target.value } : r))} className={`border border-[#ddd] rounded px-3 py-1.5 text-xs w-full max-w-[200px] ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`} disabled={!isEditMode}>
+                            <option value="">Select...</option>
+                            {options.map((opt, optIdx) => <option key={`${opt}-${optIdx}`} value={opt}>{opt}</option>)}
+                          </select>
+                        </td>
+                      </tr>
+                    );
+                  }
+                });
+
+                // Add New Row button and Save button
+                if (isEditMode) {
+                  sectionElements.push(
+                    <tr key={`add-row-btn-${sectionLabel}-${renderCallId}`}>
+                      <td colSpan={5} className="py-2 px-3 border-b border-[#eee] bg-[#fafafa]">
+                        <div className="flex items-center gap-4">
+                          <button onClick={() => setShowAddRowModal({ show: true, sectionLabel })} className="flex items-center gap-1.5 text-xs text-[#1976d2] hover:underline">
+                            <Icon icon="mdi:plus-circle-outline" width={16} height={16} />
+                            <span>Add New Row</span>
+                          </button>
+                          {sectionCustomRows.length > 0 && (
+                            <button
+                              onClick={async () => {
+                                setSavingData(true);
+                                try {
+                                  const mergedData = { ...currentDropdownData, customRows };
+                                  setCurrentDropdownData(mergedData);
+                                  await fetch(`/api/setup-projects/${projectId}`, {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ dropdownData: mergedData }),
+                                  });
+                                  setSaveSuccessModal({ show: true, message: 'Custom rows saved successfully!' });
+                                } catch (error) {
+                                  console.error('Error saving custom rows:', error);
+                                  alert('Failed to save custom rows');
+                                } finally {
+                                  setSavingData(false);
+                                }
+                              }}
+                              disabled={savingData}
+                              className="flex items-center gap-1.5 text-xs bg-[#2e7d32] text-white px-3 py-1.5 rounded font-semibold hover:bg-[#1b5e20] disabled:bg-[#ccc] disabled:cursor-not-allowed"
+                            >
+                              <Icon icon="mdi:content-save" width={14} height={14} />
+                              <span>{savingData ? 'Saving...' : 'Save'}</span>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }
+
+                return sectionElements;
+              };
+
               // ── Section header ──
               if (doc.type === 'section') {
-                return (
+                elements.push(
                   <tr key={`section-${idx}`}>
                     <td colSpan={5} className="py-2.5 px-3 bg-[#f0f0f0] border-b border-[#ddd] text-[13px] text-primary">
                       <strong>{doc.label}</strong>
                     </td>
                   </tr>
                 );
+                return elements;
               }
 
               if (doc.type === 'dropdown') {
@@ -752,29 +1085,41 @@ function DocumentTable({
                         <tr>
                           <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
                             <div className="flex items-center gap-3">
-                              <label className="text-xs font-semibold text-[#555] min-w-[120px]">Amount:</label>
-                              <div className="relative flex-1">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666] text-xs font-semibold">₱</span>
+                              <div className="flex items-center gap-2 flex-1">
+                                <label className="text-xs font-semibold text-[#555] shrink-0">Amount:</label>
+                                <div className="relative flex-1">
+                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666] text-xs font-semibold">₱</span>
+                                  <input
+                                    type="text"
+                                    value={approvedAmount}
+                                    onChange={(e) => {
+                                      // Allow only numbers and decimal
+                                      const value = e.target.value.replace(/[^0-9.]/g, '');
+                                      setApprovedAmount(value);
+                                    }}
+                                    placeholder="Enter amount"
+                                    disabled={!isEditMode}
+                                    className={`w-full border border-[#ddd] rounded px-3 py-2 pl-7 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <label className="text-xs font-semibold text-[#555]">Date:</label>
                                 <input
-                                  type="text"
-                                  value={approvedAmount}
-                                  onChange={(e) => {
-                                    // Allow only numbers and decimal
-                                    const value = e.target.value.replace(/[^0-9.]/g, '');
-                                    setApprovedAmount(value);
-                                  }}
-                                  placeholder="Enter approved amount"
+                                  type="date"
+                                  value={approvedAmountDate}
+                                  onChange={(e) => setApprovedAmountDate(e.target.value)}
                                   disabled={!isEditMode}
-                                  className={`w-full border border-[#ddd] rounded px-3 py-2 pl-7 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                  className={`border border-[#ddd] rounded px-3 py-2 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                 />
                               </div>
                               <button
                                 onClick={() => saveDropdownData(
-                                  { approvedAmountForRelease: approvedAmount },
+                                  { approvedAmountForRelease: approvedAmount, approvedAmountDate: approvedAmountDate },
                                   `Approved amount "₱${Number(approvedAmount).toLocaleString()}" saved successfully!`
                                 )}
                                 disabled={savingData || !isEditMode || !approvedAmount}
-                                className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] disabled:bg-[#ccc] disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                                className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] disabled:bg-[#ccc] disabled:cursor-not-allowed transition-colors whitespace-nowrap shrink-0"
                               >
                                 {savingData ? 'Saving...' : 'Save'}
                               </button>
@@ -782,7 +1127,7 @@ function DocumentTable({
                             {hasSavedValue && (
                               <div className="mt-2 text-[11px] text-[#2e7d32] flex items-center gap-1">
                                 <Icon icon="mdi:check-circle" width={14} height={14} />
-                                <span>Saved: ₱{Number(approvedAmount).toLocaleString()}</span>
+                                <span>Saved: ₱{Number(approvedAmount).toLocaleString()}{approvedAmountDate && ` (${new Date(approvedAmountDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})`}</span>
                               </div>
                             )}
                           </td>
@@ -798,12 +1143,17 @@ function DocumentTable({
                     <React.Fragment key={key}>
                       <tr>
                         <td colSpan={5} className="p-0 border-b border-[#eee]">
-                          <button 
-                            className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
+                          <button
+                            className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
                             onClick={() => toggleDropdown(key)}
                           >
                             <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
                             <span>{doc.label}</span>
+                            {abstractQuotationRows.length > 0 && (
+                              <span className="ml-2 text-[10px] bg-[#2e7d32] text-white px-2 py-0.5 rounded-full">
+                                {abstractQuotationRows.length} item(s)
+                              </span>
+                            )}
                           </button>
                         </td>
                       </tr>
@@ -811,116 +1161,131 @@ function DocumentTable({
                         <tr>
                           <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
                             <div className="space-y-3">
-                              <div className="flex items-center gap-3">
-                                {abstractQuotationType && (
-                                  <button
-                                    onClick={addInterventionItem}
-                                    disabled={!isEditMode}
-                                    className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
-                                  >
-                                    Add {abstractQuotationType} Item
-                                  </button>
-                                )}
+                              {abstractQuotationRows.length === 0 ? (
+                                <p className="text-xs text-[#999] italic text-center py-4">
+                                  No items added yet. Please add items in &quot;Abstract of Quotation&quot; first.
+                                </p>
+                              ) : (
+                                <>
+                                  {abstractQuotationRows.map((row, rowIdx) => {
+                                    const itemType = row.type || 'Not set';
+                                    const itemName = row.name || 'No name';
+                                    const interventionData = interventionInputs[rowIdx] || {};
 
-                                {interventionInputs.length > 0 && (
-                                  <button
-                                    onClick={() => saveDropdownData(
-                                      { interventionItems: interventionInputs },
-                                      `${interventionInputs.length} intervention item(s) saved successfully!`
-                                    )}
-                                    disabled={savingData || !isEditMode}
-                                    className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors ml-auto disabled:bg-[#ccc] disabled:cursor-not-allowed"
-                                  >
-                                    {savingData ? 'Saving...' : 'Save All Items'}
-                                  </button>
-                                )}
-                              </div>
-                              
-                              {interventionInputs.map((item, index) => (
-                                <div key={index} className="border border-[#ddd] rounded p-3 bg-white">
-                                  <div className="flex justify-between items-center mb-2">
-                                    <strong className="text-xs text-[#2e7d32]">
-                                      {item.type === 'equipment' ? 'Equipment' : 'Non-Equipment'} #{index + 1}
-                                    </strong>
+                                    return (
+                                      <div key={rowIdx} className="bg-white border border-[#ddd] rounded p-3">
+                                        <div className="flex items-center gap-3 mb-3">
+                                          <span className="text-xs font-semibold text-[#2e7d32] min-w-[60px]">
+                                            {itemType} #{rowIdx + 1}
+                                          </span>
+                                          <input
+                                            type="text"
+                                            value={itemName}
+                                            disabled
+                                            className="border border-[#ddd] rounded px-3 py-2 text-xs flex-1 bg-gray-100 cursor-not-allowed"
+                                            title="Name from Abstract of Quotation"
+                                          />
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-3">
+                                          <div>
+                                            <label className="block text-xs text-[#555] mb-1">Cost</label>
+                                            <input
+                                              type="text"
+                                              value={interventionData.cost || ''}
+                                              onChange={(e) => {
+                                                const updated = [...interventionInputs];
+                                                if (!updated[rowIdx]) {
+                                                  updated[rowIdx] = { type: row.type?.toLowerCase() as 'equipment' | 'non-equipment' };
+                                                }
+                                                updated[rowIdx].cost = e.target.value;
+                                                setInterventionInputs(updated);
+                                              }}
+                                              disabled={!isEditMode}
+                                              placeholder="Enter cost..."
+                                              className={`w-full border border-[#ddd] rounded px-3 py-2 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                            />
+                                          </div>
+                                          <div>
+                                            <label className="block text-xs text-[#555] mb-1">Status</label>
+                                            <select
+                                              value={interventionData.status || ''}
+                                              onChange={(e) => {
+                                                if (e.target.value === '__add_new__') {
+                                                  setShowAddStatusModal(true);
+                                                } else {
+                                                  const updated = [...interventionInputs];
+                                                  if (!updated[rowIdx]) {
+                                                    updated[rowIdx] = { type: row.type?.toLowerCase() as 'equipment' | 'non-equipment' };
+                                                  }
+                                                  updated[rowIdx].status = e.target.value;
+                                                  setInterventionInputs(updated);
+                                                }
+                                              }}
+                                              disabled={!isEditMode}
+                                              className={`w-full border border-[#ddd] rounded px-3 py-2 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                            >
+                                              <option value="">Select...</option>
+                                              {interventionStatusOptions.map(opt => (
+                                                <option key={opt} value={opt}>{opt}</option>
+                                              ))}
+                                              <option value="__add_new__" className="text-primary font-bold">+ Add new option</option>
+                                            </select>
+                                          </div>
+                                          <div>
+                                            <label className="block text-xs text-[#555] mb-1">Equipment Property Code</label>
+                                            <input
+                                              type="text"
+                                              value={interventionData.propertyCode || ''}
+                                              onChange={(e) => {
+                                                const updated = [...interventionInputs];
+                                                if (!updated[rowIdx]) {
+                                                  updated[rowIdx] = { type: row.type?.toLowerCase() as 'equipment' | 'non-equipment' };
+                                                }
+                                                updated[rowIdx].propertyCode = e.target.value;
+                                                setInterventionInputs(updated);
+                                              }}
+                                              disabled={!isEditMode}
+                                              placeholder="Enter property code..."
+                                              className={`w-full border border-[#ddd] rounded px-3 py-2 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                            />
+                                          </div>
+                                        </div>
+                                        <div className="mt-3">
+                                          <label className="block text-xs text-[#555] mb-1">
+                                            {row.type === 'Equipment' ? 'Equipment' : row.type === 'Non-equipment' ? 'Non-Equipment' : 'Equipment/Non-Equipment'} Specification
+                                          </label>
+                                          <textarea
+                                            value={interventionData.specification || ''}
+                                            onChange={(e) => {
+                                              const updated = [...interventionInputs];
+                                              if (!updated[rowIdx]) {
+                                                updated[rowIdx] = { type: row.type?.toLowerCase() as 'equipment' | 'non-equipment' };
+                                              }
+                                              updated[rowIdx].specification = e.target.value;
+                                              setInterventionInputs(updated);
+                                            }}
+                                            disabled={!isEditMode}
+                                            placeholder={`Enter ${row.type?.toLowerCase() || 'equipment/non-equipment'} specification...`}
+                                            rows={3}
+                                            className={`w-full border border-[#ddd] rounded px-3 py-2 text-xs resize-none ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                          />
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                  <div className="flex justify-end pt-2">
                                     <button
-                                      onClick={() => removeInterventionItem(index)}
-                                      disabled={!isEditMode}
-                                      className={`${isEditMode ? 'text-red-600 hover:text-red-800' : 'text-gray-400 cursor-not-allowed'}`}
+                                      onClick={() => saveDropdownData(
+                                        { interventionItems: interventionInputs },
+                                        `${abstractQuotationRows.length} intervention item(s) saved successfully!`
+                                      )}
+                                      disabled={savingData || !isEditMode}
+                                      className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
                                     >
-                                      <Icon icon="mdi:close" width={16} height={16} />
+                                      {savingData ? 'Saving...' : 'Save All'}
                                     </button>
                                   </div>
-
-                                  {item.type === 'equipment' ? (
-                                    <div className="grid grid-cols-2 gap-2">
-                                      <div>
-                                        <label className="block text-xs text-[#555] mb-1">Name of Equipment</label>
-                                        <input
-                                          type="text"
-                                          value={item.name || ''}
-                                          onChange={(e) => updateInterventionItem(index, 'name', e.target.value)}
-                                          disabled={!isEditMode}
-                                          className={`w-full border border-[#ddd] rounded px-2 py-1 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className="block text-xs text-[#555] mb-1">Cost</label>
-                                        <input
-                                          type="text"
-                                          value={item.cost || ''}
-                                          onChange={(e) => updateInterventionItem(index, 'cost', e.target.value)}
-                                          disabled={!isEditMode}
-                                          className={`w-full border border-[#ddd] rounded px-2 py-1 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className="block text-xs text-[#555] mb-1">Status</label>
-                                        <select
-                                          value={item.status || ''}
-                                          onChange={(e) => updateInterventionItem(index, 'status', e.target.value)}
-                                          disabled={!isEditMode}
-                                          className={`w-full border border-[#ddd] rounded px-2 py-1 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                        >
-                                          <option value="">Select...</option>
-                                          <option value="Procured">Procured</option>
-                                          <option value="Pulled Out">Pulled Out</option>
-                                        </select>
-                                      </div>
-                                      <div>
-                                        <label className="block text-xs text-[#555] mb-1">Equipment Property Code</label>
-                                        <input
-                                          type="text"
-                                          value={item.propertyCode || ''}
-                                          onChange={(e) => updateInterventionItem(index, 'propertyCode', e.target.value)}
-                                          disabled={!isEditMode}
-                                          className={`w-full border border-[#ddd] rounded px-2 py-1 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                        />
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div>
-                                      <label className="block text-xs text-[#555] mb-1">Service Type</label>
-                                      <select
-                                        value={item.serviceType || ''}
-                                        onChange={(e) => updateInterventionItem(index, 'serviceType', e.target.value)}
-                                        disabled={!isEditMode}
-                                        className={`w-full border border-[#ddd] rounded px-2 py-1 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                      >
-                                        <option value="">Select...</option>
-                                        <option value="Laboratory Testing">Laboratory Testing</option>
-                                        <option value="Packaging">Packaging</option>
-                                        <option value="Labelling">Labelling</option>
-                                        <option value="Trainings">Trainings</option>
-                                      </select>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                              
-                              {!abstractQuotationType && (
-                                <p className="text-xs text-[#999] italic">
-                                  Please select a type in &quot;Abstract of Quotation&quot; first
-                                </p>
+                                </>
                               )}
                             </div>
                           </td>
@@ -1086,8 +1451,8 @@ function DocumentTable({
                     <React.Fragment key={key}>
                       <tr>
                         <td colSpan={5} className="p-0 border-b border-[#eee]">
-                          <button 
-                            className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
+                          <button
+                            className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
                             onClick={() => toggleDropdown(key)}
                           >
                             <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
@@ -1098,28 +1463,138 @@ function DocumentTable({
                       {isExpanded && (
                         <tr>
                           <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
-                            <div className="flex items-center gap-3">
-                              <select
-                                value={abstractQuotationType}
-                                onChange={(e) => setAbstractQuotationType(e.target.value)}
-                                className={`border border-[#ddd] rounded px-3 py-2 text-xs flex-1 ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                disabled={!isEditMode}
-                              >
-                                <option value="">Select type...</option>
-                                {doc.options.map(opt => (
-                                  <option key={opt} value={opt}>{opt}</option>
-                                ))}
-                              </select>
-                              <button
-                                onClick={() => saveDropdownData(
-                                  { abstractQuotationType },
-                                  `Abstract of Quotation type "${abstractQuotationType}" saved successfully!`
-                                )}
-                                disabled={!abstractQuotationType || savingData || !isEditMode}
-                                className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] disabled:bg-[#ccc] disabled:cursor-not-allowed transition-colors"
-                              >
-                                {savingData ? 'Saving...' : 'Save'}
-                              </button>
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-[#555]">Abstract of Quotation Items</span>
+                                <button
+                                  onClick={() => {
+                                    if (!isEditMode) return;
+                                    setAbstractQuotationRows([...abstractQuotationRows, { type: '', name: '' }]);
+                                  }}
+                                  disabled={!isEditMode}
+                                  className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${isEditMode ? 'bg-[#2e7d32] text-white hover:bg-[#1b5e20]' : 'bg-[#ccc] text-white cursor-not-allowed'}`}
+                                >
+                                  + Add Item
+                                </button>
+                              </div>
+
+                              {abstractQuotationRows.length === 0 && (
+                                <p className="text-xs text-[#999] italic text-center py-4">
+                                  No items added yet. Click the button above to add one.
+                                </p>
+                              )}
+
+                              {abstractQuotationRows.map((row, rowIdx) => {
+                                const templateItemId = `${phase}-${doc.id}-row-${rowIdx}-${row.type || 'pending'}`;
+                                const uploadedDoc = getDocForItem(templateItemId);
+                                const isUploading = uploadingItemId === templateItemId;
+                                const hasFile = !!uploadedDoc;
+
+                                return (
+                                  <div key={rowIdx} className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                    <span className="text-xs font-semibold text-[#333] min-w-[60px]">
+                                      Item #{rowIdx + 1}
+                                    </span>
+                                    <select
+                                      value={row.type}
+                                      onChange={(e) => {
+                                        if (e.target.value === '__add_new__') {
+                                          setShowAddTypeModal(true);
+                                        } else {
+                                          const updated = [...abstractQuotationRows];
+                                          updated[rowIdx].type = e.target.value;
+                                          setAbstractQuotationRows(updated);
+                                        }
+                                      }}
+                                      disabled={!isEditMode}
+                                      className={`border border-[#ddd] rounded px-3 py-2 text-xs min-w-[140px] ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                    >
+                                      <option value="">Select type...</option>
+                                      {abstractQuotationTypeOptions.map(opt => (
+                                        <option key={opt} value={opt}>{opt}</option>
+                                      ))}
+                                      <option value="__add_new__" className="text-primary font-bold">+ Add new option</option>
+                                    </select>
+                                    <input
+                                      type="text"
+                                      value={row.name}
+                                      onChange={(e) => {
+                                        const updated = [...abstractQuotationRows];
+                                        updated[rowIdx].name = e.target.value;
+                                        setAbstractQuotationRows(updated);
+                                      }}
+                                      placeholder={row.type ? `Enter ${row.type.toLowerCase()} name...` : "Enter name..."}
+                                      disabled={!isEditMode}
+                                      className={`border border-[#ddd] rounded px-3 py-2 text-xs flex-1 min-w-[150px] ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                    />
+                                    {hasFile && (
+                                      <span className="text-[10px] text-[#2e7d32] bg-[#e8f5e9] px-2 py-0.5 rounded">Uploaded</span>
+                                    )}
+                                    <div className="flex gap-1.5 ml-auto">
+                                      <button
+                                        className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode && row.type ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        title={!row.type ? "Select type first" : isEditMode ? "Upload" : "View mode - editing disabled"}
+                                        onClick={() => handleUploadClick(templateItemId)}
+                                        disabled={isUploading || !row.type || !isEditMode}
+                                      >
+                                        {isUploading ? (
+                                          <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                        ) : (
+                                          <Icon icon="mdi:upload" width={14} height={14} />
+                                        )}
+                                      </button>
+                                      <button
+                                        className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                          hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                        }`}
+                                        title="View"
+                                        onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
+                                        disabled={!hasFile}
+                                      >
+                                        <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                      </button>
+                                      <button
+                                        className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                          hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                        }`}
+                                        title={isEditMode ? "Delete file" : "View mode - editing disabled"}
+                                        onClick={() => hasFile && isEditMode && handleDeleteAll(templateItemId)}
+                                        disabled={!hasFile || !isEditMode}
+                                      >
+                                        <Icon icon="mdi:delete-outline" width={14} height={14} />
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          if (!isEditMode) return;
+                                          if (confirm(`Remove Item #${rowIdx + 1}?`)) {
+                                            setAbstractQuotationRows(abstractQuotationRows.filter((_, i) => i !== rowIdx));
+                                          }
+                                        }}
+                                        disabled={!isEditMode}
+                                        className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#757575] hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
+                                        title={isEditMode ? "Remove row" : "View mode - editing disabled"}
+                                      >
+                                        <Icon icon="mdi:minus" width={14} height={14} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+
+                              {abstractQuotationRows.length > 0 && (
+                                <div className="flex justify-end pt-2">
+                                  <button
+                                    onClick={() => saveDropdownData(
+                                      { abstractQuotationRows },
+                                      `${abstractQuotationRows.length} item(s) saved successfully!`
+                                    )}
+                                    disabled={savingData || !isEditMode}
+                                    className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
+                                  >
+                                    {savingData ? 'Saving...' : 'Save All'}
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1649,10 +2124,15 @@ function DocumentTable({
                                   return sum + amount;
                                 }, 0);
                                 const runningBalance = approvedAmountValue - runningDeduction;
+                                const templateItemId = `${phase}-${doc.id}-untag-${idx}`;
+                                const uploadedDoc = getDocForItem(templateItemId);
+                                const isUploadingRow = uploadingItemId === templateItemId;
+                                const hasFile = !!uploadedDoc;
 
                                 return (
-                                  <div key={idx} className="mb-3">
-                                    <div className="flex items-center gap-3 mb-1">
+                                  <div key={idx} className="mb-3 pb-3 border-b border-[#eee] last:border-b-0 last:pb-0 last:mb-0">
+                                    <div className="flex items-center gap-3 mb-2">
+                                      <span className="text-xs font-semibold text-[#555] min-w-[50px]">#{idx + 1}</span>
                                       <div className="flex-1 relative">
                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666] text-xs font-semibold">₱</span>
                                         <input
@@ -1669,21 +2149,72 @@ function DocumentTable({
                                           className={`w-full border border-[#ddd] rounded px-2 py-1.5 pl-7 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                         />
                                       </div>
-                                      <button
-                                        onClick={() => {
-                                          if (untaggingAmountRows.length > 1) {
-                                            setUntaggingAmountRows(untaggingAmountRows.filter((_, i) => i !== idx));
-                                          }
-                                        }}
-                                        disabled={untaggingAmountRows.length === 1 || !isEditMode}
-                                        className="w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white bg-[#c62828] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        title="Remove row"
-                                      >
-                                        <Icon icon="mdi:close" width={14} height={14} />
-                                      </button>
+                                      <div className="flex items-center gap-2">
+                                        <label className="text-xs text-[#555]">Date:</label>
+                                        <input
+                                          type="date"
+                                          value={row.date || ''}
+                                          onChange={(e) => {
+                                            const updated = [...untaggingAmountRows];
+                                            updated[idx].date = e.target.value;
+                                            setUntaggingAmountRows(updated);
+                                          }}
+                                          disabled={!isEditMode}
+                                          className={`border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                        />
+                                      </div>
+                                      {hasFile && (
+                                        <span className="text-[10px] text-[#2e7d32] bg-[#e8f5e9] px-2 py-0.5 rounded">Uploaded</span>
+                                      )}
+                                      <div className="flex gap-1.5">
+                                        <button
+                                          className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                          title={isEditMode ? "Upload" : "View mode - editing disabled"}
+                                          onClick={() => handleUploadClick(templateItemId)}
+                                          disabled={isUploadingRow || !isEditMode}
+                                        >
+                                          {isUploadingRow ? (
+                                            <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                          ) : (
+                                            <Icon icon="mdi:upload" width={14} height={14} />
+                                          )}
+                                        </button>
+                                        <button
+                                          className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                            hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                          }`}
+                                          title="View"
+                                          onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
+                                          disabled={!hasFile}
+                                        >
+                                          <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                        </button>
+                                        <button
+                                          className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                            hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                          }`}
+                                          title={isEditMode ? "Delete file" : "View mode - editing disabled"}
+                                          onClick={() => hasFile && isEditMode && handleDeleteAll(templateItemId)}
+                                          disabled={!hasFile || !isEditMode}
+                                        >
+                                          <Icon icon="mdi:delete-outline" width={14} height={14} />
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            if (untaggingAmountRows.length > 1) {
+                                              setUntaggingAmountRows(untaggingAmountRows.filter((_, i) => i !== idx));
+                                            }
+                                          }}
+                                          disabled={untaggingAmountRows.length === 1 || !isEditMode}
+                                          className="w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white bg-[#757575] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                                          title="Remove row"
+                                        >
+                                          <Icon icon="mdi:minus" width={14} height={14} />
+                                        </button>
+                                      </div>
                                     </div>
                                     {row.amount && (
-                                      <div className="text-[10px] text-right pr-10">
+                                      <div className="text-[10px] text-right">
                                         <span className="text-[#666]">Balance after this row: </span>
                                         <span className={`font-semibold ${runningBalance >= 0 ? 'text-[#2e7d32]' : 'text-[#c62828]'}`}>
                                           ₱{runningBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -1698,7 +2229,7 @@ function DocumentTable({
                             <div className="flex items-center gap-3">
                               <button
                                 onClick={() => {
-                                  setUntaggingAmountRows([...untaggingAmountRows, { amount: '' }]);
+                                  setUntaggingAmountRows([...untaggingAmountRows, { amount: '', date: '' }]);
                                 }}
                                 disabled={!isEditMode}
                                 className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
@@ -1779,91 +2310,116 @@ function DocumentTable({
                               </div>
                             </div>
 
-                            {/* Input rows for amount, equipment/non-equipment, supplier */}
+                            {/* Input rows - synced with Abstract of Quotation */}
                             <div className="bg-white border border-[#ddd] rounded p-3">
                               <div className="text-xs font-semibold text-[#555] mb-3">Clearance Details (for reference)</div>
-                              <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 mb-2 text-xs font-semibold text-[#555]">
-                                <div>Amount</div>
-                                <div>{itemTypeLabel}</div>
-                                <div>Supplier</div>
-                                <div className="w-7"></div>
-                              </div>
 
-                              {clearanceUntagRows.map((row, idx) => (
-                                <div key={idx} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 mb-2">
-                                  <input
-                                    type="text"
-                                    value={row.amount}
-                                    onChange={(e) => {
-                                      const updated = [...clearanceUntagRows];
-                                      updated[idx].amount = e.target.value;
-                                      setClearanceUntagRows(updated);
-                                    }}
-                                    placeholder="Enter amount"
-                                    disabled={!isEditMode}
-                                    className={`border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                  />
-                                  <input
-                                    type="text"
-                                    value={row.equipment}
-                                    onChange={(e) => {
-                                      const updated = [...clearanceUntagRows];
-                                      updated[idx].equipment = e.target.value;
-                                      setClearanceUntagRows(updated);
-                                    }}
-                                    placeholder={`Enter ${itemTypeLabel.toLowerCase()}`}
-                                    disabled={!isEditMode}
-                                    className={`border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                  />
-                                  <input
-                                    type="text"
-                                    value={row.supplier}
-                                    onChange={(e) => {
-                                      const updated = [...clearanceUntagRows];
-                                      updated[idx].supplier = e.target.value;
-                                      setClearanceUntagRows(updated);
-                                    }}
-                                    placeholder="Enter supplier"
-                                    disabled={!isEditMode}
-                                    className={`border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                  />
-                                  <button
-                                    onClick={() => {
-                                      if (clearanceUntagRows.length > 1) {
-                                        setClearanceUntagRows(clearanceUntagRows.filter((_, i) => i !== idx));
-                                      }
-                                    }}
-                                    disabled={clearanceUntagRows.length === 1 || !isEditMode}
-                                    className="w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white bg-[#c62828] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    title="Remove row"
-                                  >
-                                    <Icon icon="mdi:close" width={14} height={14} />
-                                  </button>
+                              {abstractQuotationRows.length === 0 ? (
+                                <p className="text-xs text-[#999] italic text-center py-4">
+                                  No items added yet. Please add items in &quot;Abstract of Quotation&quot; first.
+                                </p>
+                              ) : (
+                                <div className="space-y-3">
+                                  {abstractQuotationRows.map((aqRow, idx) => {
+                                    const clearanceData = clearanceUntagRows[idx] || { amount: '', supplier: '', date: '' };
+                                    const typeLabel = aqRow.type || 'Type';
+                                    const itemName = aqRow.name || 'No name';
+
+                                    return (
+                                      <div key={idx} className="border border-[#eee] rounded p-3 bg-[#fafafa]">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <span className="text-xs font-semibold text-[#2e7d32]">#{idx + 1}</span>
+                                          <span className="text-xs font-semibold text-[#555]">{typeLabel}</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3 mb-2">
+                                          <div>
+                                            <label className="block text-xs text-[#555] mb-1">{typeLabel} Name</label>
+                                            <input
+                                              type="text"
+                                              value={itemName}
+                                              disabled
+                                              className="w-full border border-[#ddd] rounded px-2 py-1.5 text-xs bg-gray-100 cursor-not-allowed"
+                                              title="Fetched from Abstract of Quotation"
+                                            />
+                                          </div>
+                                          <div>
+                                            <label className="block text-xs text-[#555] mb-1">Amount</label>
+                                            <input
+                                              type="text"
+                                              value={clearanceData.amount}
+                                              onChange={(e) => {
+                                                const value = e.target.value.replace(/[^0-9.]/g, '');
+                                                const updated = [...clearanceUntagRows];
+                                                if (!updated[idx]) {
+                                                  updated[idx] = { amount: '', supplier: '', date: '' };
+                                                }
+                                                updated[idx].amount = value;
+                                                setClearanceUntagRows(updated);
+                                              }}
+                                              placeholder="Enter amount"
+                                              disabled={!isEditMode}
+                                              className={`w-full border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                            />
+                                          </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                          <div>
+                                            <label className="block text-xs text-[#555] mb-1">Supplier</label>
+                                            <input
+                                              type="text"
+                                              value={clearanceData.supplier}
+                                              onChange={(e) => {
+                                                const updated = [...clearanceUntagRows];
+                                                if (!updated[idx]) {
+                                                  updated[idx] = { amount: '', supplier: '', date: '' };
+                                                }
+                                                updated[idx].supplier = e.target.value;
+                                                setClearanceUntagRows(updated);
+                                              }}
+                                              placeholder="Enter supplier"
+                                              disabled={!isEditMode}
+                                              className={`w-full border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                            />
+                                          </div>
+                                          <div>
+                                            <label className="block text-xs text-[#555] mb-1">Date</label>
+                                            <input
+                                              type="date"
+                                              value={clearanceData.date}
+                                              onChange={(e) => {
+                                                const updated = [...clearanceUntagRows];
+                                                if (!updated[idx]) {
+                                                  updated[idx] = { amount: '', supplier: '', date: '' };
+                                                }
+                                                updated[idx].date = e.target.value;
+                                                setClearanceUntagRows(updated);
+                                              }}
+                                              disabled={!isEditMode}
+                                              className={`w-full border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                            />
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
-                              ))}
+                              )}
                             </div>
 
-                            <div className="flex items-center gap-3">
-                              <button
-                                onClick={() => {
-                                  setClearanceUntagRows([...clearanceUntagRows, { amount: '', equipment: '', supplier: '' }]);
-                                }}
-                                disabled={!isEditMode}
-                                className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
-                              >
-                                + Add More Row
-                              </button>
-                              <button
-                                onClick={() => saveDropdownData(
-                                  { clearanceUntagRows },
-                                  `${clearanceUntagRows.length} clearance row(s) saved successfully!`
-                                )}
-                                disabled={savingData || !isEditMode}
-                                className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors ml-auto disabled:bg-[#ccc] disabled:cursor-not-allowed"
-                              >
-                                {savingData ? 'Saving...' : 'Save All'}
-                              </button>
-                            </div>
+                            {abstractQuotationRows.length > 0 && (
+                              <div className="flex justify-end">
+                                <button
+                                  onClick={() => saveDropdownData(
+                                    { clearanceUntagRows },
+                                    `${abstractQuotationRows.length} clearance row(s) saved successfully!`
+                                  )}
+                                  disabled={savingData || !isEditMode}
+                                  className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
+                                >
+                                  {savingData ? 'Saving...' : 'Save All'}
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1872,14 +2428,20 @@ function DocumentTable({
                 );
               }
 
-              // Completion Report dropdown handler
+              // Completion Report dropdown handler (select-based)
               if (doc.label === 'Completion Report' && doc.options) {
+                const selectedOption = dropdownSelections[doc.id] || '';
+                const templateItemId = selectedOption ? `${phase}-${doc.id}-${selectedOption}` : '';
+                const uploadedDoc = selectedOption ? getDocForItem(templateItemId) : null;
+                const isUploadingItem = uploadingItemId === templateItemId;
+                const hasFile = !!uploadedDoc;
+
                 return (
                   <React.Fragment key={key}>
                     <tr>
                       <td colSpan={5} className="p-0 border-b border-[#eee]">
-                        <button 
-                          className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]" 
+                        <button
+                          className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
                           onClick={() => toggleDropdown(key)}
                         >
                           <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
@@ -1891,101 +2453,69 @@ function DocumentTable({
                       <tr>
                         <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
                           <div className="space-y-3">
-                            {doc.options.map((option, optIdx) => (
-                              <div key={optIdx} className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-xs font-semibold text-[#555]">{option}</span>
+                            <div className="flex items-center gap-3">
+                              <select
+                                value={selectedOption}
+                                onChange={(e) => {
+                                  setDropdownSelections(prev => ({ ...prev, [doc.id]: e.target.value }));
+                                }}
+                                className={`border border-[#ddd] rounded px-3 py-2 text-xs flex-1 ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                disabled={!isEditMode}
+                              >
+                                <option value="">Select option...</option>
+                                {doc.options.map(opt => (
+                                  <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                              </select>
+                              <button
+                                onClick={() => handleSaveDropdownSelection(doc.id)}
+                                disabled={!selectedOption || savingData || !isEditMode}
+                                className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] disabled:bg-[#ccc] disabled:cursor-not-allowed transition-colors"
+                              >
+                                {savingData ? 'Saving...' : 'Save'}
+                              </button>
+                            </div>
+
+                            {selectedOption && (
+                              <div className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                <span className="flex-1 text-xs text-[#333] font-medium">{selectedOption}</span>
+                                <div className="flex gap-1.5">
                                   <button
-                                    onClick={() => {
-                                      if (!isEditMode) return;
-                                      setCompletionReportRows([...completionReportRows, { type: option }]);
-                                    }}
-                                    disabled={!isEditMode}
-                                    className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${isEditMode ? 'bg-[#2e7d32] text-white hover:bg-[#1b5e20]' : 'bg-[#ccc] text-white cursor-not-allowed'}`}
+                                    className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    title={isEditMode ? "Upload" : "View mode - editing disabled"}
+                                    onClick={() => handleUploadClick(templateItemId)}
+                                    disabled={isUploadingItem || !isEditMode}
                                   >
-                                    + Add {option}
+                                    {isUploadingItem ? (
+                                      <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                    ) : (
+                                      <Icon icon="mdi:upload" width={14} height={14} />
+                                    )}
+                                  </button>
+                                  <button
+                                    className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                      hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                    }`}
+                                    title="View"
+                                    onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
+                                    disabled={!hasFile}
+                                  >
+                                    <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                  </button>
+                                  <button
+                                    className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                      hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                    }`}
+                                    title={isEditMode ? "Delete" : "View mode - editing disabled"}
+                                    onClick={() => hasFile && isEditMode && handleDeleteAll(templateItemId)}
+                                    disabled={!hasFile || !isEditMode}
+                                  >
+                                    <Icon icon="mdi:delete-outline" width={14} height={14} />
                                   </button>
                                 </div>
-
-                                {completionReportRows
-                                  .map((row, rowIdx) => ({ row, rowIdx }))
-                                  .filter(({ row }) => row.type === option)
-                                  .map(({ row, rowIdx }) => {
-                                    const templateItemId = `${phase}-${doc.id}-${option}-${rowIdx}`;
-                                    const uploadedDoc = getDocForItem(templateItemId);
-                                    const isUploading = uploadingItemId === templateItemId;
-                                    const hasFile = !!uploadedDoc;
-
-                                    return (
-                                      <div key={rowIdx} className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
-                                        <span className="flex-1 text-xs text-[#333]">
-                                          {option} #{completionReportRows.filter(r => r.type === option).indexOf(row) + 1}
-                                        </span>
-                                        <div className="flex gap-1.5">
-                                          <button
-                                            className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
-                                            title={isEditMode ? "Upload" : "View mode - editing disabled"}
-                                            onClick={() => handleUploadClick(templateItemId)}
-                                            disabled={isUploading || !isEditMode}
-                                          >
-                                            {isUploading ? (
-                                              <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
-                                            ) : (
-                                              <Icon icon="mdi:upload" width={14} height={14} />
-                                            )}
-                                          </button>
-                                          <button
-                                            className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
-                                              hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
-                                            }`}
-                                            title="View"
-                                            onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
-                                            disabled={!hasFile}
-                                          >
-                                            <Icon icon="mdi:eye-outline" width={14} height={14} />
-                                          </button>
-                                          <button
-                                            className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
-                                              hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
-                                            }`}
-                                            title={isEditMode ? "Delete" : "View mode - editing disabled"}
-                                            onClick={() => hasFile && isEditMode && handleDeleteAll(templateItemId)}
-                                            disabled={!hasFile || !isEditMode}
-                                          >
-                                            <Icon icon="mdi:delete-outline" width={14} height={14} />
-                                          </button>
-                                          <button
-                                            className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#757575] hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
-                                            title={isEditMode ? "Remove Row" : "View mode - editing disabled"}
-                                            disabled={!isEditMode}
-                                            onClick={() => {
-                                              if (!isEditMode) return;
-                                              if (confirm(`Remove this ${option}?`)) {
-                                                setCompletionReportRows(completionReportRows.filter((_, i) => i !== rowIdx));
-                                              }
-                                            }}
-                                          >
-                                            <Icon icon="mdi:close" width={14} height={14} />
-                                          </button>
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                              </div>
-                            ))}
-
-                            {completionReportRows.length > 0 && (
-                              <div className="flex justify-end pt-2">
-                                <button
-                                  onClick={() => saveDropdownData(
-                                    { completionReportRows },
-                                    `${completionReportRows.length} completion report(s) saved successfully!`
-                                  )}
-                                  disabled={savingData || !isEditMode}
-                                  className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
-                                >
-                                  {savingData ? 'Saving...' : 'Save All'}
-                                </button>
+                                {hasFile && (
+                                  <span className="text-[10px] text-[#2e7d32] bg-[#e8f5e9] px-2 py-0.5 rounded">Uploaded</span>
+                                )}
                               </div>
                             )}
                           </div>
@@ -2128,7 +2658,7 @@ function DocumentTable({
             }
 
             // QPR dropdown handler
-            if (doc.label === 'QPR' && doc.options) {
+            if (doc.label === 'Quarterly Project Status Reports' && doc.options) {
               return (
                 <React.Fragment key={key}>
                   <tr>
@@ -2426,21 +2956,481 @@ function DocumentTable({
                 </React.Fragment>
               );
             }
-                              
-                // Default dropdown (no options)
+
+                // Generic select-based dropdown for specific labels
+                const selectBasedDropdowns = [
+                  'Amendments to the MOA',
+                  'Others',
+                  'Liquidation Report',
+                  'Terminal or Graduation Report',
+                  'Termination Report',
+                  'Pre-Project Information Sheet (PIS)'
+                ];
+
+                if (selectBasedDropdowns.includes(doc.label) && doc.options) {
+                  const selectedOption = dropdownSelections[doc.id] || '';
+                  const templateItemId = selectedOption ? `${phase}-${doc.id}-${selectedOption}` : '';
+                  const uploadedDoc = selectedOption ? getDocForItem(templateItemId) : null;
+                  const isUploading = uploadingItemId === templateItemId;
+                  const hasFile = !!uploadedDoc;
+
+                  return (
+                    <React.Fragment key={key}>
+                      <tr>
+                        <td colSpan={5} className="p-0 border-b border-[#eee]">
+                          <button
+                            className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                            onClick={() => toggleDropdown(key)}
+                          >
+                            <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                            <span>{doc.label}</span>
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-3">
+                                <select
+                                  value={selectedOption}
+                                  onChange={(e) => {
+                                    setDropdownSelections(prev => ({ ...prev, [doc.id]: e.target.value }));
+                                  }}
+                                  className={`border border-[#ddd] rounded px-3 py-2 text-xs flex-1 ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                  disabled={!isEditMode}
+                                >
+                                  <option value="">Select option...</option>
+                                  {doc.options.map(opt => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                  ))}
+                                </select>
+                                <button
+                                  onClick={() => handleSaveDropdownSelection(doc.id)}
+                                  disabled={!selectedOption || savingData || !isEditMode}
+                                  className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] disabled:bg-[#ccc] disabled:cursor-not-allowed transition-colors"
+                                >
+                                  {savingData ? 'Saving...' : 'Save'}
+                                </button>
+                              </div>
+
+                              {selectedOption && (
+                                <div className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                  <span className="flex-1 text-xs text-[#333] font-medium">{selectedOption}</span>
+                                  <div className="flex gap-1.5">
+                                    <button
+                                      className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                      title={isEditMode ? "Upload" : "View mode - editing disabled"}
+                                      onClick={() => handleUploadClick(templateItemId)}
+                                      disabled={isUploading || !isEditMode}
+                                    >
+                                      {isUploading ? (
+                                        <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                      ) : (
+                                        <Icon icon="mdi:upload" width={14} height={14} />
+                                      )}
+                                    </button>
+                                    <button
+                                      className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                        hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                      }`}
+                                      title="View"
+                                      onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
+                                      disabled={!hasFile}
+                                    >
+                                      <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                    </button>
+                                    <button
+                                      className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                        hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                      }`}
+                                      title={isEditMode ? "Delete" : "View mode - editing disabled"}
+                                      onClick={() => hasFile && isEditMode && handleDeleteAll(templateItemId)}
+                                      disabled={!hasFile || !isEditMode}
+                                    >
+                                      <Icon icon="mdi:delete-outline" width={14} height={14} />
+                                    </button>
+                                  </div>
+                                  {hasFile && (
+                                    <span className="text-[10px] text-[#2e7d32] bg-[#e8f5e9] px-2 py-0.5 rounded">Uploaded</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                }
+
+                // Internal Evaluation and External Evaluation dropdown handler
+                if (doc.label === 'Internal Evaluation' || doc.label === 'External Evaluation') {
+                  const isInternal = doc.label === 'Internal Evaluation';
+                  const evalRows = isInternal ? internalEvalRows : externalEvalRows;
+                  const setEvalRows = isInternal ? setInternalEvalRows : setExternalEvalRows;
+
+                  return (
+                    <React.Fragment key={key}>
+                      <tr>
+                        <td colSpan={5} className="p-0 border-b border-[#eee]">
+                          <button
+                            className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                            onClick={() => toggleDropdown(key)}
+                          >
+                            <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                            <span>{doc.label}</span>
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                            <div className="space-y-4">
+                              {evalRows.map((row, rowIdx) => {
+                                const pptTid = `${phase}-${doc.id}-ppt-${rowIdx}`;
+                                const complianceTid = `${phase}-${doc.id}-compliance-${rowIdx}`;
+                                const pptDoc = getDocForItem(pptTid);
+                                const complianceDoc = getDocForItem(complianceTid);
+                                const hasPptFile = !!pptDoc;
+                                const hasComplianceFile = !!complianceDoc;
+                                const isPptUploading = uploadingItemId === pptTid;
+                                const isComplianceUploading = uploadingItemId === complianceTid;
+
+                                return (
+                                  <div key={rowIdx} className="bg-white border border-[#ddd] rounded p-4 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs font-semibold text-[#333]">Evaluation {rowIdx + 1}</span>
+                                      {evalRows.length > 1 && isEditMode && (
+                                        <button
+                                          onClick={() => {
+                                            const newRows = evalRows.filter((_, i) => i !== rowIdx);
+                                            setEvalRows(newRows);
+                                          }}
+                                          className="text-[#c62828] text-xs hover:underline"
+                                        >
+                                          Remove
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    {/* Date input */}
+                                    <div className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                      <span className="flex-1 text-xs text-[#333]">Date</span>
+                                      <input
+                                        type="date"
+                                        value={row.date}
+                                        onChange={(e) => {
+                                          const newRows = [...evalRows];
+                                          newRows[rowIdx] = { ...newRows[rowIdx], date: e.target.value };
+                                          setEvalRows(newRows);
+                                        }}
+                                        className={`border border-[#ddd] rounded px-3 py-2 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                        disabled={!isEditMode}
+                                      />
+                                    </div>
+
+                                    {/* PPT Presentation row */}
+                                    <div className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                      <span className="flex-1 text-xs text-[#333]">PPT Presentation</span>
+                                      <div className="flex gap-1.5">
+                                        <button
+                                          className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                          title={isEditMode ? "Upload" : "View mode - editing disabled"}
+                                          onClick={() => handleUploadClick(pptTid)}
+                                          disabled={isPptUploading || !isEditMode}
+                                        >
+                                          {isPptUploading ? (
+                                            <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                          ) : (
+                                            <Icon icon="mdi:upload" width={14} height={14} />
+                                          )}
+                                        </button>
+                                        <button
+                                          className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                            hasPptFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                          }`}
+                                          title="View"
+                                          onClick={() => hasPptFile && setPreviewDoc(pptDoc)}
+                                          disabled={!hasPptFile}
+                                        >
+                                          <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                        </button>
+                                        <button
+                                          className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                            hasPptFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                          }`}
+                                          title={isEditMode ? "Delete" : "View mode - editing disabled"}
+                                          onClick={() => hasPptFile && isEditMode && handleDeleteAll(pptTid)}
+                                          disabled={!hasPptFile || !isEditMode}
+                                        >
+                                          <Icon icon="mdi:delete-outline" width={14} height={14} />
+                                        </button>
+                                      </div>
+                                      {hasPptFile && (
+                                        <span className="text-[10px] text-[#2e7d32] bg-[#e8f5e9] px-2 py-0.5 rounded">Uploaded</span>
+                                      )}
+                                    </div>
+
+                                    {/* Compliance Report row */}
+                                    <div className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                      <span className="flex-1 text-xs text-[#333]">Compliance Report</span>
+                                      <div className="flex gap-1.5">
+                                        <button
+                                          className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                          title={isEditMode ? "Upload" : "View mode - editing disabled"}
+                                          onClick={() => handleUploadClick(complianceTid)}
+                                          disabled={isComplianceUploading || !isEditMode}
+                                        >
+                                          {isComplianceUploading ? (
+                                            <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                          ) : (
+                                            <Icon icon="mdi:upload" width={14} height={14} />
+                                          )}
+                                        </button>
+                                        <button
+                                          className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                            hasComplianceFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                          }`}
+                                          title="View"
+                                          onClick={() => hasComplianceFile && setPreviewDoc(complianceDoc)}
+                                          disabled={!hasComplianceFile}
+                                        >
+                                          <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                        </button>
+                                        <button
+                                          className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                            hasComplianceFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                          }`}
+                                          title={isEditMode ? "Delete" : "View mode - editing disabled"}
+                                          onClick={() => hasComplianceFile && isEditMode && handleDeleteAll(complianceTid)}
+                                          disabled={!hasComplianceFile || !isEditMode}
+                                        >
+                                          <Icon icon="mdi:delete-outline" width={14} height={14} />
+                                        </button>
+                                      </div>
+                                      {hasComplianceFile && (
+                                        <span className="text-[10px] text-[#2e7d32] bg-[#e8f5e9] px-2 py-0.5 rounded">Uploaded</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+
+                              <div className="flex gap-3">
+                                {isEditMode && (
+                                  <button
+                                    onClick={() => {
+                                      setEvalRows([...evalRows, { date: '' }]);
+                                    }}
+                                    className="text-xs text-[#2e7d32] hover:underline flex items-center gap-1"
+                                  >
+                                    <Icon icon="mdi:plus" width={14} height={14} />
+                                    Add Evaluation Row
+                                  </button>
+                                )}
+                                <button
+                                  onClick={async () => {
+                                    setSavingData(true);
+                                    try {
+                                      const evalKey = isInternal ? 'internalEvalRows' : 'externalEvalRows';
+                                      const mergedData = {
+                                        ...currentDropdownData,
+                                        [evalKey]: evalRows,
+                                      };
+                                      setCurrentDropdownData(mergedData);
+
+                                      const response = await fetch(`/api/setup-projects/${projectId}`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ dropdownData: mergedData }),
+                                      });
+
+                                      if (!response.ok) throw new Error('Failed to save');
+
+                                      setSaveSuccessModal({ show: true, message: `${doc.label} saved successfully!` });
+                                    } catch (error) {
+                                      console.error('Error saving evaluation data:', error);
+                                      alert('Failed to save evaluation data');
+                                    } finally {
+                                      setSavingData(false);
+                                    }
+                                  }}
+                                  disabled={savingData || !isEditMode}
+                                  className="bg-[#2e7d32] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1b5e20] disabled:bg-[#ccc] disabled:cursor-not-allowed transition-colors ml-auto"
+                                >
+                                  {savingData ? 'Saving...' : 'Save'}
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                }
+
+                // Default dropdown (with options)
                 return (
-                  <tr key={key}>
-                    <td colSpan={5} className="p-0 border-b border-[#eee]">
-                      <button
-                        className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
-                        onClick={() => toggleDropdown(key)}
-                      >
-                        <Icon icon={expandedDropdowns[key] ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                  <React.Fragment key={key}>
+                    <tr>
+                      <td colSpan={5} className="p-0 border-b border-[#eee]">
+                        <button
+                          className="flex items-center gap-1.5 bg-[#e8f5e9] border-none py-2 px-3 text-[13px] text-[#2e7d32] font-semibold cursor-pointer w-full transition-colors duration-200 hover:bg-[#c8e6c9]"
+                          onClick={() => toggleDropdown(key)}
+                        >
+                          <Icon icon={expandedDropdowns[key] ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
+                          <span>{doc.label}</span>
+                        </button>
+                      </td>
+                    </tr>
+                    {expandedDropdowns[key] && doc.options && (
+                      <tr>
+                        <td colSpan={5} className="p-4 bg-[#f9f9f9] border-b border-[#eee]">
+                          <div className="space-y-2">
+                            {doc.options.map((option, optIdx) => {
+                              const tid = `${phase}-${doc.id}-${optIdx}`;
+                              const uploadedDoc = getDocForItem(tid);
+                              const hasFile = !!uploadedDoc;
+                              const isUploading = uploadingItemId === tid;
+
+                              return (
+                                <div key={optIdx} className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
+                                  <span className="flex-1 text-xs text-[#333]">{option}</span>
+                                  <div className="flex gap-1.5">
+                                    <button
+                                      className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                                      title={isEditMode ? "Upload" : "View mode - editing disabled"}
+                                      onClick={() => handleUploadClick(tid)}
+                                      disabled={isUploading || !isEditMode}
+                                    >
+                                      {isUploading ? (
+                                        <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" />
+                                      ) : (
+                                        <Icon icon="mdi:upload" width={14} height={14} />
+                                      )}
+                                    </button>
+                                    <button
+                                      className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                        hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                      }`}
+                                      title="View"
+                                      onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
+                                      disabled={!hasFile}
+                                    >
+                                      <Icon icon="mdi:eye-outline" width={14} height={14} />
+                                    </button>
+                                    <button
+                                      className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
+                                        hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
+                                      }`}
+                                      title={isEditMode ? "Delete" : "View mode - editing disabled"}
+                                      onClick={() => hasFile && isEditMode && handleDeleteAll(tid)}
+                                      disabled={!hasFile || !isEditMode}
+                                    >
+                                      <Icon icon="mdi:delete-outline" width={14} height={14} />
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              }
+
+              // ── Accepted Liquidation with date ──
+              if (doc.label === 'Accepted Liquidation') {
+                itemCounter++;
+                const tid = `${phase}-${doc.id}`;
+                const allDocs = getDocsForItem(tid);
+                const latest = allDocs[0];
+                const isUploading = uploadingItemId === tid;
+                const hasFile = allDocs.length > 0;
+
+                elements.push(
+                  <tr key={`${title}-${doc.id}-${idx}`}>
+                    <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#888] font-medium">{itemCounter}</td>
+                    <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#333]">
+                      <div className="flex items-center gap-3">
                         <span>{doc.label}</span>
-                      </button>
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-[#666]">Date:</label>
+                          <input
+                            type="date"
+                            value={acceptedLiquidationDate}
+                            onChange={(e) => setAcceptedLiquidationDate(e.target.value)}
+                            className={`border border-[#ddd] rounded px-2 py-1 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                            disabled={!isEditMode}
+                          />
+                          <button
+                            onClick={async () => {
+                              setSavingData(true);
+                              try {
+                                const mergedData = { ...currentDropdownData, acceptedLiquidationDate };
+                                setCurrentDropdownData(mergedData);
+                                await fetch(`/api/setup-projects/${projectId}`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ dropdownData: mergedData }),
+                                });
+                                setSaveSuccessModal({ show: true, message: 'Date saved successfully!' });
+                              } catch (error) {
+                                console.error('Error saving date:', error);
+                              } finally {
+                                setSavingData(false);
+                              }
+                            }}
+                            disabled={savingData || !isEditMode}
+                            className="bg-[#2e7d32] text-white px-2 py-1 rounded text-[10px] font-semibold hover:bg-[#1b5e20] disabled:bg-[#ccc] disabled:cursor-not-allowed"
+                          >
+                            {savingData ? '...' : 'Save'}
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-2.5 px-3 border-b border-[#eee] align-middle">
+                      {hasFile ? (
+                        <span className="text-[10px] text-[#2e7d32] bg-[#e8f5e9] px-2 py-0.5 rounded">Uploaded</span>
+                      ) : (
+                        <span className="text-[#bbb] italic text-xs">No file uploaded</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#999] text-xs">
+                      {hasFile ? new Date(latest.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
+                    </td>
+                    <td className="py-2.5 px-3 border-b border-[#eee] align-middle">
+                      <div className="flex gap-1.5">
+                        <button
+                          className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                          title={isEditMode ? "Upload" : "View mode - editing disabled"}
+                          onClick={() => handleUploadClick(tid)}
+                          disabled={isUploading || !isEditMode}
+                        >
+                          {isUploading ? <Icon icon="mdi:loading" width={14} height={14} className="animate-spin" /> : <Icon icon="mdi:upload" width={14} height={14} />}
+                        </button>
+                        <button
+                          className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
+                          title={isEditMode ? "Delete" : "View mode - editing disabled"}
+                          onClick={() => hasFile && isEditMode && handleDeleteAll(tid)}
+                          disabled={!hasFile || !isEditMode}
+                        >
+                          <Icon icon="mdi:delete-outline" width={14} height={14} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
+
+                // Check if this is the last item before a section or the last doc
+                if (isLastBeforeSection || isLastDoc) {
+                  elements.push(...renderSectionCustomRows(currentSectionLabel, `end-${idx}`));
+                }
+
+                return elements;
               }
 
               // ── Regular item row ──
@@ -2450,9 +3440,8 @@ function DocumentTable({
               const latest = allDocs[0];
               const isUploading = uploadingItemId === tid;
               const hasFile = allDocs.length > 0;
-              const extColor = (ext: string) => ext==='PDF'?'#e53935':ext==='DOCX'||ext==='DOC'?'#1565c0':ext==='XLSX'||ext==='XLS'?'#2e7d32':ext==='PNG'||ext==='JPG'||ext==='JPEG'?'#f57c00':'#607d8b';
 
-              return (
+              elements.push(
                 <tr key={`${title}-${doc.id}-${idx}`}>
                   <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#888] font-medium">{itemCounter}</td>
                   <td className="py-2.5 px-3 border-b border-[#eee] align-middle text-[#333]">{doc.label}</td>
@@ -2559,7 +3548,15 @@ function DocumentTable({
                   </td>
                 </tr>
               );
+
+              // If this is the last item before a section or the last doc, add custom rows for current section
+              if (isLastBeforeSection || isLastDoc) {
+                elements.push(...renderSectionCustomRows(currentSectionLabel, `end-${idx}`));
+              }
+
+              return elements;
             })}
+
           </tbody>
         </table>
       </div>
@@ -2781,6 +3778,212 @@ function DocumentTable({
       </div>
     )}
 
+    {/* Add New Type Modal */}
+    {showAddTypeModal && (
+      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1200]">
+        <div className="bg-white rounded-lg w-full max-w-[300px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+          <h3 className="text-base font-bold text-primary mb-3">Add New Type Option</h3>
+          <input
+            type="text"
+            value={newTypeName}
+            onChange={(e) => setNewTypeName(e.target.value)}
+            placeholder="Enter type name"
+            className="w-full px-3 py-2 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary mb-4"
+            autoFocus
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => { setShowAddTypeModal(false); setNewTypeName(''); }}
+              className="px-4 py-2 bg-gray-200 text-gray-600 rounded text-sm font-medium hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (newTypeName.trim() && !abstractQuotationTypeOptions.includes(newTypeName.trim())) {
+                  const updated = [...abstractQuotationTypeOptions, newTypeName.trim()];
+                  setAbstractQuotationTypeOptions(updated);
+                  saveDropdownData(
+                    { abstractQuotationTypeOptions: updated },
+                    `Type "${newTypeName.trim()}" added successfully!`
+                  );
+                } else if (abstractQuotationTypeOptions.includes(newTypeName.trim())) {
+                  alert('This type already exists!');
+                  return;
+                }
+                setShowAddTypeModal(false);
+                setNewTypeName('');
+              }}
+              className="px-4 py-2 bg-primary text-white rounded text-sm font-medium hover:opacity-90"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Add New Status Modal */}
+    {showAddStatusModal && (
+      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1200]">
+        <div className="bg-white rounded-lg w-full max-w-[300px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+          <h3 className="text-base font-bold text-primary mb-3">Add New Status Option</h3>
+          <input
+            type="text"
+            value={newStatusName}
+            onChange={(e) => setNewStatusName(e.target.value)}
+            placeholder="Enter status name"
+            className="w-full px-3 py-2 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary mb-4"
+            autoFocus
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => { setShowAddStatusModal(false); setNewStatusName(''); }}
+              className="px-4 py-2 bg-gray-200 text-gray-600 rounded text-sm font-medium hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (newStatusName.trim() && !interventionStatusOptions.includes(newStatusName.trim())) {
+                  const updated = [...interventionStatusOptions, newStatusName.trim()];
+                  setInterventionStatusOptions(updated);
+                  saveDropdownData(
+                    { interventionStatusOptions: updated },
+                    `Status "${newStatusName.trim()}" added successfully!`
+                  );
+                } else if (interventionStatusOptions.includes(newStatusName.trim())) {
+                  alert('This status already exists!');
+                  return;
+                }
+                setShowAddStatusModal(false);
+                setNewStatusName('');
+              }}
+              className="px-4 py-2 bg-primary text-white rounded text-sm font-medium hover:opacity-90"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Add New Row Modal */}
+    {showAddRowModal?.show && (
+      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1200]">
+        <div className="bg-white rounded-lg w-full max-w-[400px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+          <h3 className="text-base font-bold text-primary mb-4">Add New Row to {showAddRowModal.sectionLabel}</h3>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-[#555] mb-1">Row Name</label>
+              <input
+                type="text"
+                value={newRowName}
+                onChange={(e) => setNewRowName(e.target.value)}
+                placeholder="Enter document/field name"
+                className="w-full px-3 py-2 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[#555] mb-1">Row Type</label>
+              <select
+                value={newRowType}
+                onChange={(e) => setNewRowType(e.target.value as 'item' | 'dropdown' | 'textinput')}
+                className="w-full px-3 py-2 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+              >
+                <option value="item">File Upload</option>
+                <option value="textinput">Text Input</option>
+                <option value="dropdown">Dropdown</option>
+              </select>
+            </div>
+
+            {newRowType === 'dropdown' && (
+              <div>
+                <label className="block text-xs font-semibold text-[#555] mb-1">Dropdown Options (comma-separated)</label>
+                <input
+                  type="text"
+                  value={newRowDropdownOptions}
+                  onChange={(e) => setNewRowDropdownOptions(e.target.value)}
+                  placeholder="Option 1, Option 2, Option 3"
+                  className="w-full px-3 py-2 border border-[#d0d0d0] rounded text-sm focus:outline-none focus:border-primary"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2 mt-5">
+            <button
+              type="button"
+              onClick={() => {
+                setShowAddRowModal(null);
+                setNewRowName('');
+                setNewRowType('item');
+                setNewRowDropdownOptions('');
+              }}
+              className="px-4 py-2 bg-gray-200 text-gray-600 rounded text-sm font-medium hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                if (!newRowName.trim()) {
+                  alert('Please enter a row name');
+                  return;
+                }
+
+                const newRow = {
+                  id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                  sectionLabel: showAddRowModal.sectionLabel,
+                  name: newRowName.trim(),
+                  rowType: newRowType,
+                  dropdownOptions: newRowType === 'dropdown' ? newRowDropdownOptions.split(',').map(o => o.trim()).filter(o => o) : undefined,
+                  textValue: '',
+                };
+
+                const updatedCustomRows = [...customRows, newRow];
+                setCustomRows(updatedCustomRows);
+
+                // Save to database
+                try {
+                  const mergedData = {
+                    ...currentDropdownData,
+                    customRows: updatedCustomRows,
+                  };
+                  setCurrentDropdownData(mergedData);
+
+                  await fetch(`/api/setup-projects/${projectId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dropdownData: mergedData }),
+                  });
+
+                  setSaveSuccessModal({ show: true, message: `Row "${newRowName.trim()}" added successfully!` });
+                } catch (error) {
+                  console.error('Error saving custom row:', error);
+                }
+
+                setShowAddRowModal(null);
+                setNewRowName('');
+                setNewRowType('item');
+                setNewRowDropdownOptions('');
+              }}
+              className="px-4 py-2 bg-primary text-white rounded text-sm font-medium hover:opacity-90"
+            >
+              Add Row
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
     {/* Preview Modal */}
     {previewDoc&&(
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[1100]" onClick={()=>setPreviewDoc(null)}>
@@ -2863,6 +4066,60 @@ export default function ProjectDetailPage() {
   const [pendingEditRequests, setPendingEditRequests] = useState<EditRequest[]>([]);
   const [approvedEditorsList, setApprovedEditorsList] = useState<EditRequest[]>([]);
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
+  const [loadingPermissions, setLoadingPermissions] = useState(false);
+
+  // Function to fetch pending edit requests and approved editors
+  const fetchEditRequestsAndEditors = useCallback(async () => {
+    setLoadingPermissions(true);
+    try {
+      // Always fetch fresh project data to get latest pendingEditRequests
+      const freshProjectRes = await fetch(`/api/setup-projects/${id}`);
+      const freshProject = await freshProjectRes.json();
+
+      const dropdownData = freshProject.dropdownData as Record<string, unknown> | null;
+      const pendingRequestIds = (dropdownData?.pendingEditRequests as string[]) || [];
+      const approvedEditorIds = (dropdownData?.approvedEditors as string[]) || [];
+
+      // If no pending requests and no approved editors, clear both states
+      if (pendingRequestIds.length === 0 && approvedEditorIds.length === 0) {
+        setPendingEditRequests([]);
+        setApprovedEditorsList([]);
+        setLoadingPermissions(false);
+        return;
+      }
+
+      const usersRes = await fetch('/api/users');
+      const users = await usersRes.json();
+
+      // Map pending requests
+      const requests: EditRequest[] = pendingRequestIds.map((userId: string) => {
+        const user = users.find((u: { id: string; fullName: string; profileImageUrl?: string }) => u.id === userId);
+        return {
+          userId,
+          userName: user?.fullName || 'Unknown User',
+          userProfileUrl: user?.profileImageUrl || null,
+          requestedAt: 'Pending',
+        };
+      });
+      setPendingEditRequests(requests);
+
+      // Map approved editors
+      const editors: EditRequest[] = approvedEditorIds.map((userId: string) => {
+        const user = users.find((u: { id: string; fullName: string; profileImageUrl?: string }) => u.id === userId);
+        return {
+          userId,
+          userName: user?.fullName || 'Unknown User',
+          userProfileUrl: user?.profileImageUrl || null,
+          requestedAt: 'Approved',
+        };
+      });
+      setApprovedEditorsList(editors);
+    } catch (err) {
+      console.error('Failed to fetch edit requests and editors:', err);
+    } finally {
+      setLoadingPermissions(false);
+    }
+  }, [id]);
 
   // Get current user from localStorage
   useEffect(() => {
@@ -2881,74 +4138,30 @@ export default function ProjectDetailPage() {
     const handleOpenEditRequestModal = (e: CustomEvent) => {
       if (e.detail.projectId === id) {
         setEditPermissionModal(true);
+        fetchEditRequestsAndEditors();
       }
     };
 
     window.addEventListener('openEditRequestModal', handleOpenEditRequestModal as EventListener);
     return () => window.removeEventListener('openEditRequestModal', handleOpenEditRequestModal as EventListener);
-  }, [id]);
+  }, [id, fetchEditRequestsAndEditors]);
 
   // Check sessionStorage for pending edit request modal on page load
   useEffect(() => {
     const pendingProjectId = sessionStorage.getItem('pendingEditRequestModal');
-    if (pendingProjectId === id) {
+    if (pendingProjectId === id && !loading) {
       sessionStorage.removeItem('pendingEditRequestModal');
       sessionStorage.removeItem('pendingEditRequestUserId');
-      // Open the edit permission modal after a short delay to let project load
-      setTimeout(() => setEditPermissionModal(true), 500);
+      setEditPermissionModal(true);
+      fetchEditRequestsAndEditors();
     }
-  }, [id]);
+  }, [id, loading, fetchEditRequestsAndEditors]);
 
   // Fetch pending edit requests and approved editors when project data changes
   useEffect(() => {
     if (!project) return;
-
-    const fetchEditRequestsAndEditors = async () => {
-      const dropdownData = project.dropdownData as Record<string, unknown> | null;
-      const pendingRequestIds = (dropdownData?.pendingEditRequests as string[]) || [];
-      const approvedEditorIds = (dropdownData?.approvedEditors as string[]) || [];
-
-      // If no pending requests and no approved editors, clear both states
-      if (pendingRequestIds.length === 0 && approvedEditorIds.length === 0) {
-        setPendingEditRequests([]);
-        setApprovedEditorsList([]);
-        return;
-      }
-
-      try {
-        const usersRes = await fetch('/api/users');
-        const users = await usersRes.json();
-
-        // Map pending requests
-        const requests: EditRequest[] = pendingRequestIds.map((userId: string) => {
-          const user = users.find((u: { id: string; fullName: string; profileImageUrl?: string }) => u.id === userId);
-          return {
-            userId,
-            userName: user?.fullName || 'Unknown User',
-            userProfileUrl: user?.profileImageUrl || null,
-            requestedAt: 'Pending',
-          };
-        });
-        setPendingEditRequests(requests);
-
-        // Map approved editors
-        const editors: EditRequest[] = approvedEditorIds.map((userId: string) => {
-          const user = users.find((u: { id: string; fullName: string; profileImageUrl?: string }) => u.id === userId);
-          return {
-            userId,
-            userName: user?.fullName || 'Unknown User',
-            userProfileUrl: user?.profileImageUrl || null,
-            requestedAt: 'Approved',
-          };
-        });
-        setApprovedEditorsList(editors);
-      } catch (err) {
-        console.error('Failed to fetch edit requests and editors:', err);
-      }
-    };
-
     fetchEditRequestsAndEditors();
-  }, [project]);
+  }, [project, fetchEditRequestsAndEditors]);
 
   useEffect(() => {
     fetch(`/api/setup-projects/${id}`)
@@ -3281,7 +4494,10 @@ export default function ProjectDetailPage() {
               {/* Permission Button - Show only for owner (assignee) or admin, not for users with granted edit access */}
               {isOwnerOrAdmin() && (
                 <button
-                  onClick={() => setEditPermissionModal(true)}
+                  onClick={() => {
+                    setEditPermissionModal(true);
+                    fetchEditRequestsAndEditors();
+                  }}
                   className="relative flex items-center justify-center w-10 h-10 border-none rounded-full bg-[#f5f5f5] text-[#666] cursor-pointer transition-all duration-200 hover:bg-[#e0e0e0] hover:text-[#333]"
                   title="Edit Permissions"
                 >
@@ -3514,6 +4730,13 @@ export default function ProjectDetailPage() {
 
               {/* Content */}
               <div className="px-6 py-4 max-h-[400px] overflow-y-auto">
+                {loadingPermissions ? (
+                  <div className="flex flex-col items-center justify-center py-10">
+                    <Icon icon="mdi:loading" width={40} height={40} className="animate-spin text-[#f57c00] mb-3" />
+                    <p className="text-sm text-[#666] m-0">Loading permissions...</p>
+                  </div>
+                ) : (
+                  <>
                 {/* Pending Requests Section */}
                 <div className="mb-4">
                   <h4 className="text-sm font-semibold text-[#333] mb-3 flex items-center gap-2">
@@ -3642,6 +4865,8 @@ export default function ProjectDetailPage() {
                       ))}
                     </div>
                   </div>
+                )}
+                  </>
                 )}
               </div>
 

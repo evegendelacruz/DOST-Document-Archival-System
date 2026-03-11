@@ -6,8 +6,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
-import NotificationDropdown from './notification';
-import MessengerDropdown from './MessengerDropdown';
+// import NotificationDropdown from './notification'; // temporarily disabled
+// import MessengerDropdown from './MessengerDropdown'; // temporarily disabled
 import SnakeGame from './SnakeGame';
 
 
@@ -146,8 +146,14 @@ export default function Header() {
 
         {showSnake && <SnakeGame onClose={() => setShowSnake(false)} />}
 
-        <MessengerDropdown />
-        <NotificationDropdown />
+        {/* MessengerDropdown — temporarily disabled (no API calls) */}
+        <button disabled className="relative flex items-center justify-center w-8 h-8 rounded-full text-gray-500 pointer-events-none opacity-40" title="Messenger (disabled)">
+          <Icon icon="mdi:message-text-outline" width={24} height={24} />
+        </button>
+        {/* NotificationDropdown — temporarily disabled (no API calls) */}
+        <button disabled className="relative bg-transparent border-none p-[5px] text-[#666] pointer-events-none opacity-40" title="Notifications (disabled)">
+          <Icon icon="mdi:bell-outline" width={24} height={24} />
+        </button>
        
         {/* User Profile Dropdown */}
         <div className="relative" ref={dropdownRef}>

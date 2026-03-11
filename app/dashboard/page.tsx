@@ -840,8 +840,8 @@ export default function DashboardPage() {
                           <span className="font-semibold text-[#333]">Staff Involved:</span>
                           {event.staffInvolvedUsers && event.staffInvolvedUsers.length > 0 ? (
                             <div className="flex items-center gap-1 flex-wrap">
-                              {event.staffInvolvedUsers.map((staff) => (
-                                <div key={staff.id} className="flex items-center gap-1 bg-gray-100 rounded-full px-1.5 py-0.5">
+                              {event.staffInvolvedUsers.map((staff, idx) => (
+                                <div key={`${staff.id}-${idx}`} className="flex items-center gap-1 bg-gray-100 rounded-full px-1.5 py-0.5">
                                   {staff.profileImageUrl ? (
                                     <img src={staff.profileImageUrl} alt={staff.fullName} className="w-4 h-4 rounded-full object-cover" />
                                   ) : (
