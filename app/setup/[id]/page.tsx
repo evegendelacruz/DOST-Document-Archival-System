@@ -127,7 +127,7 @@ const implementationDocs: DocRow[] = [
     options: ['DV', 'ORS']
   },
   { id: 18, label: 'Approved Amount for Release', type: 'dropdown' },
-  { id: 27, label: 'Untagging Amount & Documentary Requirements', type: 'dropdown' },
+  { id: 27, label: 'Untagging Request & Documentary Requirements', type: 'dropdown' },
   { id: 21, label: 'Clearance to Untag', type: 'dropdown' },
   { id: 4, label: 'Official Receipt of Technology Assistance', type: 'item' },
   { id: 9, label: 'Amendments to the MOA', type: 'dropdown', options: ['Change in Project Duration - Annex C', 'Extension of Project Duration - Annex C', 'Change in LIB or LIB-realignment - Annex B', 'Refund Restructuring - Annex D'] },
@@ -139,7 +139,7 @@ const managementDocs: DocRow[] = [
 ];
 
 const monitoringDocs: DocRow[] = [
-  { id: 15, label: 'Pre-Project Information Sheet (PIS)',type: 'dropdown', options: ['Withdrawal Request', 'Approval']},
+  { id: 15, label: 'Pre-Project Information Sheet (PIS)',type: 'item'},
   { id: 25, label: 'Annual PIS', type: 'dropdown', options: ['2024', '2025', '2026', '2027', '2028'] },
   { id: 26, label: 'Quarterly Project Status Reports', type: 'dropdown', options: ['Q1', 'Q2', 'Q3', 'Q4'] }, // Single dropdown for all monitoring reports
   { id: 998, label: 'Others', type: 'dropdown', options: [] },
@@ -254,11 +254,16 @@ function DocumentTable({
     name: string;
   }>>([]);
   const [abstractQuotationTypeOptions, setAbstractQuotationTypeOptions] = useState<string[]>(['Equipment', 'Non-equipment']);
+  const [abstractQuotationTypeDropdownOpen, setAbstractQuotationTypeDropdownOpen] = useState<number | null>(null);
+  const [abstractQuotationTypeDropdownPos, setAbstractQuotationTypeDropdownPos] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
   const [showAddTypeModal, setShowAddTypeModal] = useState(false);
   const [newTypeName, setNewTypeName] = useState<string>('');
-  const [interventionStatusOptions, setInterventionStatusOptions] = useState<string[]>(['Procured', 'Pulled Out']);
+  const [interventionStatusOptions, setInterventionStatusOptions] = useState<string[]>(['For Procurement', 'Pulled Out']);
   const [showAddStatusModal, setShowAddStatusModal] = useState(false);
   const [newStatusName, setNewStatusName] = useState<string>('');
+  const [interventionStatusDropdownOpen, setInterventionStatusDropdownOpen] = useState<number | null>(null);
+  const [interventionStatusDropdownPos, setInterventionStatusDropdownPos] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
+  const interventionStatusDropdownRef = useRef<HTMLDivElement>(null);
   const [othersOptions, setOthersOptions] = useState<string[]>(['Withdrawal Request', 'Withdrawal Approval', 'Photo(s) During Implementation']);
   const [showAddOthersModal, setShowAddOthersModal] = useState(false);
   const [newOthersName, setNewOthersName] = useState<string>('');
@@ -365,6 +370,7 @@ function DocumentTable({
     specification?: string;
   }>>([]);
   const [clearanceUntagRows, setClearanceUntagRows] = useState<Array<{
+    name: string;
     amount: string;
     supplier: string;
     date: string;
@@ -468,6 +474,14 @@ function DocumentTable({
     rowName: string;
   } | null>(null);
 
+  // Generic confirmation modal for all remove actions
+  const [genericConfirmModal, setGenericConfirmModal] = useState<{
+    show: boolean;
+    title: string;
+    itemName: string;
+    onConfirm: () => void;
+  } | null>(null);
+
   // Initialize states from saved dropdownData
   useEffect(() => {
     if (initialDropdownData) {
@@ -556,6 +570,7 @@ function DocumentTable({
       // Restore clearance untag rows
       if (data.clearanceUntagRows) {
         setClearanceUntagRows(data.clearanceUntagRows as Array<{
+          name: string;
           amount: string;
           supplier: string;
           date: string;
@@ -749,16 +764,25 @@ function DocumentTable({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close Refund Documents dropdown when clicking outside
+  // Close Refund Documents dropdown when clicking outside or scrolling
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (refundDropdownRef.current && !refundDropdownRef.current.contains(event.target as Node)) {
         setRefundDropdownOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    const handleScroll = () => {
+      setRefundDropdownOpen(false);
+    };
+    if (refundDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScroll, true);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        window.removeEventListener('scroll', handleScroll, true);
+      };
+    }
+  }, [refundDropdownOpen]);
 
   // Close Management Report dropdown when clicking outside
   useEffect(() => {
@@ -771,16 +795,67 @@ function DocumentTable({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close Communication dropdown when clicking outside
+  // Close Communication dropdown when clicking outside or scrolling
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (communicationDropdownRef.current && !communicationDropdownRef.current.contains(event.target as Node)) {
         setCommunicationDropdownOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    const handleScroll = () => {
+      setCommunicationDropdownOpen(false);
+    };
+    if (communicationDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScroll, true);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        window.removeEventListener('scroll', handleScroll, true);
+      };
+    }
+  }, [communicationDropdownOpen]);
+
+  // Close Abstract Quotation type dropdown when clicking outside or scrolling
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('[data-abstract-type-dropdown]')) {
+        setAbstractQuotationTypeDropdownOpen(null);
+      }
+    };
+    const handleScroll = () => {
+      setAbstractQuotationTypeDropdownOpen(null);
+    };
+    if (abstractQuotationTypeDropdownOpen !== null) {
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScroll, true);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        window.removeEventListener('scroll', handleScroll, true);
+      };
+    }
+  }, [abstractQuotationTypeDropdownOpen]);
+
+  // Close Intervention Status dropdown when clicking outside or scrolling
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('[data-intervention-status-dropdown]')) {
+        setInterventionStatusDropdownOpen(null);
+      }
+    };
+    const handleScroll = () => {
+      setInterventionStatusDropdownOpen(null);
+    };
+    if (interventionStatusDropdownOpen !== null) {
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScroll, true);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        window.removeEventListener('scroll', handleScroll, true);
+      };
+    }
+  }, [interventionStatusDropdownOpen]);
 
   const toggleDropdown = (key: string) => setExpandedDropdowns(prev => ({ ...prev, [key]: !prev[key] }));
 
@@ -1160,7 +1235,7 @@ function DocumentTable({
                                 >
                                   (edit)
                                 </button>
-                                <button onClick={() => { if (confirm(`Delete "${customRow.name}" row?`)) setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); }} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
+                                <button onClick={() => setGenericConfirmModal({ show: true, title: 'Remove Row', itemName: customRow.name, onConfirm: () => { setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); setGenericConfirmModal(null); } })} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
                               </>
                             )}
                           </div>
@@ -1245,7 +1320,7 @@ function DocumentTable({
                                 >
                                   (edit)
                                 </button>
-                                <button onClick={() => { if (confirm(`Delete "${customRow.name}" row?`)) setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); }} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
+                                <button onClick={() => setGenericConfirmModal({ show: true, title: 'Remove Row', itemName: customRow.name, onConfirm: () => { setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); setGenericConfirmModal(null); } })} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
                               </>
                             )}
                           </div>
@@ -1331,7 +1406,7 @@ function DocumentTable({
                                 >
                                   (edit)
                                 </button>
-                                <button onClick={() => { if (confirm(`Delete "${customRow.name}" row?`)) setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); }} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
+                                <button onClick={() => setGenericConfirmModal({ show: true, title: 'Remove Row', itemName: customRow.name, onConfirm: () => { setCustomRows(prev => prev.filter(r => r.id !== customRow.id)); setGenericConfirmModal(null); } })} className="text-[#c62828] hover:underline text-[10px]">(remove)</button>
                               </>
                             )}
                           </div>
@@ -1678,31 +1753,98 @@ function DocumentTable({
                                               className={`w-full border border-[#ddd] rounded px-3 py-2 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                             />
                                           </div>
-                                          <div>
+                                          <div className="relative" data-intervention-status-dropdown>
                                             <label className="block text-xs text-[#555] mb-1">Status</label>
-                                            <select
-                                              value={interventionData.status || ''}
-                                              onChange={(e) => {
-                                                if (e.target.value === '__add_new__') {
-                                                  setShowAddStatusModal(true);
-                                                } else {
-                                                  const updated = [...interventionInputs];
-                                                  if (!updated[rowIdx]) {
-                                                    updated[rowIdx] = { type: row.type?.toLowerCase() as 'equipment' | 'non-equipment' };
-                                                  }
-                                                  updated[rowIdx].status = e.target.value;
-                                                  setInterventionInputs(updated);
-                                                }
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                if (!isEditMode) return;
+                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                setInterventionStatusDropdownPos({
+                                                  top: rect.bottom + 4,
+                                                  left: rect.left,
+                                                  width: rect.width
+                                                });
+                                                setInterventionStatusDropdownOpen(interventionStatusDropdownOpen === rowIdx ? null : rowIdx);
                                               }}
                                               disabled={!isEditMode}
-                                              className={`w-full border border-[#ddd] rounded px-3 py-2 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                              className={`w-full border border-[#ddd] rounded px-3 py-2 text-xs text-left flex items-center justify-between ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : 'bg-white cursor-pointer'}`}
                                             >
-                                              <option value="">Select...</option>
-                                              {interventionStatusOptions.map(opt => (
-                                                <option key={opt} value={opt}>{opt}</option>
-                                              ))}
-                                              <option value="__add_new__" className="text-primary font-bold">+ Add new option</option>
-                                            </select>
+                                              <span className={interventionData.status ? 'text-[#333]' : 'text-[#999]'}>
+                                                {interventionData.status || 'Select...'}
+                                              </span>
+                                              <Icon icon={interventionStatusDropdownOpen === rowIdx ? 'mdi:chevron-up' : 'mdi:chevron-down'} width={16} height={16} className="text-[#666]" />
+                                            </button>
+                                            {interventionStatusDropdownOpen === rowIdx && typeof window !== 'undefined' && createPortal(
+                                              <div
+                                                ref={interventionStatusDropdownRef}
+                                                data-intervention-status-dropdown
+                                                className="bg-white border border-[#ddd] rounded shadow-lg z-[1100] max-h-[200px] overflow-y-auto"
+                                                style={{
+                                                  position: 'fixed',
+                                                  top: interventionStatusDropdownPos.top,
+                                                  left: interventionStatusDropdownPos.left,
+                                                  width: interventionStatusDropdownPos.width,
+                                                }}
+                                              >
+                                                {interventionStatusOptions.map(opt => {
+                                                  const isDefault = ['Procured', 'Pulled Out'].includes(opt);
+                                                  return (
+                                                    <div
+                                                      key={opt}
+                                                      className="flex items-center justify-between px-3 py-2 hover:bg-[#f5f5f5] cursor-pointer text-xs group"
+                                                      onClick={() => {
+                                                        const updated = [...interventionInputs];
+                                                        if (!updated[rowIdx]) {
+                                                          updated[rowIdx] = { type: row.type?.toLowerCase() as 'equipment' | 'non-equipment' };
+                                                        }
+                                                        updated[rowIdx].status = opt;
+                                                        setInterventionInputs(updated);
+                                                        setInterventionStatusDropdownOpen(null);
+                                                      }}
+                                                    >
+                                                      <span>{opt}</span>
+                                                      {!isDefault && isEditMode && (
+                                                        <button
+                                                          type="button"
+                                                          className="opacity-0 group-hover:opacity-100 text-[#c62828] hover:text-[#b71c1c] transition-opacity"
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setGenericConfirmModal({
+                                                              show: true,
+                                                              title: 'Remove Status Option',
+                                                              itemName: opt,
+                                                              onConfirm: () => {
+                                                                const updated = interventionStatusOptions.filter(o => o !== opt);
+                                                                setInterventionStatusOptions(updated);
+                                                                saveDropdownData(
+                                                                  { interventionStatusOptions: updated },
+                                                                  `Status option "${opt}" removed successfully!`
+                                                                );
+                                                                setGenericConfirmModal(null);
+                                                                setInterventionStatusDropdownOpen(null);
+                                                              }
+                                                            });
+                                                          }}
+                                                        >
+                                                          <Icon icon="mdi:close" width={14} height={14} />
+                                                        </button>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })}
+                                                <div
+                                                  className="px-3 py-2 hover:bg-[#f5f5f5] cursor-pointer text-xs text-[#1976d2] font-semibold border-t border-[#eee]"
+                                                  onClick={() => {
+                                                    setShowAddStatusModal(true);
+                                                    setInterventionStatusDropdownOpen(null);
+                                                  }}
+                                                >
+                                                  + Add new option
+                                                </div>
+                                              </div>,
+                                              document.body
+                                            )}
                                           </div>
                                           <div>
                                             <label className="block text-xs text-[#555] mb-1">Equipment Property Code</label>
@@ -1963,31 +2105,100 @@ function DocumentTable({
                                 const isUploading = uploadingItemId === templateItemId;
                                 const hasFile = !!uploadedDoc;
 
+                                const defaultTypeOptions = ['Equipment', 'Non-equipment'];
+                                const isCustomTypeOption = (opt: string) => !defaultTypeOptions.includes(opt);
+
                                 return (
-                                  <div key={rowIdx} className="flex items-center gap-3 bg-white border border-[#ddd] rounded p-3">
-                                    <span className="text-xs font-semibold text-[#333] min-w-[60px]">
-                                      Item #{rowIdx + 1}
-                                    </span>
-                                    <select
-                                      value={row.type}
-                                      onChange={(e) => {
-                                        if (e.target.value === '__add_new__') {
-                                          setShowAddTypeModal(true);
-                                        } else {
-                                          const updated = [...abstractQuotationRows];
-                                          updated[rowIdx].type = e.target.value;
-                                          setAbstractQuotationRows(updated);
-                                        }
-                                      }}
-                                      disabled={!isEditMode}
-                                      className={`border border-[#ddd] rounded px-3 py-2 text-xs min-w-[140px] ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                    >
-                                      <option value="">Select type...</option>
-                                      {abstractQuotationTypeOptions.map(opt => (
-                                        <option key={opt} value={opt}>{opt}</option>
-                                      ))}
-                                      <option value="__add_new__" className="text-primary font-bold">+ Add new option</option>
-                                    </select>
+                                  <div key={rowIdx} className="bg-white border border-[#ddd] rounded p-3">
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-xs font-semibold text-[#333] min-w-[60px]">
+                                        Item #{rowIdx + 1}
+                                      </span>
+                                      {/* Custom Type Dropdown */}
+                                    <div className="relative" data-abstract-type-dropdown>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          if (!isEditMode) return;
+                                          const rect = e.currentTarget.getBoundingClientRect();
+                                          setAbstractQuotationTypeDropdownPos({
+                                            top: rect.bottom + window.scrollY,
+                                            left: rect.left + window.scrollX,
+                                            width: rect.width
+                                          });
+                                          setAbstractQuotationTypeDropdownOpen(abstractQuotationTypeDropdownOpen === rowIdx ? null : rowIdx);
+                                        }}
+                                        disabled={!isEditMode}
+                                        className={`border border-[#ddd] rounded px-3 py-2 text-xs min-w-[140px] text-left flex items-center justify-between ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : 'bg-white cursor-pointer hover:border-[#aaa]'}`}
+                                      >
+                                        <span className={row.type ? 'text-[#333]' : 'text-[#999]'}>
+                                          {row.type || 'Select type...'}
+                                        </span>
+                                        <Icon icon="mdi:chevron-down" width={16} height={16} className="text-[#666]" />
+                                      </button>
+                                      {abstractQuotationTypeDropdownOpen === rowIdx && (
+                                        <div
+                                          data-abstract-type-dropdown
+                                          className="fixed bg-white border border-[#ddd] rounded shadow-lg max-h-[200px] overflow-y-auto z-[99999]"
+                                          style={{
+                                            top: abstractQuotationTypeDropdownPos.top,
+                                            left: abstractQuotationTypeDropdownPos.left,
+                                            minWidth: abstractQuotationTypeDropdownPos.width,
+                                          }}
+                                        >
+                                          {abstractQuotationTypeOptions.map(opt => (
+                                            <div
+                                              key={opt}
+                                              className="group px-3 py-2 text-xs cursor-pointer flex items-center justify-between hover:bg-[#f5f5f5] text-[#333]"
+                                              onClick={() => {
+                                                const updated = [...abstractQuotationRows];
+                                                updated[rowIdx].type = opt;
+                                                setAbstractQuotationRows(updated);
+                                                setAbstractQuotationTypeDropdownOpen(null);
+                                              }}
+                                            >
+                                              <span>{opt}</span>
+                                              {isCustomTypeOption(opt) && (
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setGenericConfirmModal({
+                                                      show: true,
+                                                      title: 'Remove Type Option',
+                                                      itemName: opt,
+                                                      onConfirm: () => {
+                                                        const newTypes = abstractQuotationTypeOptions.filter(t => t !== opt);
+                                                        setAbstractQuotationTypeOptions(newTypes);
+                                                        saveDropdownData(
+                                                          { abstractQuotationTypeOptions: newTypes },
+                                                          `Type "${opt}" removed successfully!`
+                                                        );
+                                                        setGenericConfirmModal(null);
+                                                        setAbstractQuotationTypeDropdownOpen(null);
+                                                      }
+                                                    });
+                                                  }}
+                                                  className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center text-[#c62828] hover:bg-[#ffebee] rounded transition-opacity"
+                                                  title={`Remove "${opt}"`}
+                                                >
+                                                  <Icon icon="mdi:close" width={14} height={14} />
+                                                </button>
+                                              )}
+                                            </div>
+                                          ))}
+                                          <div
+                                            className="px-3 py-2 text-xs text-[#1976d2] font-semibold hover:bg-[#e3f2fd] cursor-pointer border-t border-[#eee]"
+                                            onClick={() => {
+                                              setShowAddTypeModal(true);
+                                              setAbstractQuotationTypeDropdownOpen(null);
+                                            }}
+                                          >
+                                            <Icon icon="mdi:plus" width={14} height={14} className="inline mr-1" />
+                                            Add new type
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
                                     <input
                                       type="text"
                                       value={row.name}
@@ -1998,12 +2209,13 @@ function DocumentTable({
                                       }}
                                       placeholder={row.type ? `Enter ${row.type.toLowerCase()} name...` : "Enter name..."}
                                       disabled={!isEditMode}
-                                      className={`border border-[#ddd] rounded px-3 py-2 text-xs flex-1 min-w-[150px] ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                      className={`border border-[#ddd] rounded px-3 py-2 text-xs w-[180px] ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                     />
-                                    {hasFile && (
-                                      <span className="text-[10px] text-[#2e7d32] bg-[#e8f5e9] px-2 py-0.5 rounded">Uploaded</span>
-                                    )}
-                                    <div className="flex gap-1.5 ml-auto">
+                                    {/* File display inline */}
+                                    <div className="flex-1 min-w-0">
+                                      {renderFileChips(templateItemId) ?? <span className="text-[#bbb] italic text-xs">No file</span>}
+                                    </div>
+                                    <div className="flex gap-1.5">
                                       <button
                                         className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode && row.type ? 'bg-[#f5a623] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'} disabled:opacity-50 disabled:cursor-not-allowed`}
                                         title={!row.type ? "Select type first" : isEditMode ? "Upload" : "View mode - editing disabled"}
@@ -2018,16 +2230,6 @@ function DocumentTable({
                                       </button>
                                       <button
                                         className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
-                                          hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
-                                        }`}
-                                        title="View"
-                                        onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
-                                        disabled={!hasFile}
-                                      >
-                                        <Icon icon="mdi:eye-outline" width={14} height={14} />
-                                      </button>
-                                      <button
-                                        className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
                                           hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
                                         }`}
                                         title={isEditMode ? "Delete file" : "View mode - editing disabled"}
@@ -2039,9 +2241,15 @@ function DocumentTable({
                                       <button
                                         onClick={() => {
                                           if (!isEditMode) return;
-                                          if (confirm(`Remove Item #${rowIdx + 1}?`)) {
-                                            setAbstractQuotationRows(abstractQuotationRows.filter((_, i) => i !== rowIdx));
-                                          }
+                                          setGenericConfirmModal({
+                                            show: true,
+                                            title: 'Remove Item',
+                                            itemName: `Item #${rowIdx + 1}`,
+                                            onConfirm: () => {
+                                              setAbstractQuotationRows(abstractQuotationRows.filter((_, i) => i !== rowIdx));
+                                              setGenericConfirmModal(null);
+                                            }
+                                          });
                                         }}
                                         disabled={!isEditMode}
                                         className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#757575] hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
@@ -2050,6 +2258,7 @@ function DocumentTable({
                                         <Icon icon="mdi:minus" width={14} height={14} />
                                       </button>
                                     </div>
+                                  </div>
                                   </div>
                                 );
                               })}
@@ -2121,16 +2330,6 @@ function DocumentTable({
                                           </button>
                                           <button
                                             className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
-                                              hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
-                                            }`}
-                                            title="View"
-                                            onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
-                                            disabled={!hasFile}
-                                          >
-                                            <Icon icon="mdi:eye-outline" width={14} height={14} />
-                                          </button>
-                                          <button
-                                            className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
                                               hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
                                             }`}
                                             title={isEditMode ? "Delete" : "View mode - editing disabled"}
@@ -2195,16 +2394,6 @@ function DocumentTable({
                                             </button>
                                             <button
                                               className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
-                                                hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
-                                              }`}
-                                              title="View"
-                                              onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
-                                              disabled={!hasFile}
-                                            >
-                                              <Icon icon="mdi:eye-outline" width={14} height={14} />
-                                            </button>
-                                            <button
-                                              className={`w-7 h-7 border-none rounded-md flex items-center justify-center transition-opacity duration-200 text-white ${
                                                 hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'
                                               }`}
                                               title={isEditMode ? "Delete" : "View mode - editing disabled"}
@@ -2219,14 +2408,20 @@ function DocumentTable({
                                               disabled={!isEditMode}
                                               onClick={() => {
                                                 if (!isEditMode) return;
-                                                if (confirm(`Remove Supplemental MOA #${idx + 1} slot?`)) {
-                                                  const newCount = Math.max(0, moaSupplementalCount - 1);
-                                                  setMoaSupplementalCount(newCount);
-                                                  saveDropdownData(
-                                                    { moaSupplementalCount: newCount },
-                                                    `Supplemental MOA slot removed!`
-                                                  );
-                                                }
+                                                setGenericConfirmModal({
+                                                  show: true,
+                                                  title: 'Remove Supplemental MOA',
+                                                  itemName: `Supplemental MOA #${idx + 1}`,
+                                                  onConfirm: () => {
+                                                    const newCount = Math.max(0, moaSupplementalCount - 1);
+                                                    setMoaSupplementalCount(newCount);
+                                                    saveDropdownData(
+                                                      { moaSupplementalCount: newCount },
+                                                      `Supplemental MOA slot removed!`
+                                                    );
+                                                    setGenericConfirmModal(null);
+                                                  }
+                                                });
                                               }}
                                             >
                                               <Icon icon="mdi:minus" width={14} height={14} />
@@ -2311,9 +2506,15 @@ function DocumentTable({
                                     {fundReleaseDateRows.length > 1 && (
                                       <button
                                         onClick={() => {
-                                          if (confirm(`Remove Fund Release #${rowIdx + 1}?`)) {
-                                            setFundReleaseDateRows(fundReleaseDateRows.filter((_, i) => i !== rowIdx));
-                                          }
+                                          setGenericConfirmModal({
+                                            show: true,
+                                            title: 'Remove Fund Release',
+                                            itemName: `Fund Release #${rowIdx + 1}`,
+                                            onConfirm: () => {
+                                              setFundReleaseDateRows(fundReleaseDateRows.filter((_, i) => i !== rowIdx));
+                                              setGenericConfirmModal(null);
+                                            }
+                                          });
                                         }}
                                         disabled={!isEditMode}
                                         className={`w-6 h-6 border-none rounded flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#c62828] hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
@@ -2563,7 +2764,7 @@ function DocumentTable({
               }
 
               // Untagging Amount & Documentary Requirements dropdown handler
-              if (doc.label === 'Untagging Amount & Documentary Requirements' && doc.type === 'dropdown') {
+              if (doc.label === 'Untagging Request & Documentary Requirements' && doc.type === 'dropdown') {
                 // Helper function to get ordinal suffix
                 const getOrdinal = (n: number) => {
                   const s = ['th', 'st', 'nd', 'rd'];
@@ -2573,15 +2774,6 @@ function DocumentTable({
 
                 // Get Approved Amount for Release
                 const approvedAmountValue = parseFloat(approvedAmount?.replace(/,/g, '') || '0') || 0;
-
-                // Calculate total deductions from clearanceUntaggingRows
-                const totalUntaggingDeductions = clearanceUntaggingRows.reduce((sum, row) => {
-                  const amount = parseFloat(row.amount?.replace(/,/g, '') || '0') || 0;
-                  return sum + amount;
-                }, 0);
-
-                // Calculate remaining balance
-                const remainingBalance = approvedAmountValue - totalUntaggingDeductions;
 
                 // Add new untagging row
                 const addUntaggingRow = () => {
@@ -2613,11 +2805,6 @@ function DocumentTable({
                         >
                           <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
                           <span>{doc.label}</span>
-                          {totalUntaggingDeductions > 0 && (
-                            <span className="ml-2 text-[10px] bg-[#00AEEF] text-white px-2 py-0.5 rounded-full">
-                              ₱{totalUntaggingDeductions.toLocaleString()}
-                            </span>
-                          )}
                         </button>
                       </td>
                     </tr>
@@ -2640,22 +2827,6 @@ function DocumentTable({
                                   <span className="text-xs text-[#e65100] italic">Not set - please set in Approved Amount for Release</span>
                                 )}
                               </div>
-                              {clearanceUntaggingRows.some(r => r.amount) && (
-                                <div className="mt-2 pt-2 border-t border-[#90caf9]">
-                                  <div className="flex items-center justify-between text-xs">
-                                    <span className="text-[#1565c0]">SETUP iFund:</span>
-                                    <span className="font-semibold text-[#1565c0]">
-                                      ₱{totalUntaggingDeductions.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center justify-between text-xs mt-1">
-                                    <span className="text-[#1565c0] font-semibold">Remaining Balance:</span>
-                                    <span className={`font-bold ${remainingBalance >= 0 ? 'text-[#2e7d32]' : 'text-[#c62828]'}`}>
-                                      ₱{remainingBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
                             </div>
 
                             {/* Untagging Clearance & Documentary Requirements */}
@@ -2673,13 +2844,6 @@ function DocumentTable({
 
                               <div className="space-y-2">
                                 {clearanceUntaggingRows.map((row, idx) => {
-                                  // Calculate running total up to this row
-                                  const runningDeduction = clearanceUntaggingRows.slice(0, idx + 1).reduce((sum, r) => {
-                                    const amount = parseFloat(r.amount?.replace(/,/g, '') || '0') || 0;
-                                    return sum + amount;
-                                  }, 0);
-                                  const runningBalance = approvedAmountValue - runningDeduction;
-
                                   const templateItemId = `${phase}-${doc.id}-untagging-${idx}`;
                                   const uploadedDoc = getDocForItem(templateItemId);
                                   const isUploadingItem = uploadingItemId === templateItemId;
@@ -2772,14 +2936,6 @@ function DocumentTable({
                                           </button>
                                         </div>
                                       </div>
-                                      {/* Running balance indicator */}
-                                      {row.amount && (
-                                        <div className="mt-1 pt-1 border-t border-[#eee] flex justify-end">
-                                          <span className={`text-[10px] ${runningBalance >= 0 ? 'text-[#2e7d32]' : 'text-[#c62828]'}`}>
-                                            Balance after this: ₱{runningBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                          </span>
-                                        </div>
-                                      )}
                                     </div>
                                   );
                                 })}
@@ -2827,6 +2983,14 @@ function DocumentTable({
                   return n + (s[(v - 20) % 10] || s[v] || s[0]);
                 };
 
+                // Calculate deductions from clearanceUntagRows
+                const approvedAmountValue = parseFloat(approvedAmount?.replace(/,/g, '') || '0') || 0;
+                const totalClearanceDeductions = clearanceUntagRows.reduce((sum, row) => {
+                  const amount = parseFloat(row.amount?.replace(/,/g, '') || '0') || 0;
+                  return sum + amount;
+                }, 0);
+                const remainingBalance = approvedAmountValue - totalClearanceDeductions;
+
                 return (
                   <React.Fragment key={key}>
                     <tr>
@@ -2837,9 +3001,14 @@ function DocumentTable({
                         >
                           <Icon icon={isExpanded ? 'mdi:chevron-down' : 'mdi:chevron-right'} width={18} height={18} />
                           <span>{doc.label}</span>
-                          {abstractQuotationRows.length > 0 && (
+                          {clearanceUntagRows.length > 0 && (
                             <span className="ml-2 text-[10px] bg-[#2e7d32] text-white px-2 py-0.5 rounded-full">
-                              {abstractQuotationRows.length} item(s)
+                              {clearanceUntagRows.length} item(s)
+                            </span>
+                          )}
+                          {totalClearanceDeductions > 0 && (
+                            <span className="ml-2 text-[10px] bg-[#00AEEF] text-white px-2 py-0.5 rounded-full">
+                              ₱{totalClearanceDeductions.toLocaleString()}
                             </span>
                           )}
                         </button>
@@ -2852,23 +3021,64 @@ function DocumentTable({
                             {/* Info banner */}
                             <div className="flex items-start gap-2 bg-[#e3f2fd] border border-[#90caf9] rounded-lg py-2.5 px-4 text-xs text-[#1565c0] leading-[1.4]">
                               <Icon icon="mdi:information-outline" width={16} height={16} className="min-w-4 mt-px" />
-                              <span>This section displays clearance details based on items from &quot;List of Intervention&quot;. Amounts entered here are for reference only.</span>
+                              <span>Select intervention items from the dropdown. The options are based on items from &quot;List of Intervention&quot;.</span>
+                            </div>
+
+                            {/* Approved Amount Summary with Deductions */}
+                            <div className={`border rounded-lg p-3 ${approvedAmountValue > 0 ? 'bg-[#e3f2fd] border-[#90caf9]' : 'bg-[#fff3e0] border-[#ffb74d]'}`}>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Icon icon={approvedAmountValue > 0 ? "mdi:cash-multiple" : "mdi:alert-circle-outline"} width={16} height={16} className={approvedAmountValue > 0 ? "text-[#1565c0]" : "text-[#e65100]"} />
+                                  <span className={`text-xs font-semibold ${approvedAmountValue > 0 ? 'text-[#1565c0]' : 'text-[#e65100]'}`}>Approved Amount for Release:</span>
+                                </div>
+                                {approvedAmountValue > 0 ? (
+                                  <span className="text-sm font-bold text-[#1565c0]">
+                                    ₱{approvedAmountValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-[#e65100] italic">Not set - please set in Approved Amount for Release</span>
+                                )}
+                              </div>
+                              {clearanceUntagRows.some(r => r.amount) && (
+                                <div className="mt-2 pt-2 border-t border-[#90caf9]">
+                                  <div className="flex items-center justify-between text-xs">
+                                    <span className="text-[#1565c0]">iFund Amount:</span>
+                                    <span className="font-semibold text-[#1565c0]">
+                                      ₱{totalClearanceDeductions.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between text-xs mt-1">
+                                    <span className="text-[#1565c0] font-semibold">Remaining Balance:</span>
+                                    <span className={`font-bold ${remainingBalance >= 0 ? 'text-[#2e7d32]' : 'text-[#c62828]'}`}>
+                                      ₱{remainingBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
                             </div>
 
                             {/* Clearance Details */}
                             <div className="bg-white border border-[#ddd] rounded p-3">
-                              <div className="text-xs font-semibold text-[#555] mb-3">Clearance Details</div>
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="text-xs font-semibold text-[#555]">Clearance Details</div>
+                                {isEditMode && (
+                                  <button
+                                    onClick={() => setClearanceUntagRows([...clearanceUntagRows, { name: '', amount: '', supplier: '', date: '' }])}
+                                    className="flex items-center gap-1 bg-[#2e7d32] text-white px-2 py-1 rounded text-xs font-semibold hover:bg-[#1b5e20] transition-colors"
+                                  >
+                                    <Icon icon="mdi:plus" width={14} height={14} />
+                                    Add Row
+                                  </button>
+                                )}
+                              </div>
 
-                              {abstractQuotationRows.length === 0 ? (
+                              {clearanceUntagRows.length === 0 ? (
                                 <p className="text-xs text-[#999] italic text-center py-4">
-                                  No items added yet. Please add items in &quot;Abstract of Quotation&quot; first.
+                                  No clearance items added yet. Click &quot;Add Row&quot; to add a new clearance entry.
                                 </p>
                               ) : (
                                 <div className="space-y-3">
-                                  {abstractQuotationRows.map((aqRow, idx) => {
-                                    const clearanceData = clearanceUntagRows[idx] || { amount: '', supplier: '', date: '' };
-                                    const typeLabel = aqRow.type || 'Type';
-                                    const itemName = aqRow.name || 'No name';
+                                  {clearanceUntagRows.map((clearanceData, idx) => {
                                     const templateItemId = `${phase}-${doc.id}-clearance-${idx}`;
                                     const uploadedDoc = getDocForItem(templateItemId);
                                     const isUploadingItem = uploadingItemId === templateItemId;
@@ -2876,24 +3086,66 @@ function DocumentTable({
 
                                     return (
                                       <div key={idx} className="border border-[#eee] rounded p-3 bg-[#fafafa]">
-                                        <div className="flex items-center gap-2 mb-3">
-                                          <span className="text-xs font-semibold text-[#2e7d32]">{getOrdinal(idx + 1)} Untagging &amp; Amount</span>
+                                        <div className="flex items-center justify-between mb-3">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-xs font-semibold text-[#2e7d32]">{getOrdinal(idx + 1)} Untagging &amp; Amount</span>
+                                            <span className="text-[#999]">|</span>
+                                            <span className="text-xs text-[#555]">Approved Date:</span>
+                                            <input
+                                              type="date"
+                                              value={clearanceData.date}
+                                              onChange={(e) => {
+                                                const updated = [...clearanceUntagRows];
+                                                updated[idx].date = e.target.value;
+                                                setClearanceUntagRows(updated);
+                                              }}
+                                              disabled={!isEditMode}
+                                              className={`border border-[#ddd] rounded px-2 py-1 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                            />
+                                          </div>
+                                          {isEditMode && (
+                                            <button
+                                              onClick={() => setGenericConfirmModal({
+                                                show: true,
+                                                title: 'Remove Clearance',
+                                                itemName: `${getOrdinal(idx + 1)} Untagging`,
+                                                onConfirm: () => {
+                                                  setClearanceUntagRows(clearanceUntagRows.filter((_, i) => i !== idx));
+                                                  setGenericConfirmModal(null);
+                                                }
+                                              })}
+                                              className="text-[#c62828] hover:bg-[#ffebee] p-1 rounded transition-colors"
+                                              title="Remove this row"
+                                            >
+                                              <Icon icon="mdi:close" width={16} height={16} />
+                                            </button>
+                                          )}
                                         </div>
 
-                                        {/* Item Name (read-only from List of Intervention) */}
+                                        {/* Item Name dropdown */}
                                         <div className="mb-3">
-                                          <label className="block text-xs text-[#555] mb-1">{typeLabel} Name</label>
-                                          <input
-                                            type="text"
-                                            value={itemName}
-                                            disabled
-                                            className="w-full border border-[#ddd] rounded px-2 py-1.5 text-xs bg-gray-100 cursor-not-allowed"
-                                            title="Fetched from List of Intervention"
-                                          />
+                                          <label className="block text-xs text-[#555] mb-1">Name</label>
+                                          <select
+                                            value={clearanceData.name}
+                                            onChange={(e) => {
+                                              const updated = [...clearanceUntagRows];
+                                              updated[idx].name = e.target.value;
+                                              setClearanceUntagRows(updated);
+                                            }}
+                                            disabled={!isEditMode}
+                                            className={`w-full border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                          >
+                                            <option value="">-- Select from List of Intervention --</option>
+                                            {abstractQuotationRows.map((aqRow, aqIdx) => (
+                                              <option key={aqIdx} value={aqRow.name}>
+                                                {aqRow.name || `Item ${aqIdx + 1}`}
+                                              </option>
+                                            ))}
+                                          </select>
                                         </div>
 
-                                        {/* Amount, Supplier, Date inputs */}
-                                        <div className="grid grid-cols-3 gap-3 mb-3">
+                                        {/* Amount and Supplier inputs */}
+                                        <div className="grid grid-cols-2 gap-3 mb-3">
                                           <div>
                                             <label className="block text-xs text-[#555] mb-1">Amount</label>
                                             <div className="relative">
@@ -2904,9 +3156,6 @@ function DocumentTable({
                                                 onChange={(e) => {
                                                   const value = e.target.value.replace(/[^0-9.,]/g, '');
                                                   const updated = [...clearanceUntagRows];
-                                                  if (!updated[idx]) {
-                                                    updated[idx] = { amount: '', supplier: '', date: '' };
-                                                  }
                                                   updated[idx].amount = value;
                                                   setClearanceUntagRows(updated);
                                                 }}
@@ -2923,30 +3172,10 @@ function DocumentTable({
                                               value={clearanceData.supplier}
                                               onChange={(e) => {
                                                 const updated = [...clearanceUntagRows];
-                                                if (!updated[idx]) {
-                                                  updated[idx] = { amount: '', supplier: '', date: '' };
-                                                }
                                                 updated[idx].supplier = e.target.value;
                                                 setClearanceUntagRows(updated);
                                               }}
                                               placeholder="Enter supplier"
-                                              disabled={!isEditMode}
-                                              className={`w-full border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                            />
-                                          </div>
-                                          <div>
-                                            <label className="block text-xs text-[#555] mb-1">Date</label>
-                                            <input
-                                              type="date"
-                                              value={clearanceData.date}
-                                              onChange={(e) => {
-                                                const updated = [...clearanceUntagRows];
-                                                if (!updated[idx]) {
-                                                  updated[idx] = { amount: '', supplier: '', date: '' };
-                                                }
-                                                updated[idx].date = e.target.value;
-                                                setClearanceUntagRows(updated);
-                                              }}
                                               disabled={!isEditMode}
                                               className={`w-full border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                             />
@@ -2972,16 +3201,6 @@ function DocumentTable({
                                                 : <Icon icon="mdi:upload" width={14} height={14} />}
                                             </button>
 
-                                            {/* View */}
-                                            <button
-                                              className={`w-7 h-7 border-none rounded-md flex items-center justify-center text-white ${hasFile ? 'bg-[#2e7d32] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
-                                              title="View"
-                                              onClick={() => hasFile && setPreviewDoc(uploadedDoc)}
-                                              disabled={!hasFile}
-                                            >
-                                              <Icon icon="mdi:eye" width={14} height={14} />
-                                            </button>
-
                                             {/* Delete File */}
                                             <button
                                               className={`w-7 h-7 border-none rounded-md flex items-center justify-center text-white ${hasFile && isEditMode ? 'bg-[#c62828] cursor-pointer hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
@@ -3000,12 +3219,12 @@ function DocumentTable({
                               )}
                             </div>
 
-                            {abstractQuotationRows.length > 0 && (
+                            {clearanceUntagRows.length > 0 && (
                               <div className="flex justify-end">
                                 <button
                                   onClick={() => saveDropdownData(
                                     { clearanceUntagRows },
-                                    `${abstractQuotationRows.length} clearance row(s) saved successfully!`
+                                    `${clearanceUntagRows.length} clearance row(s) saved successfully!`
                                   )}
                                   disabled={savingData || !isEditMode}
                                   className="bg-[#1976d2] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#1565c0] transition-colors disabled:bg-[#ccc] disabled:cursor-not-allowed"
@@ -3217,9 +3436,15 @@ function DocumentTable({
                                     disabled={!isEditMode}
                                     onClick={() => {
                                       if (!isEditMode) return;
-                                      if (confirm(`Remove this Annual PIS?`)) {
-                                        setAnnualPISRows(annualPISRows.filter((_, i) => i !== rowIdx));
-                                      }
+                                      setGenericConfirmModal({
+                                        show: true,
+                                        title: 'Remove Annual PIS',
+                                        itemName: `Annual PIS #${rowIdx + 1}`,
+                                        onConfirm: () => {
+                                          setAnnualPISRows(annualPISRows.filter((_, i) => i !== rowIdx));
+                                          setGenericConfirmModal(null);
+                                        }
+                                      });
                                     }}
                                   >
                                     <Icon icon="mdi:close" width={14} height={14} />
@@ -3305,9 +3530,15 @@ function DocumentTable({
                                   <button
                                     onClick={() => {
                                       if (!isEditMode) return;
-                                      if (confirm(`Remove QPR #${rowIdx + 1}?`)) {
-                                        setQprRows(qprRows.filter((_, i) => i !== rowIdx));
-                                      }
+                                      setGenericConfirmModal({
+                                        show: true,
+                                        title: 'Remove QPR',
+                                        itemName: `QPR #${rowIdx + 1}`,
+                                        onConfirm: () => {
+                                          setQprRows(qprRows.filter((_, i) => i !== rowIdx));
+                                          setGenericConfirmModal(null);
+                                        }
+                                      });
                                     }}
                                     disabled={!isEditMode}
                                     className={`w-6 h-6 border-none rounded flex items-center justify-center transition-opacity duration-200 text-white ${isEditMode ? 'bg-[#c62828] hover:opacity-80' : 'bg-[#ccc] cursor-not-allowed'}`}
@@ -3515,9 +3746,15 @@ function DocumentTable({
                                           disabled={!isEditMode}
                                           onClick={() => {
                                             if (!isEditMode) return;
-                                            if (confirm(`Remove this ${option}?`)) {
-                                              setCompletionReportRows(completionReportRows.filter((_, i) => i !== rowIdx));
-                                            }
+                                            setGenericConfirmModal({
+                                              show: true,
+                                              title: `Remove ${option}`,
+                                              itemName: `${option} #${rowIdx + 1}`,
+                                              onConfirm: () => {
+                                                setCompletionReportRows(completionReportRows.filter((_, i) => i !== rowIdx));
+                                                setGenericConfirmModal(null);
+                                              }
+                                            });
                                           }}
                                         >
                                           <Icon icon="mdi:close" width={14} height={14} />
@@ -4016,14 +4253,20 @@ function DocumentTable({
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
-                                                  if (confirm(`Remove "${type}" from available options?`)) {
-                                                    const newTypes = refundDocumentsOptions.filter(t => t !== type);
-                                                    setRefundDocumentsOptions(newTypes);
-                                                    saveDropdownData(
-                                                      { refundDocumentsOptions: newTypes },
-                                                      `Refund document type "${type}" removed successfully!`
-                                                    );
-                                                  }
+                                                  setGenericConfirmModal({
+                                                    show: true,
+                                                    title: 'Remove Option',
+                                                    itemName: type,
+                                                    onConfirm: () => {
+                                                      const newTypes = refundDocumentsOptions.filter(t => t !== type);
+                                                      setRefundDocumentsOptions(newTypes);
+                                                      saveDropdownData(
+                                                        { refundDocumentsOptions: newTypes },
+                                                        `Refund document type "${type}" removed successfully!`
+                                                      );
+                                                      setGenericConfirmModal(null);
+                                                    }
+                                                  });
                                                 }}
                                                 className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center text-[#c62828] hover:bg-[#ffebee] rounded transition-opacity"
                                                 title={`Remove "${type}"`}
@@ -4282,7 +4525,7 @@ function DocumentTable({
                                           left: communicationDropdownPos.left,
                                           width: communicationDropdownPos.width,
                                           transform: 'translateY(calc(-100% - 4px))',
-                                          zIndex: 99999,
+                                          zIndex: 100,
                                         }}
                                         className="bg-white border border-[#ddd] rounded shadow-lg max-h-[300px] overflow-y-auto"
                                       >
@@ -4308,14 +4551,20 @@ function DocumentTable({
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
-                                                  if (confirm(`Remove "${type}" from available options?`)) {
-                                                    const newTypes = communicationTypes.filter(t => t !== type);
-                                                    setCommunicationTypes(newTypes);
-                                                    saveDropdownData(
-                                                      { communicationTypes: newTypes },
-                                                      `Communication type "${type}" removed successfully!`
-                                                    );
-                                                  }
+                                                  setGenericConfirmModal({
+                                                    show: true,
+                                                    title: 'Remove Option',
+                                                    itemName: type,
+                                                    onConfirm: () => {
+                                                      const newTypes = communicationTypes.filter(t => t !== type);
+                                                      setCommunicationTypes(newTypes);
+                                                      saveDropdownData(
+                                                        { communicationTypes: newTypes },
+                                                        `Communication type "${type}" removed successfully!`
+                                                      );
+                                                      setGenericConfirmModal(null);
+                                                    }
+                                                  });
                                                 }}
                                                 className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center text-[#c62828] hover:bg-[#ffebee] rounded transition-opacity"
                                                 title={`Remove "${type}"`}
@@ -4765,14 +5014,20 @@ function DocumentTable({
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
-                                                  if (confirm(`Remove "${type}" from available options?`)) {
-                                                    const newTypes = managementReportTypes.filter(t => t !== type);
-                                                    setManagementReportTypes(newTypes);
-                                                    saveDropdownData(
-                                                      { managementReportTypes: newTypes },
-                                                      `Report type "${type}" removed successfully!`
-                                                    );
-                                                  }
+                                                  setGenericConfirmModal({
+                                                    show: true,
+                                                    title: 'Remove Option',
+                                                    itemName: type,
+                                                    onConfirm: () => {
+                                                      const newTypes = managementReportTypes.filter(t => t !== type);
+                                                      setManagementReportTypes(newTypes);
+                                                      saveDropdownData(
+                                                        { managementReportTypes: newTypes },
+                                                        `Report type "${type}" removed successfully!`
+                                                      );
+                                                      setGenericConfirmModal(null);
+                                                    }
+                                                  });
                                                 }}
                                                 className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center text-[#c62828] hover:bg-[#ffebee] rounded transition-opacity"
                                                 title={`Remove "${type}"`}
@@ -6357,6 +6612,37 @@ function DocumentTable({
       </div>
     )}
 
+    {/* Generic Confirmation Modal */}
+    {genericConfirmModal && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]" onClick={() => setGenericConfirmModal(null)}>
+        <div className="bg-white rounded-2xl w-full max-w-[400px] py-8 px-10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] text-center" onClick={e => e.stopPropagation()}>
+          <div className="w-14 h-14 rounded-full bg-[#ffebee] flex items-center justify-center mx-auto mb-4">
+            <Icon icon="mdi:alert-circle-outline" width={36} height={36} color="#c62828" />
+          </div>
+          <h3 className="text-lg font-bold text-[#333] m-0 mb-3">{genericConfirmModal.title}?</h3>
+          <p className="text-[14px] text-[#666] m-0 mb-6">
+            Are you sure you want to remove <strong className="text-[#333]">{genericConfirmModal.itemName}</strong>? This action cannot be undone.
+          </p>
+          <div className="flex gap-3 justify-center">
+            <button
+              type="button"
+              onClick={() => setGenericConfirmModal(null)}
+              className="py-2.5 px-8 bg-white text-[#333] border border-[#d0d0d0] rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#f5f5f5]"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={genericConfirmModal.onConfirm}
+              className="py-2.5 px-8 bg-[#c62828] text-white border-none rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#b71c1c]"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
     {/* Remove Others Option Confirmation Modal */}
     {showRemoveOthersModal && (
       <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1200]">
@@ -6999,7 +7285,7 @@ export default function ProjectDetailPage() {
   };
 
   const statusDropdownRef = useRef<HTMLDivElement>(null);
-  const overallProgress = Math.round((initiationProgress + implementationProgress + managementProgress + monitoringProgress + refundProgress + communicationsProgress) / 6);
+  const overallProgress = Math.round((initiationProgress + implementationProgress) / 2);
 
   // Edit Mode states
   const [isEditMode, setIsEditMode] = useState(false);
@@ -8033,12 +8319,11 @@ export default function ProjectDetailPage() {
 
         {/* Progress */}
         <div className="bg-white rounded-xl py-6 px-7 mb-2 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-          <div className="grid grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-3 gap-6">
             {[
               { label: 'Project Initiation', progress: initiationProgress, files: initiationFiles },
               { label: 'Project Implementation', progress: implementationProgress, files: implementationFiles },
-              { label: 'Project Management', progress: managementProgress, files: managementFiles },
-              { label: 'Project Monitoring', progress: monitoringProgress, files: monitoringFiles },
+              { label: 'Overall Progress', progress: overallProgress, files: { uploaded: initiationFiles.uploaded + implementationFiles.uploaded, total: initiationFiles.total + implementationFiles.total } },
             ].map(({ label, progress, files }) => (
               <div key={label}>
                 <div className="flex items-center justify-between mb-2">
@@ -8048,25 +8333,7 @@ export default function ProjectDetailPage() {
                 <div className="w-full h-2 bg-[#e0e0e0] rounded-full overflow-hidden">
                   <div className="h-full rounded-full transition-all duration-300" style={{ width: `${progress}%`, backgroundColor: currentStatus.bar }}/>
                 </div>
-                <span className="text-[11px] text-[#888] mt-1 block">{files.uploaded}/{files.total} files uploaded</span>
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-3 gap-6">
-            {[
-              { label: 'Project Refund', progress: refundProgress, files: refundFiles },
-              { label: 'Communications', progress: communicationsProgress, files: communicationsFiles },
-              { label: 'Overall Project Progress', progress: overallProgress, files: { uploaded: initiationFiles.uploaded + implementationFiles.uploaded + managementFiles.uploaded + monitoringFiles.uploaded + refundFiles.uploaded + communicationsFiles.uploaded, total: initiationFiles.total + implementationFiles.total + managementFiles.total + monitoringFiles.total + refundFiles.total + communicationsFiles.total } },
-            ].map(({ label, progress, files }) => (
-              <div key={label}>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-[13px] font-semibold text-[#333] m-0">{label}</h3>
-                  <span className="text-[13px] font-semibold text-[#333]">{progress}%</span>
-                </div>
-                <div className="w-full h-2 bg-[#e0e0e0] rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-300" style={{ width: `${progress}%`, backgroundColor: currentStatus.bar }}/>
-                </div>
-                <span className="text-[11px] text-[#888] mt-1 block">{files.uploaded}/{files.total} files uploaded</span>
+                <span className="text-[11px] text-[#888] mt-1 block">{files.uploaded}/{files.total} actions taken</span>
               </div>
             ))}
           </div>
