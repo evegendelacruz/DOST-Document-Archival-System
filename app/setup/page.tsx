@@ -745,16 +745,16 @@ export default function SetupPage() {
               />
             </div>
           </div>
-          <div className="flex-1 flex justify-center items-center">
-            <div className="relative w-[600px] h-[50px]">
-              <Icon icon="mdi:magnify" className="absolute left-[15px] top-1/2 -translate-y-1/2 text-[#999] w-5 h-5" width={20} height={20} />
-              <input type="text" className="w-full h-full pl-[50px] pr-[25px] border border-[#e0e0e0] rounded-[25px] text-[15px] bg-[#f5f5f5] transition-all duration-200 focus:outline-none focus:border-primary focus:bg-white focus:shadow-[0_2px_8px_rgba(20,97,132,0.1)] placeholder:text-[#999]" placeholder="Search here" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-            </div>
+          <div className="flex items-center gap-3">
+            <button className="flex items-center gap-2 py-3 px-5 bg-[#217346] text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-[#1a5c38]">
+              <Icon icon="mdi:upload" width={20} height={20} />
+              Import Project
+            </button>
+            <button className="flex items-center gap-2 py-3 px-5 bg-accent text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover" onClick={() => { setEditingProjectId(null); setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', year: '', companyLogo: null }); setEmails(['']); setContactNumbers(['']); setBarangaySearch(''); setFormErrors({}); setSaveError(''); setShowAddModal(true); }}>
+              <Icon icon="mdi:plus" width={20} height={20} />
+              Add New Project
+            </button>
           </div>
-          <button className="flex items-center gap-2 py-3 px-5 bg-accent text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover" onClick={() => { setEditingProjectId(null); setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', year: '', companyLogo: null }); setEmails(['']); setContactNumbers(['']); setBarangaySearch(''); setFormErrors({}); setSaveError(''); setShowAddModal(true); }}>
-            <Icon icon="mdi:plus" width={20} height={20} />
-            Add New Project
-          </button>
         </div>
 
         {/* Filter Tabs */}
@@ -774,6 +774,13 @@ export default function SetupPage() {
         <div className="bg-white rounded-[15px] p-5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
           <div className="flex justify-between items-center mb-5 pb-[15px] border-b border-[#e0e0e0]">
             <h2 className="text-lg font-bold text-primary m-0">MASTERLIST</h2>
+            {/* Search Bar */}
+            <div className="flex-1 flex justify-center items-center mx-4">
+              <div className="relative w-full max-w-[400px]">
+                <Icon icon="mdi:magnify" className="absolute left-3 top-1/2 -translate-y-1/2 text-[#999]" width={18} height={18} />
+                <input type="text" className="w-full py-2 pl-10 pr-4 border border-[#e0e0e0] rounded-lg text-[13px] bg-[#f9f9f9] transition-all duration-200 focus:outline-none focus:border-primary focus:bg-white focus:shadow-[0_0_0_3px_rgba(20,97,132,0.1)] placeholder:text-[#999]" placeholder="Search projects..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              </div>
+            </div>
             <div className="flex gap-2.5">
               {/* Sort Dropdown */}
               <div className="relative" ref={sortRef}>
@@ -869,7 +876,7 @@ export default function SetupPage() {
                     <td className="w-9 min-w-[36px] text-center py-3 px-2.5 text-left border-b border-[#e0e0e0]">
                       <input type="checkbox" className="w-4 h-4 accent-accent cursor-pointer" checked={selectedProjects.includes(project.id)} onChange={(e) => setSelectedProjects(prev => e.target.checked ? [...prev, project.id] : prev.filter(id => id !== project.id))} />
                     </td>
-                      <td className="text-primary font-semibold whitespace-nowrap py-3 px-2 text-left border-b border-[#e0e0e0]">#{project.code}</td>
+                      <td className="text-primary font-semibold whitespace-nowrap py-3 px-2 text-left border-b border-[#e0e0e0]">{project.code}</td>
                       <td className="max-w-[250px] text-[#333] font-medium whitespace-normal break-words py-3 px-2 text-left border-b border-[#e0e0e0]"><Link href={`/setup/${project.id}`} className="text-primary no-underline font-medium hover:text-accent hover:underline">{project.title}</Link></td>
                       <td className="py-3 px-1.5 text-center border-b border-[#e0e0e0]">
                         {project.companyLogoUrl ? (
