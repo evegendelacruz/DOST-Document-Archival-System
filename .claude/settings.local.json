@@ -23,6 +23,7 @@
       "Bash(cmd.exe /c \"npm install @tailwindcss/oxide-win32-x64-msvc@4.1.18 --save-optional\")",
       "Bash(timeout 30 npm run dev:*)",
       "Bash(timeout 15 npm run dev:*)",
+      "Bash(npx ts-node:*)",
       "Read(//mnt/c/Users/Admin/Desktop/DOST/DOST-Document-Archival-System/**)",
       "Bash(mkdir -p \"/mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/api/view-doc/[docId]\")",
       "Bash(mkdir -p \"/mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/view-doc/[docId]\")",
