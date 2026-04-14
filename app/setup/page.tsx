@@ -28,59 +28,6 @@ function getAuthHeaders(): HeadersInit {
   return userId ? { 'x-user-id': userId } : {};
 }
 
-// Cascading address data: Province → Municipality → Barangays
-const addressData: Record<string, Record<string, string[]>> = {
-  'Misamis Oriental': {
-    'Cagayan de Oro City': [
-      'Agusan', 'Balulang', 'Bayabas', 'Bayanga', 'Besigan', 'Bonbon', 'Bugo', 'Bulua',
-      'Camaman-an', 'Canitoan', 'Carmen', 'Consolacion', 'Cugman', 'Dansolihon', 'F.S. Catanico',
-      'Gusa', 'Iponan', 'Kauswagan', 'Lapasan', 'Macabalan', 'Macasandig', 'Mambuaya',
-      'Nazareth', 'Pagalungan', 'Pagatpat', 'Patag', 'Puerto', 'Puntod', 'San Simon',
-      'Tablon', 'Tagpangi', 'Taglimao', 'Tignapoloan', 'Tuburan', 'Tumpagon',
-    ],
-    'Opol': ['Awang', 'Bagocboc', 'Barra', 'Bonbon', 'Cauyonan', 'Igpit', 'Luyong Bonbon', 'Poblacion', 'Taboc'],
-    'El Salvador': ['Amoros', 'Bolisong', 'Cogon', 'Hinigdaan', 'Kibonbon', 'Molugan', 'Poblacion', 'Sinaloc', 'Taytay'],
-    'Alubijid': ['Baybay', 'Benigwayan', 'Calatcat', 'Lanao', 'Larapan', 'Libertad', 'Mandahican', 'Poblacion', 'Samay', 'Sungay'],
-    'Laguindingan': ['Aromahon', 'Gasi', 'Kibaghot', 'Moog', 'Poblacion', 'Sinai', 'Tubajon'],
-    'Gitagum': ['Burnay', 'Cogon', 'Manaka', 'Matangad', 'Pangayawan', 'Poblacion', 'Tala-o'],
-    'Libertad': ['Ane-i', 'Caluya', 'Coracon', 'Gimangpang', 'Kimalok', 'Poblacion', 'San Juan', 'Solana'],
-    'Initao': ['Aloe', 'Gimangpang', 'Jampason', 'Kamelon', 'Poblacion', 'San Pedro', 'Tawantawan', 'Tubigan'],
-    'Naawan': ['Don Pedro', 'Linangkayan', 'Lubilan', 'Mapulog', 'Maputi', 'Poblacion', 'Tagbalogo'],
-    'Manticao': ['Argayoso', 'Camanga', 'Kauswagan', 'Pagawan', 'Poblacion', 'Punta Silum', 'Tuod'],
-    'Lugait': ['Aya-aya', 'Betahon', 'Biga', 'Lower Talacogon', 'Poblacion', 'Upper Talacogon'],
-    'Tagoloan': ['Balubal', 'Casinglot', 'Gracia', 'Mohon', 'Nangcaon', 'Natumolan', 'Poblacion', 'Tagoloan Poblacion', 'Villanueva'],
-    'Villanueva': ['Balacanas', 'Imelda', 'Katipunan', 'Looc', 'Poblacion', 'San Martin', 'Tambobong'],
-    'Jasaan': ['Aplaya', 'Bobuntugan', 'Corrales', 'Danao', 'Jampason', 'Kimaya', 'Lower Jasaan', 'Poblacion', 'San Isidro', 'Upper Jasaan'],
-    'Balingasag': ['Baliwagan', 'Cogon', 'Dasigon', 'Linugos', 'Mambayaan', 'Poblacion', 'San Juan', 'Talusan'],
-    'Lagonglong': ['Banglay', 'Gaston', 'Kabulawan', 'Poblacion', 'Tabok', 'Umagos'],
-    'Salay': ['Alipuaton', 'Bunal', 'Casulog', 'Dasigon', 'Looc', 'Matampa', 'Poblacion', 'Rizal'],
-    'Binuangan': ['Dampias', 'Kitamban', 'Mabini', 'Poblacion', 'Silo-o', 'Sto. Rosario'],
-    'Sugbongcogon': ['Alicomohan', 'Kaulayanan', 'Kinoguitan', 'Poblacion', 'San Jose'],
-    'Kinoguitan': ['Baliangao', 'Caluya', 'Esperanza', 'Poblacion', 'Sanghan', 'Sugbongcogon'],
-    'Claveria': ['Ane-i', 'Aposkahoy', 'Hinaplanan', 'Lanise', 'Luna', 'Minalwang', 'Poblacion', 'Rizal', 'San Vicente'],
-    'Medina': ['Banglay', 'Cabug', 'Duka', 'Gingoog', 'Poblacion', 'San Roque'],
-    'Talisayan': ['Camuayan', 'Casibole', 'Katipunan', 'Poblacion', 'San Isidro', 'Sindangan'],
-    'Magsaysay': ['Candiis', 'Damayuhan', 'Kakuigan', 'Poblacion', 'San Isidro'],
-    'Balingoan': ['Baukbauk', 'Dolores', 'Hambabauyon', 'Poblacion', 'Waterfalls'],
-  },
-  'Bukidnon': {
-    'Malaybalay City': ['Aglayan', 'Bangcud', 'Busdi', 'Casisang', 'Dalwangan', 'Imbayao', 'Laguitas', 'Patpat', 'Poblacion', 'San Jose', 'Sumpong'],
-    'Valencia City': ['Bagontaas', 'Batangan', 'Catumbalon', 'Colonia', 'Lumbayao', 'Mailag', 'Poblacion', 'San Carlos', 'Tongantongan'],
-    'Manolo Fortich': ['Alae', 'Dahilayan', 'Dalirig', 'Kulaman', 'Linabo', 'Poblacion', 'Tankulan'],
-    'Sumilao': ['Kisolon', 'Licoan', 'Poblacion', 'San Roque', 'Vista Villa'],
-  },
-  'Lanao del Norte': {
-    'Iligan City': ['Buruun', 'Dalipuga', 'Del Carmen', 'Hinaplanon', 'Kiwalan', 'Mahayahay', 'Maria Cristina', 'Pala-o', 'Poblacion', 'Santiago', 'Suarez', 'Tambacan', 'Tibanga', 'Tubod', 'Villaverde'],
-    'Kapatagan': ['Balonging', 'Daan Lanao', 'Mabatao', 'Maranding', 'Nangka', 'Poblacion', 'Taguitic'],
-    'Tubod': ['Baroy', 'Lala', 'Maigo', 'Poblacion'],
-  },
-  'Camiguin': {
-    'Mambajao': ['Agoho', 'Baylao', 'Benoni', 'Bug-ong', 'Kuguita', 'Poblacion', 'Tupsan', 'Yumbing'],
-    'Catarman': ['Benoni', 'Bonbon', 'Hubangon', 'Mainit', 'Poblacion'],
-    'Sagay': ['Alangilan', 'Bonbon', 'Maac', 'Poblacion'],
-    'Guinsiliban': ['Butay', 'Cantaan', 'Liong', 'Poblacion'],
-  },
-};
 
 const filterTabs = [
   { id: 'PROPOSAL', label: 'Proposal', color: '#1565c0' },
@@ -176,6 +123,16 @@ export default function SetupPage() {
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Address data states (fetched from API)
+  const [provinces, setProvinces] = useState<{ id: string; name: string }[]>([]);
+  const [municipalities, setMunicipalities] = useState<{ id: string; name: string }[]>([]);
+  const [barangays, setBarangays] = useState<{ id: string; name: string }[]>([]);
+
+  // Barangay searchable dropdown state
+  const [barangaySearch, setBarangaySearch] = useState('');
+  const [showBarangayDropdown, setShowBarangayDropdown] = useState(false);
+  const barangayRef = useRef<HTMLDivElement>(null);
+
   // Confirmation modal states
   const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
     show: boolean;
@@ -244,11 +201,64 @@ export default function SetupPage() {
 
   useEffect(() => { fetchProjects(); }, []);
 
+  // Fetch provinces on mount
+  useEffect(() => {
+    fetch('/api/address/provinces')
+      .then(res => res.json())
+      .then((data: { id: string; name: string }[]) => setProvinces(data))
+      .catch(() => console.error('Failed to fetch provinces'));
+  }, []);
+
+  // Fetch municipalities when province changes
+  useEffect(() => {
+    if (!formData.province) {
+      setMunicipalities([]);
+      return;
+    }
+    // Find province ID by name
+    const province = provinces.find(p => p.name === formData.province);
+    if (!province) {
+      setMunicipalities([]);
+      return;
+    }
+    fetch(`/api/address/municipalities?provinceId=${encodeURIComponent(province.id)}`)
+      .then(res => res.json())
+      .then((data: { id: string; name: string }[]) => setMunicipalities(data))
+      .catch(() => console.error('Failed to fetch municipalities'));
+  }, [formData.province, provinces]);
+
+  // Fetch barangays when municipality changes
+  useEffect(() => {
+    if (!formData.municipality) {
+      setBarangays([]);
+      return;
+    }
+    // Find municipality ID by name
+    const municipality = municipalities.find(m => m.name === formData.municipality);
+    if (!municipality) {
+      setBarangays([]);
+      return;
+    }
+    fetch(`/api/address/barangays?municipalityId=${encodeURIComponent(municipality.id)}`)
+      .then(res => res.json())
+      .then((data: { id: string; name: string }[]) => {
+        // Remove duplicates by name and sort alphabetically
+        const uniqueMap = new Map<string, { id: string; name: string }>();
+        data.forEach(b => {
+          if (!uniqueMap.has(b.name)) uniqueMap.set(b.name, b);
+        });
+        const unique = Array.from(uniqueMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+        setBarangays(unique);
+      })
+      .catch(() => console.error('Failed to fetch barangays'));
+  }, [formData.municipality, municipalities]);
+
   // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (sortRef.current && !sortRef.current.contains(e.target as Node)) setShowSortDropdown(false);
       if (filterRef.current && !filterRef.current.contains(e.target as Node)) setShowFilterDropdown(false);
+      if (barangayRef.current && !barangayRef.current.contains(e.target as Node)) setShowBarangayDropdown(false);
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -304,17 +314,22 @@ export default function SetupPage() {
   const handleFormChange = (field: string, value: string) => {
     setFormData(prev => {
       const updated = { ...prev, [field]: value };
-      if (field === 'province') { updated.municipality = ''; updated.barangay = ''; }
-      if (field === 'municipality') { updated.barangay = ''; }
+      if (field === 'province') { updated.municipality = ''; updated.barangay = ''; updated.coordinates = ''; }
+      if (field === 'municipality') { updated.barangay = ''; updated.coordinates = ''; }
       return updated;
     });
+    // Reset barangay search when province or municipality changes
+    if (field === 'province' || field === 'municipality') {
+      setBarangaySearch('');
+    }
+    // Sync barangay search when barangay is directly set
+    if (field === 'barangay') {
+      setBarangaySearch(value);
+    }
     if (formErrors[field]) {
       setFormErrors(prev => { const next = { ...prev }; delete next[field]; return next; });
     }
   };
-
-  const municipalities = formData.province && addressData[formData.province] ? Object.keys(addressData[formData.province]) : [];
-  const barangays = formData.province && formData.municipality && addressData[formData.province]?.[formData.municipality] ? addressData[formData.province][formData.municipality] : [];
 
   const handleEmailChange = (index: number, value: string) => { const updated = [...emails]; updated[index] = value; setEmails(updated); if (formErrors.emails) setFormErrors(prev => { const next = { ...prev }; delete next.emails; return next; }); };
   const addEmail = () => { setEmails(prev => [...prev, '']); };
@@ -471,6 +486,7 @@ export default function SetupPage() {
     });
     setEmails(project.emails.length > 0 ? project.emails : ['']);
     setContactNumbers(project.contactNumbers.length > 0 ? project.contactNumbers : ['']);
+    setBarangaySearch(barangay);
     setEditingProjectId(projectId);
     setFormErrors({});
     setSaveError('');
@@ -735,7 +751,7 @@ export default function SetupPage() {
               <input type="text" className="w-full h-full pl-[50px] pr-[25px] border border-[#e0e0e0] rounded-[25px] text-[15px] bg-[#f5f5f5] transition-all duration-200 focus:outline-none focus:border-primary focus:bg-white focus:shadow-[0_2px_8px_rgba(20,97,132,0.1)] placeholder:text-[#999]" placeholder="Search here" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
           </div>
-          <button className="flex items-center gap-2 py-3 px-5 bg-accent text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover" onClick={() => { setEditingProjectId(null); setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', year: '', companyLogo: null }); setEmails(['']); setContactNumbers(['']); setFormErrors({}); setSaveError(''); setShowAddModal(true); }}>
+          <button className="flex items-center gap-2 py-3 px-5 bg-accent text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover" onClick={() => { setEditingProjectId(null); setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', year: '', companyLogo: null }); setEmails(['']); setContactNumbers(['']); setBarangaySearch(''); setFormErrors({}); setSaveError(''); setShowAddModal(true); }}>
             <Icon icon="mdi:plus" width={20} height={20} />
             Add New Project
           </button>
@@ -978,24 +994,81 @@ export default function SetupPage() {
                   <label className="text-[13px] font-semibold text-[#333]">Province<span className="text-[#dc3545] ml-0.5">*</span></label>
                   <select value={formData.province} onChange={(e) => handleFormChange('province', e.target.value)} className={`${modalSelectCls} ${formErrors.province ? 'border-[#dc3545]! focus:border-[#dc3545]! focus:shadow-[0_0_0_3px_rgba(220,53,69,0.1)]!' : ''}`}>
                     <option value="">Select Province</option>
-                    {Object.keys(addressData).map(prov => (<option key={prov} value={prov}>{prov}</option>))}
+                    {provinces.map((prov) => (<option key={prov.id} value={prov.name}>{prov.name}</option>))}
                   </select>
                   {formErrors.province && <span className="text-[#dc3545] text-[11px]">{formErrors.province}</span>}
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[13px] font-semibold text-[#333]">Municipality/City<span className="text-[#dc3545] ml-0.5">*</span></label>
-                  <select value={formData.municipality} onChange={(e) => handleFormChange('municipality', e.target.value)} disabled={!formData.province} className={`${modalSelectCls} ${formErrors.municipality ? 'border-[#dc3545]! focus:border-[#dc3545]! focus:shadow-[0_0_0_3px_rgba(220,53,69,0.1)]!' : ''}`}>
-                    <option value="">Select Municipality</option>
-                    {municipalities.map(mun => (<option key={mun} value={mun}>{mun}</option>))}
+                  <select value={formData.municipality} onChange={(e) => handleFormChange('municipality', e.target.value)} disabled={!formData.province || municipalities.length === 0} className={`${modalSelectCls} ${formErrors.municipality ? 'border-[#dc3545]! focus:border-[#dc3545]! focus:shadow-[0_0_0_3px_rgba(220,53,69,0.1)]!' : ''}`}>
+                    <option value="">{!formData.province ? 'Select Province first' : municipalities.length === 0 ? 'Loading...' : 'Select Municipality'}</option>
+                    {municipalities.map((mun) => (<option key={mun.id} value={mun.name}>{mun.name}</option>))}
                   </select>
                   {formErrors.municipality && <span className="text-[#dc3545] text-[11px]">{formErrors.municipality}</span>}
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[13px] font-semibold text-[#333]">Barangay<span className="text-[#dc3545] ml-0.5">*</span></label>
-                  <select value={formData.barangay} onChange={(e) => handleFormChange('barangay', e.target.value)} disabled={!formData.municipality} className={`${modalSelectCls} ${formErrors.barangay ? 'border-[#dc3545]! focus:border-[#dc3545]! focus:shadow-[0_0_0_3px_rgba(220,53,69,0.1)]!' : ''}`}>
-                    <option value="">Select Barangay</option>
-                    {barangays.map(brgy => (<option key={brgy} value={brgy}>{brgy}</option>))}
-                  </select>
+                  <div ref={barangayRef} className="relative">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder={!formData.municipality ? 'Select Municipality first' : barangays.length === 0 ? 'Loading...' : 'Type to search barangay...'}
+                        value={barangaySearch}
+                        onChange={(e) => {
+                          setBarangaySearch(e.target.value);
+                          setShowBarangayDropdown(true);
+                          // Clear the actual value if user is typing something different
+                          if (e.target.value !== formData.barangay) {
+                            setFormData(prev => ({ ...prev, barangay: '' }));
+                          }
+                        }}
+                        onFocus={() => formData.municipality && barangays.length > 0 && setShowBarangayDropdown(true)}
+                        disabled={!formData.municipality || barangays.length === 0}
+                        className={`${modalInputCls} pr-8 ${formErrors.barangay ? 'border-[#dc3545]! focus:border-[#dc3545]! focus:shadow-[0_0_0_3px_rgba(220,53,69,0.1)]!' : ''}`}
+                      />
+                      <Icon
+                        icon={showBarangayDropdown ? "mdi:chevron-up" : "mdi:chevron-down"}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#999] pointer-events-none"
+                        width={18}
+                        height={18}
+                      />
+                    </div>
+                    {showBarangayDropdown && barangays.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#e0e0e0] rounded-lg shadow-[0_4px_16px_rgba(0,0,0,0.12)] z-50 max-h-[200px] overflow-y-auto">
+                        {barangays
+                          .filter(brgy => brgy.name.toLowerCase().includes(barangaySearch.toLowerCase()))
+                          .map((brgy) => (
+                            <button
+                              key={brgy.id}
+                              type="button"
+                              className={`w-full text-left py-2 px-3 text-[13px] border-none bg-transparent cursor-pointer transition-colors duration-150 hover:bg-[#f0f8ff] ${formData.barangay === brgy.name ? 'bg-[#e3f2fd] text-primary font-medium' : 'text-[#333]'}`}
+                              onClick={() => {
+                                handleFormChange('barangay', brgy.name);
+                                setBarangaySearch(brgy.name);
+                                setShowBarangayDropdown(false);
+                                // Geocode the selected barangay to get coordinates
+                                const query = `${brgy.name}, ${formData.municipality}, ${formData.province}, Philippines`;
+                                fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`)
+                                  .then(r => r.json())
+                                  .then(data => {
+                                    if (data[0]) {
+                                      const lat = parseFloat(data[0].lat).toFixed(6);
+                                      const lng = parseFloat(data[0].lon).toFixed(6);
+                                      setFormData(prev => ({ ...prev, coordinates: `${lat},${lng}` }));
+                                    }
+                                  })
+                                  .catch(() => {});
+                              }}
+                            >
+                              {brgy.name}
+                            </button>
+                          ))}
+                        {barangays.filter(brgy => brgy.name.toLowerCase().includes(barangaySearch.toLowerCase())).length === 0 && (
+                          <div className="py-2 px-3 text-[13px] text-[#999]">No barangays found</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   {formErrors.barangay && <span className="text-[#dc3545] text-[11px]">{formErrors.barangay}</span>}
                 </div>
               </div>
@@ -1129,14 +1202,16 @@ export default function SetupPage() {
             </div>
             {/* Real-time search bar */}
             <div className="px-6 pb-3">
-              <MapSearchBar onSelect={(coords) => setMapFlyTarget(coords)} initialQuery={formData.municipality} />
+              <MapSearchBar onSelect={(coords) => setMapFlyTarget(coords)} initialQuery={[formData.barangay, formData.municipality, formData.province].filter(Boolean).join(', ')} />
             </div>
             <div className="w-full h-[400px]">
               <MapPickerInner
                 lat={formData.coordinates ? parseFloat(formData.coordinates.split(',')[0]) : null}
                 lng={formData.coordinates ? parseFloat(formData.coordinates.split(',')[1]) : null}
                 onPick={(lat, lng) => { setFormData(prev => ({ ...prev, coordinates: `${lat.toFixed(6)},${lng.toFixed(6)}` })); }}
-                flyTo={mapFlyTarget}
+                flyTo={formData.coordinates
+                  ? [parseFloat(formData.coordinates.split(',')[0]), parseFloat(formData.coordinates.split(',')[1])] as [number, number]
+                  : mapFlyTarget}
               />
             </div>
             <div className="flex justify-center py-4 px-6 border-t border-[#eee]">
@@ -1363,13 +1438,18 @@ function MapPickerInner({
   }, []);
 
   // Fly to target with a short delay so user sees the map before it zooms
+  const flyToLat = flyTo?.[0] ?? null;
+  const flyToLng = flyTo?.[1] ?? null;
   useEffect(() => {
-    if (!flyTo) return;
+    // Determine target: use flyTo prop, or use existing lat/lng if available
+    const targetLat = flyToLat ?? lat;
+    const targetLng = flyToLng ?? lng;
+    if (targetLat === null || targetLng === null) return;
     const timer = setTimeout(() => {
-      if (mapRef.current) mapRef.current.flyTo(flyTo, 13, { duration: 1.5 });
-    }, 700);
+      if (mapRef.current) mapRef.current.flyTo([targetLat, targetLng], 15, { duration: 1.2 });
+    }, 500);
     return () => clearTimeout(timer);
-  }, [flyTo, comps]);
+  }, [flyToLat, flyToLng, lat, lng, comps]);
 
   if (!comps || !L) {
     return <div className="w-full h-full flex items-center justify-center text-base text-[#666] bg-[#f5f5f5]">Loading map...</div>;
