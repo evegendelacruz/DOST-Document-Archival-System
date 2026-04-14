@@ -22,7 +22,13 @@
       "Bash(node:*)",
       "Bash(cmd.exe /c \"npm install @tailwindcss/oxide-win32-x64-msvc@4.1.18 --save-optional\")",
       "Bash(timeout 30 npm run dev:*)",
-      "Bash(timeout 15 npm run dev:*)"
+      "Bash(timeout 15 npm run dev:*)",
+      "Read(//mnt/c/Users/Admin/Desktop/DOST/DOST-Document-Archival-System/**)",
+      "Bash(mkdir -p \"/mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/api/view-doc/[docId]\")",
+      "Bash(mkdir -p \"/mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/view-doc/[docId]\")",
+      "Bash(cp \"/mnt/c/Users/Admin/Desktop/DOST/DOST-Document-Archival-System/app/api/local-ip/route.ts\" \"/mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/api/local-ip/route.ts\")",
+      "Bash(cp \"/mnt/c/Users/Admin/Desktop/DOST/DOST-Document-Archival-System/app/api/view-doc/[docId]/route.ts\" \"/mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/api/view-doc/[docId]/route.ts\")",
+      "Bash(cp \"/mnt/c/Users/Admin/Desktop/DOST/DOST-Document-Archival-System/app/view-doc/[docId]/page.tsx\" \"/mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/view-doc/[docId]/page.tsx\")"
     ]
   }
 }
