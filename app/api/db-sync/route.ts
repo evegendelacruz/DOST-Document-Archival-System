@@ -22,7 +22,7 @@ function createSyncClient(url: string): PrismaClient {
 
 async function chunkInsert<T extends object>(
   items: T[],
-  insertFn: (chunk: T[]) => Promise<unknown>,
+  insertFn: (chunk: any[]) => Promise<unknown>,
   chunkSize = 50
 ) {
   for (let i = 0; i < items.length; i += chunkSize) {
