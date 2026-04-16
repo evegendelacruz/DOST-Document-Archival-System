@@ -7629,9 +7629,14 @@ export default function ProjectDetailPage() {
   }, [project, fetchEditRequestsAndEditors]);
 
   useEffect(() => {
+    if (!id) return;
+    setError(false);
+    setLoading(true);
     fetch(`/api/setup-projects/${id}`)
-      .then(res=>{if(!res.ok)throw new Error('Not found');return res.json();})
-      .then(data=>setProject(data)).catch(()=>setError(true)).finally(()=>setLoading(false));
+      .then(res => { if (!res.ok) throw new Error('Not found'); return res.json(); })
+      .then(data => setProject(data))
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
   }, [id]);
 
   // Initialize Executive Summary prepared by name from assignee

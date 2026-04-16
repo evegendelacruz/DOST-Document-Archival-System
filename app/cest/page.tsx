@@ -945,7 +945,13 @@ export default function CestPage() {
           {filterCards.map(card => (
             <div key={card.id} className="flex-1 flex flex-col items-center justify-center py-5 px-[15px] bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
               <span className="text-[11px] text-[#666] mb-2 font-medium text-center">{card.label}</span>
-              <span className={`font-bold ${card.isAmount ? 'text-xl text-[#2e7d32]' : 'text-[28px] text-primary'}`}>{card.value}</span>
+              {loading ? (
+                <span className="inline-block w-12 h-8 rounded-lg bg-[#e0eaf0] animate-pulse" />
+              ) : (typeof card.value === 'number' ? card.value > 0 : !!card.value) ? (
+                <span className={`font-bold ${card.isAmount ? 'text-xl text-[#2e7d32]' : 'text-[28px] text-primary'}`}>{card.value}</span>
+              ) : (
+                <span className={`font-bold opacity-30 ${card.isAmount ? 'text-xl text-[#2e7d32]' : 'text-[28px] text-primary'}`}>—</span>
+              )}
             </div>
           ))}
         </div>

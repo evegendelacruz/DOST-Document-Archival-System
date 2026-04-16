@@ -122,6 +122,17 @@ export default function SetupPage() {
   const [filterValue, setFilterValue] = useState('');
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
+  const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
+  const [geocodingProgress, setGeocodingProgress] = useState<{ current: number; total: number } | null>(null);
+  const [importResults, setImportResults] = useState<{
+    show: boolean;
+    success: number;
+    geocoded: number;
+    errors: { row: number; title: string; error: string }[];
+  } | null>(null);
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   // Address data states (fetched from API)
   const [provinces, setProvinces] = useState<{ id: string; name: string }[]>([]);
@@ -354,6 +365,196 @@ export default function SetupPage() {
       .then(data => { if (data[0]) setMapFlyTarget([parseFloat(data[0].lat), parseFloat(data[0].lon)]); })
       .catch(() => {});
   }, [formData.municipality, formData.province]);
+
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    setImportProgress(null);
+    const errors: { row: number; title: string; error: string }[] = [];
+    let successCount = 0;
+
+    // Maps the Excel Status values to the DB enum values
+    const statusMap: Record<string, string> = {
+      'NEW': 'PROPOSAL',
+      'PROPOSAL': 'PROPOSAL',
+      'APPROVED': 'APPROVED',
+      'ON-GOING': 'ONGOING',
+      'ONGOING': 'ONGOING',
+      'WITHDRAWN': 'WITHDRAWN',
+      'WITHDRAWAL': 'WITHDRAWN',
+      'TERMINATED': 'TERMINATED',
+      'GRADUATED': 'GRADUATED',
+      'COMPLETED': 'GRADUATED',
+    };
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: '' });
+
+      // Detect format by checking if first row has "Project Title" or "Project" column
+      const firstRow = rows[0] || {};
+      const isTemplateFormat = 'Project Title' in firstRow;
+
+      setImportProgress({ current: 0, total: rows.length });
+
+      for (let i = 0; i < rows.length; i++) {
+        setImportProgress({ current: i + 1, total: rows.length });
+        const row = rows[i];
+        const rowNum = i + 2;
+
+        let title: string, fund: string, typeOfFund: string, firmSize: string;
+        let province: string, municipality: string, barangay: string;
+        let rawStatus: string, prioritySector: string, corporatorName: string;
+        let contactNumbers: string[], emails: string[];
+        let coordinates: string | null, firm: string | null, typeOfFirm: string | null, year: string | null;
+
+        if (isTemplateFormat) {
+          // Template format with all required columns
+          title = String(row['Project Title'] || '').trim();
+          fund = String(row['Fund'] || '').trim();
+          typeOfFund = String(row['Type of Fund'] || '').trim();
+          firmSize = String(row['Firm Size'] || '').trim();
+          province = String(row['Province'] || '').trim();
+          municipality = String(row['Municipality'] || '').trim();
+          barangay = String(row['Barangay'] || '').trim();
+          rawStatus = String(row['Status'] || '').trim();
+          prioritySector = String(row['Priority Sector'] || '').trim();
+          corporatorName = String(row["Cooperator's Name"] || '').trim();
+          const contactNumbersRaw = String(row['Contact Numbers'] || '').trim();
+          const emailsRaw = String(row['Emails'] || '').trim();
+          contactNumbers = contactNumbersRaw.split(';').map(c => c.trim()).filter(Boolean);
+          emails = emailsRaw.split(';').map(em => em.trim()).filter(Boolean);
+          coordinates = String(row['Coordinates'] || '').trim() || null;
+          firm = String(row['Firm Name'] || '').trim() || null;
+          typeOfFirm = String(row['Type of Firm'] || '').trim() || null;
+          year = String(row['Year'] || '').trim() || null;
+        } else {
+          // DB export format: Project, Year Approved, Beneficiaries, Collaborators,
+          // Sector, Province, City, District, Status, Project Cost, Type
+          title = String(row['Project'] || '').trim();
+          fund = row['Project Cost'] != null && row['Project Cost'] !== '' && row['Project Cost'] !== '--'
+            ? String(row['Project Cost']).trim()
+            : '0';
+          typeOfFund = String(row['Type'] || 'GIA').trim() || 'GIA';
+          firmSize = 'Small';
+          province = String(row['Province'] || '').trim();
+          municipality = String(row['City'] || '').trim();
+          barangay = row['District'] ? `District ${String(row['District']).trim()}` : 'N/A';
+          rawStatus = String(row['Status'] || '').trim();
+          prioritySector = String(row['Sector'] || '').trim();
+          corporatorName = String(row['Collaborators'] || row['Beneficiaries'] || '').trim() || 'N/A';
+          contactNumbers = [];
+          emails = [];
+          coordinates = null;
+          firm = String(row['Beneficiaries'] || '').trim() || null;
+          typeOfFirm = null;
+          year = row['Year Approved'] ? String(row['Year Approved']).trim() : null;
+        }
+
+        if (!title) {
+          errors.push({ row: rowNum, title: `Row ${rowNum}`, error: 'Missing Project Title' });
+          continue;
+        }
+        if (!province || !municipality) {
+          errors.push({ row: rowNum, title, error: 'Missing Province or Municipality' });
+          continue;
+        }
+
+        const status = statusMap[rawStatus.toUpperCase()];
+        if (!status) {
+          errors.push({ row: rowNum, title, error: `Unknown status "${rawStatus}"` });
+          continue;
+        }
+
+        try {
+          const res = await fetch('/api/setup-projects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({
+              title, fund, typeOfFund, firmSize,
+              address: `${barangay}, ${municipality}, ${province}`,
+              coordinates,
+              firm, typeOfFirm, corporatorName,
+              contactNumbers, emails, status, prioritySector, year,
+            }),
+          });
+          if (!res.ok) {
+            const errData = await res.json().catch(() => null);
+            errors.push({ row: rowNum, title, error: errData?.error || 'Failed to save' });
+          } else {
+            successCount++;
+          }
+        } catch {
+          errors.push({ row: rowNum, title, error: 'Network error' });
+        }
+      }
+
+      await fetchProjects();
+
+      // Server-side batch geocode: fills coordinates for all projects missing them
+      // (covers both newly imported rows and previously imported ones)
+      let geocodedCount = 0;
+      try {
+        setGeocoding(true);
+
+        // Snapshot how many projects are currently missing coordinates so we can
+        // track progress while the batch runs on the server.
+        let geoTotal = 0;
+        try {
+          const snapRes = await fetch('/api/setup-projects', { headers: getAuthHeaders() });
+          const snapData: { coordinates: string | null }[] = await snapRes.json();
+          geoTotal = snapData.filter(p => !p.coordinates).length;
+          if (geoTotal > 0) setGeocodingProgress({ current: 0, total: geoTotal });
+        } catch { /* non-fatal */ }
+
+        // Fire the batch and poll for progress simultaneously
+        const batchPromise = fetch('/api/setup-projects/geocode-batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+          body: JSON.stringify({}),
+        });
+
+        let pollInterval: ReturnType<typeof setInterval> | null = null;
+        if (geoTotal > 0) {
+          const baselineMissing = geoTotal;
+          pollInterval = setInterval(async () => {
+            try {
+              const pollRes = await fetch('/api/setup-projects', { headers: getAuthHeaders() });
+              const pollData: { coordinates: string | null }[] = await pollRes.json();
+              const nowMissing = pollData.filter(p => !p.coordinates).length;
+              const done = baselineMissing - nowMissing;
+              setGeocodingProgress({ current: Math.max(0, done), total: baselineMissing });
+            } catch { /* non-fatal */ }
+          }, 2000);
+        }
+
+        const geoRes = await batchPromise;
+        if (pollInterval) clearInterval(pollInterval);
+
+        if (geoRes.ok) {
+          const geoData = await geoRes.json();
+          geocodedCount = geoData.updated ?? 0;
+          if (geoTotal > 0) setGeocodingProgress({ current: geoTotal, total: geoTotal });
+          await fetchProjects();
+        }
+      } catch { /* geocoding failure is non-fatal */ } finally {
+        setGeocoding(false);
+        setGeocodingProgress(null);
+      }
+
+      setImportResults({ show: true, success: successCount, geocoded: geocodedCount, errors });
+    } catch {
+      setImportResults({ show: true, success: 0, geocoded: 0, errors: [{ row: 0, title: '', error: 'Failed to read Excel file. Make sure it is a valid .xlsx or .xls file.' }] });
+    } finally {
+      setImporting(false);
+      setImportProgress(null);
+      if (importFileRef.current) importFileRef.current.value = '';
+    }
+  };
 
   const handleSaveProject = async () => {
     const errors: Record<string, string> = {};
@@ -751,10 +952,27 @@ export default function SetupPage() {
               <input type="text" className="w-full h-full pl-[50px] pr-[25px] border border-[#e0e0e0] rounded-[25px] text-[15px] bg-[#f5f5f5] transition-all duration-200 focus:outline-none focus:border-primary focus:bg-white focus:shadow-[0_2px_8px_rgba(20,97,132,0.1)] placeholder:text-[#999]" placeholder="Search here" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
           </div>
-          <button className="flex items-center gap-2 py-3 px-5 bg-accent text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover" onClick={() => { setEditingProjectId(null); setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', year: '', companyLogo: null }); setEmails(['']); setContactNumbers(['']); setBarangaySearch(''); setFormErrors({}); setSaveError(''); setShowAddModal(true); }}>
-            <Icon icon="mdi:plus" width={20} height={20} />
-            Add New Project
-          </button>
+          <div className="flex items-center gap-2">
+            <input
+              ref={importFileRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={handleImportExcel}
+            />
+            <button
+              className="flex items-center gap-2 py-3 px-5 bg-white text-primary border border-primary rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-[#f0f8ff] disabled:opacity-60 disabled:cursor-not-allowed"
+              onClick={() => importFileRef.current?.click()}
+              disabled={importing || geocoding}
+            >
+              <Icon icon="mdi:file-excel" width={20} height={20} />
+              Import Excel
+            </button>
+            <button className="flex items-center gap-2 py-3 px-5 bg-accent text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover" onClick={() => { setEditingProjectId(null); setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', year: '', companyLogo: null }); setEmails(['']); setContactNumbers(['']); setBarangaySearch(''); setFormErrors({}); setSaveError(''); setShowAddModal(true); }}>
+              <Icon icon="mdi:plus" width={20} height={20} />
+              Add New Project
+            </button>
+          </div>
         </div>
 
         {/* Filter Tabs */}
@@ -765,7 +983,13 @@ export default function SetupPage() {
                 <span className={`text-[13px] font-medium leading-none ${activeFilter === tab.id ? 'text-white' : 'text-[#666]'}`}>{tab.label}</span>
                 <span className="w-1.5 h-1.5 rounded-full inline-block align-middle" style={{ backgroundColor: tab.color }}></span>
               </div>
-              <span className={`text-[32px] font-bold ${activeFilter === tab.id ? 'text-white' : 'text-primary'}`}>{statusCounts[tab.id] || 0}</span>
+              {loading ? (
+                <span className={`inline-block w-10 h-8 rounded-lg animate-pulse ${activeFilter === tab.id ? 'bg-white/30' : 'bg-[#e0eaf0]'}`} />
+              ) : (statusCounts[tab.id] ?? 0) > 0 ? (
+                <span className={`text-[32px] font-bold ${activeFilter === tab.id ? 'text-white' : 'text-primary'}`}>{statusCounts[tab.id]}</span>
+              ) : (
+                <span className={`text-[22px] font-bold opacity-30 ${activeFilter === tab.id ? 'text-white' : 'text-primary'}`}>—</span>
+              )}
             </button>
           ))}
         </div>
@@ -1313,6 +1537,111 @@ export default function SetupPage() {
             >
               Okay
             </button>
+          </div>
+        </div>
+      )}
+      {/* Import / Geocoding Progress Overlay */}
+      {(importing || geocoding) && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[1300] backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.25)] p-8 w-[400px] flex flex-col items-center gap-5">
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center ${geocoding ? 'bg-[#e0f7fa]' : 'bg-[#e8f0fe]'}`}>
+              <Icon
+                icon={geocoding ? 'mdi:map-marker-radius-outline' : 'mdi:file-excel-outline'}
+                width={30} height={30}
+                color={geocoding ? '#00838f' : '#1461a0'}
+              />
+            </div>
+            <div className="text-center w-full">
+              <h3 className="text-[17px] font-bold text-[#1a1a2e] mb-1">
+                {geocoding ? 'Setting Up Pins...' : 'Importing Projects...'}
+              </h3>
+              <p className="text-[13px] text-[#666] mb-4">
+                {geocoding
+                  ? geocodingProgress
+                    ? `${geocodingProgress.current} of ${geocodingProgress.total} pins set up`
+                    : 'Preparing pins...'
+                  : importProgress
+                    ? `${importProgress.current} of ${importProgress.total} rows processed`
+                    : 'Reading file...'
+                }
+              </p>
+              <div className="w-full h-2.5 bg-[#e0eaf0] rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{
+                    width: geocoding
+                      ? geocodingProgress
+                        ? `${Math.round((geocodingProgress.current / geocodingProgress.total) * 100)}%`
+                        : '4%'
+                      : importProgress && importProgress.total > 0
+                        ? `${Math.round((importProgress.current / importProgress.total) * 100)}%`
+                        : '4%',
+                    backgroundColor: geocoding ? '#00838f' : '#1461a0',
+                  }}
+                />
+              </div>
+              <p className="text-[12px] font-semibold mt-2" style={{ color: geocoding ? '#00838f' : '#1461a0' }}>
+                {geocoding
+                  ? geocodingProgress
+                    ? `${Math.round((geocodingProgress.current / geocodingProgress.total) * 100)}%`
+                    : '...'
+                  : importProgress && importProgress.total > 0
+                    ? `${Math.round((importProgress.current / importProgress.total) * 100)}%`
+                    : '0%'
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Results Modal */}
+      {importResults?.show && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]" onClick={() => setImportResults(null)}>
+          <div className="bg-white rounded-2xl w-full max-w-[500px] py-8 px-10 shadow-[0_12px_40px_rgba(0,0,0,0.25)]" onClick={(e) => e.stopPropagation()}>
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 ${importResults.errors.length === 0 ? 'bg-[#e8f5e9]' : importResults.success > 0 ? 'bg-[#fff8e1]' : 'bg-[#fce4ec]'}`}>
+              <Icon
+                icon={importResults.errors.length === 0 ? 'mdi:check-circle' : importResults.success > 0 ? 'mdi:alert-circle' : 'mdi:close-circle'}
+                width={36}
+                height={36}
+                color={importResults.errors.length === 0 ? '#2e7d32' : importResults.success > 0 ? '#f57f17' : '#c62828'}
+              />
+            </div>
+            <h3 className="text-lg font-bold text-[#333] m-0 mb-1 text-center">Import Complete</h3>
+            <div className="flex justify-center gap-6 my-4">
+              <div className="text-center">
+                <p className="text-[28px] font-bold text-[#2e7d32] m-0">{importResults.success}</p>
+                <p className="text-[12px] text-[#666] m-0">Added</p>
+              </div>
+              <div className="w-px bg-[#e0e0e0]" />
+              <div className="text-center">
+                <p className="text-[28px] font-bold text-[#00838f] m-0">{importResults.geocoded}</p>
+                <p className="text-[12px] text-[#666] m-0">Map Pins Set</p>
+              </div>
+              <div className="w-px bg-[#e0e0e0]" />
+              <div className="text-center">
+                <p className="text-[28px] font-bold text-[#c62828] m-0">{importResults.errors.length}</p>
+                <p className="text-[12px] text-[#666] m-0">Failed</p>
+              </div>
+            </div>
+            {importResults.errors.length > 0 && (
+              <div className="mt-3 max-h-[180px] overflow-y-auto border border-[#f0d0d0] rounded-lg bg-[#fff5f5] p-3 flex flex-col gap-2">
+                {importResults.errors.map((err, idx) => (
+                  <div key={idx} className="text-[12px] text-[#c62828]">
+                    <span className="font-semibold">{err.row > 0 ? `Row ${err.row}` : 'File error'}{err.title ? ` — ${err.title}` : ''}:</span>{' '}
+                    {err.error}
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="mt-6 flex justify-center">
+              <button
+                className="py-2.5 px-10 bg-primary text-white border-none rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-primary/90"
+                onClick={() => setImportResults(null)}
+              >
+                Okay
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -605,8 +605,7 @@ export default function MapsPage() {
   const [flyToCoords, setFlyToCoords] = useState<{ lat: number; lng: number; key: number } | null>(null);
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [activePanel, setActivePanel] = useState<string>('setup');
-
-  useEffect(() => {
+  const fetchPins = useCallback(() => {
     fetch('/api/setup-projects')
       .then(res => res.json())
       .then((data: SetupProjectPin[]) => setSetupProjects(data.filter(p => p.coordinates)))
@@ -616,6 +615,23 @@ export default function MapsPage() {
       .then((data: CestProjectPin[]) => setCestProjects(data.filter(p => p.coordinates)))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    fetchPins();
+
+    // Refetch when user returns to this tab after importing on another page
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') fetchPins();
+    };
+    const handleFocus = () => fetchPins();
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [fetchPins]);
 
   const panelIds = ['setup', 'cest', 'sscp', 'lgia'];
 

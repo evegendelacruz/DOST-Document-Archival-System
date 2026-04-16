@@ -307,6 +307,7 @@ export default function RecentActivity() {
 
   return (
     <DashboardLayout activePath="/recent-activity">
+    <style>{`@keyframes ra-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
     <div style={{
       fontFamily: "'Clear Sans', 'Segoe UI', system-ui, sans-serif",
       background: "#f4f6f8",
@@ -366,7 +367,13 @@ export default function RecentActivity() {
             padding: "20px 24px",
           }}>
             <div style={{ fontSize: 12, color: "#888", marginBottom: 6 }}>{label}</div>
-            <div style={{ fontSize: 32, fontWeight: 700, color: "#1a6b7a" }}>{value}</div>
+            {loading ? (
+              <div style={{ width: 64, height: 36, borderRadius: 8, background: "#e8f0f5", animation: "ra-pulse 1.4s ease-in-out infinite" }} />
+            ) : value > 0 ? (
+              <div style={{ fontSize: 32, fontWeight: 700, color: "#1a6b7a" }}>{value}</div>
+            ) : (
+              <div style={{ fontSize: 32, fontWeight: 700, color: "#1a6b7a", opacity: 0.25 }}>—</div>
+            )}
           </div>
         ))}
       </div>
