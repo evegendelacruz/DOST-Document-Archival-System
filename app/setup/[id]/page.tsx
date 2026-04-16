@@ -7308,6 +7308,22 @@ export default function ProjectDetailPage() {
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
   const [loadingPermissions, setLoadingPermissions] = useState(false);
 
+  // Transfer Ownership states
+  const [transferOwnershipModal, setTransferOwnershipModal] = useState(false);
+  const [allUsers, setAllUsers] = useState<Array<{ id: string; fullName: string; email: string; profileImageUrl?: string }>>([]);
+  const [selectedNewOwner, setSelectedNewOwner] = useState<string | null>(null);
+  const [transferring, setTransferring] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [transferConfirmModal, setTransferConfirmModal] = useState<{
+    show: boolean;
+    userId: string;
+    userName: string;
+  } | null>(null);
+  const [transferSuccessModal, setTransferSuccessModal] = useState<{
+    show: boolean;
+    message: string;
+  } | null>(null);
+
   // Function to fetch pending edit requests and approved editors
   const fetchEditRequestsAndEditors = useCallback(async () => {
     setLoadingPermissions(true);
@@ -7825,6 +7841,71 @@ export default function ProjectDetailPage() {
     return pendingRequests.includes(currentUser.id);
   };
 
+  // Fetch all users for transfer ownership
+  const fetchAllUsers = async () => {
+    try {
+      const res = await fetch('/api/users');
+      const users = await res.json();
+      // Filter out current user (can't transfer to yourself)
+      const filteredUsers = users.filter((u: { id: string }) => u.id !== currentUser?.id);
+      setAllUsers(filteredUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  // Handle transfer ownership
+  const handleTransferOwnership = async (newOwnerId: string, newOwnerName: string) => {
+    if (!project || !currentUser) return;
+
+    setTransferring(true);
+    try {
+      // Update the project with new owner
+      const res = await fetch(`/api/setup-projects/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assignee: newOwnerName,
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to transfer ownership');
+
+      // Send notification to new owner
+      await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: newOwnerId,
+          type: 'ownership_transferred',
+          title: 'Project Ownership Transferred',
+          message: `${currentUser.fullName} has transferred ownership of SETUP project "${project.title}" to you.`,
+          eventId: project.id,
+        }),
+      });
+
+      // Refresh project data
+      const updatedProject = await res.json();
+      setProject(updatedProject);
+
+      setTransferOwnershipModal(false);
+      setTransferConfirmModal(null);
+      setSelectedNewOwner(null);
+      setUserSearchQuery('');
+      setTransferSuccessModal({ show: true, message: `Ownership transferred to ${newOwnerName} successfully!` });
+
+      // Redirect to projects list after a short delay since user is no longer owner
+      setTimeout(() => {
+        window.location.href = '/setup';
+      }, 2000);
+    } catch (error) {
+      console.error('Error transferring ownership:', error);
+      alert('Failed to transfer ownership. Please try again.');
+    } finally {
+      setTransferring(false);
+    }
+  };
+
   // Handle Edit Mode toggle
   const handleEditModeToggle = async () => {
     // For assignees: toggle between Upload Mode <-> Edit Mode only (no View Mode)
@@ -8154,6 +8235,20 @@ export default function ProjectDetailPage() {
                       {pendingEditRequests.length > 9 ? '9+' : pendingEditRequests.length}
                     </span>
                   )}
+                </button>
+              )}
+
+              {/* Transfer Ownership Button - Show only for owner (assignee) */}
+              {isAssignee() && (
+                <button
+                  onClick={() => {
+                    setTransferOwnershipModal(true);
+                    fetchAllUsers();
+                  }}
+                  className="flex items-center justify-center w-10 h-10 border-none rounded-full bg-[#fff3e0] text-[#f57c00] cursor-pointer transition-all duration-200 hover:bg-[#ffe0b2] hover:text-[#e65100]"
+                  title="Transfer Ownership"
+                >
+                  <Icon icon="mdi:account-switch" width={20} height={20} />
                 </button>
               )}
 
@@ -8928,6 +9023,191 @@ export default function ProjectDetailPage() {
                   <Icon icon="mdi:download" width={18} height={18} />
                   Download DOCX
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Transfer Ownership Modal */}
+        {transferOwnershipModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]" onClick={() => { setTransferOwnershipModal(false); setUserSearchQuery(''); setSelectedNewOwner(null); }}>
+            <div className="bg-white rounded-2xl w-full max-w-[500px] shadow-[0_12px_40px_rgba(0,0,0,0.25)] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+              {/* Header */}
+              <div className="bg-gradient-to-r from-[#f57c00] to-[#ff9800] px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                    <Icon icon="mdi:account-switch" width={24} height={24} color="white" />
+                  </div>
+                  <div>
+                    <h3 className="text-white text-base font-bold m-0">Transfer Ownership</h3>
+                    <p className="text-white/80 text-xs m-0">Select a user to transfer this project to</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                {/* Warning */}
+                <div className="flex items-start gap-2 bg-[#fff3e0] border border-[#ffcc80] rounded-lg py-3 px-4 mb-4 text-xs text-[#e65100]">
+                  <Icon icon="mdi:alert-outline" width={16} height={16} className="min-w-4 mt-0.5" />
+                  <span>
+                    <strong>Warning:</strong> Transferring ownership will remove your access to edit this project. The new owner will have full control.
+                  </span>
+                </div>
+
+                {/* Search */}
+                <div className="relative mb-4">
+                  <Icon icon="mdi:magnify" width={18} height={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#999]" />
+                  <input
+                    type="text"
+                    value={userSearchQuery}
+                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                    placeholder="Search users by name or email..."
+                    className="w-full pl-10 pr-4 py-2.5 border border-[#ddd] rounded-lg text-sm focus:outline-none focus:border-[#f57c00] focus:ring-1 focus:ring-[#f57c00]/20"
+                  />
+                </div>
+
+                {/* User List */}
+                <div className="max-h-[280px] overflow-y-auto border border-[#eee] rounded-lg">
+                  {allUsers.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-[#999]">
+                      <Icon icon="mdi:loading" width={24} height={24} className="animate-spin mb-2" />
+                      <span className="text-sm">Loading users...</span>
+                    </div>
+                  ) : (
+                    allUsers
+                      .filter(u =>
+                        u.fullName.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+                        u.email.toLowerCase().includes(userSearchQuery.toLowerCase())
+                      )
+                      .map((user) => (
+                        <div
+                          key={user.id}
+                          onClick={() => setSelectedNewOwner(user.id)}
+                          className={`flex items-center gap-3 p-3 cursor-pointer border-b border-[#eee] last:border-b-0 transition-colors ${
+                            selectedNewOwner === user.id
+                              ? 'bg-[#fff3e0]'
+                              : 'hover:bg-[#f9f9f9]'
+                          }`}
+                        >
+                          <div className="w-10 h-10 rounded-full bg-[#e0e0e0] flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {user.profileImageUrl ? (
+                              <img src={user.profileImageUrl} alt={user.fullName} className="w-full h-full object-cover" />
+                            ) : (
+                              <Icon icon="mdi:account" width={24} height={24} color="#999" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-[#333] m-0 truncate">{user.fullName}</p>
+                            <p className="text-xs text-[#888] m-0 truncate">{user.email}</p>
+                          </div>
+                          {selectedNewOwner === user.id && (
+                            <Icon icon="mdi:check-circle" width={20} height={20} color="#f57c00" />
+                          )}
+                        </div>
+                      ))
+                  )}
+                  {allUsers.length > 0 && allUsers.filter(u =>
+                    u.fullName.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+                    u.email.toLowerCase().includes(userSearchQuery.toLowerCase())
+                  ).length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-8 text-[#999]">
+                      <Icon icon="mdi:account-search" width={32} height={32} className="mb-2" />
+                      <span className="text-sm">No users found</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex justify-end gap-3 px-6 py-4 bg-[#f9f9f9] border-t border-[#eee]">
+                <button
+                  onClick={() => { setTransferOwnershipModal(false); setUserSearchQuery(''); setSelectedNewOwner(null); }}
+                  className="px-5 py-2 bg-white text-[#666] border border-[#d0d0d0] rounded-lg text-sm font-medium hover:bg-[#f5f5f5]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    const selectedUser = allUsers.find(u => u.id === selectedNewOwner);
+                    if (selectedUser) {
+                      setTransferConfirmModal({
+                        show: true,
+                        userId: selectedUser.id,
+                        userName: selectedUser.fullName,
+                      });
+                    }
+                  }}
+                  disabled={!selectedNewOwner}
+                  className="px-5 py-2 bg-[#f57c00] text-white rounded-lg text-sm font-semibold hover:bg-[#e65100] disabled:bg-[#ccc] disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <Icon icon="mdi:account-switch" width={16} height={16} />
+                  Transfer
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Transfer Ownership Confirmation Modal */}
+        {transferConfirmModal?.show && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1300]" onClick={() => setTransferConfirmModal(null)}>
+            <div className="bg-white rounded-2xl w-full max-w-[420px] py-8 px-10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] text-center" onClick={(e) => e.stopPropagation()}>
+              <div className="w-14 h-14 rounded-full bg-[#fff3e0] flex items-center justify-center mx-auto mb-4">
+                <Icon icon="mdi:account-switch" width={36} height={36} color="#f57c00" />
+              </div>
+              <h3 className="text-lg font-bold text-[#333] m-0 mb-3">Confirm Transfer</h3>
+              <p className="text-[14px] text-[#666] m-0 mb-2">
+                Are you sure you want to transfer ownership of this project to:
+              </p>
+              <p className="text-[16px] font-semibold text-[#333] m-0 mb-4">
+                {transferConfirmModal.userName}
+              </p>
+              <p className="text-[12px] text-[#999] m-0 mb-6">
+                You will lose access to edit this project and will be redirected to the projects list.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  className="py-2.5 px-6 bg-white text-[#333] border border-[#d0d0d0] rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#f5f5f5]"
+                  onClick={() => setTransferConfirmModal(null)}
+                  disabled={transferring}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="py-2.5 px-6 bg-[#f57c00] text-white border-none rounded-lg text-[14px] font-semibold cursor-pointer transition-colors duration-200 hover:bg-[#e65100] disabled:bg-[#ccc] disabled:cursor-not-allowed flex items-center gap-2"
+                  onClick={() => handleTransferOwnership(transferConfirmModal.userId, transferConfirmModal.userName)}
+                  disabled={transferring}
+                >
+                  {transferring ? (
+                    <>
+                      <Icon icon="mdi:loading" width={16} height={16} className="animate-spin" />
+                      Transferring...
+                    </>
+                  ) : (
+                    <>
+                      <Icon icon="mdi:check" width={16} height={16} />
+                      Confirm Transfer
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Transfer Success Modal */}
+        {transferSuccessModal?.show && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1200]" onClick={() => setTransferSuccessModal(null)}>
+            <div className="bg-white rounded-2xl w-full max-w-[400px] py-8 px-10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] text-center" onClick={(e) => e.stopPropagation()}>
+              <div className="w-14 h-14 rounded-full bg-[#e8f5e9] flex items-center justify-center mx-auto mb-4">
+                <Icon icon="mdi:check-circle" width={36} height={36} color="#2e7d32" />
+              </div>
+              <h3 className="text-lg font-bold text-[#333] m-0 mb-3">Success!</h3>
+              <p className="text-[14px] text-[#666] m-0 mb-2">{transferSuccessModal.message}</p>
+              <p className="text-[12px] text-[#999] m-0 mb-6">Redirecting to projects list...</p>
+              <div className="flex items-center justify-center">
+                <Icon icon="mdi:loading" width={24} height={24} className="animate-spin text-[#2e7d32]" />
               </div>
             </div>
           </div>

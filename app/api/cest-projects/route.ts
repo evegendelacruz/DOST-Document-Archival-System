@@ -35,11 +35,11 @@ export async function POST(req: NextRequest) {
     const data = await req.json();
     const userId = getUserIdFromRequest(req);
 
-    // Get logged-in user info to set as assignee
-    let staffAssigned: string | null = data.staffAssigned || null;
-    let assigneeProfileUrl: string | null = data.assigneeProfileUrl || null;
+    // Get logged-in user info to set as assignee (always use creator)
+    let staffAssigned: string | null = null;
+    let assigneeProfileUrl: string | null = null;
 
-    if (userId && !staffAssigned) {
+    if (userId) {
       const user = await prisma.user.findUnique({
         where: { id: userId },
         select: { fullName: true, profileImageUrl: true },
@@ -50,9 +50,31 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Handle project code - validate uniqueness if provided, otherwise leave null
+    const projectCode = data.code?.trim() || null;
+
+    if (projectCode) {
+      // Check if the provided code already exists
+      const existingProject = await prisma.cestProject.findUnique({
+        where: { code: projectCode },
+      });
+      if (existingProject) {
+        return NextResponse.json({ error: 'Project code already exists' }, { status: 400 });
+      }
+    }
+
+    // Remove fields that we handle separately to prevent conflicts
+    const {
+      staffAssigned: _ignored,
+      assigneeProfileUrl: _ignored2,
+      code: _ignored3,
+      ...restData
+    } = data;
+
     const project = await prisma.cestProject.create({
       data: {
-        ...data,
+        ...restData,
+        code: projectCode,
         staffAssigned,
         assigneeProfileUrl,
       },
@@ -72,6 +94,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(project, { status: 201 });
   } catch (error) {
     console.error('POST /api/cest-projects error:', error);
-    return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create project';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
