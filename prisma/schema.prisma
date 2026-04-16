@@ -115,6 +115,7 @@ model ProjectDocument {
   updatedAt      DateTime      @updatedAt
   fileData       Bytes?
   mimeType       String        @default("application/octet-stream")
+  qrPin          String?
   project        SetupProject  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("project_documents")
@@ -172,6 +173,7 @@ model CestProjectDocument {
   fileUrl        String
   mimeType       String        @default("application/octet-stream")
   fileData       Bytes?
+  qrPin          String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   project        CestProject   @relation(fields: [projectId], references: [id], onDelete: Cascade)
