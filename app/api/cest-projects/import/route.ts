@@ -25,20 +25,39 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Get existing project titles to check for duplicates
+    // Get existing project titles and codes to check for duplicates
     const existingProjects = await prisma.cestProject.findMany({
-      select: { projectTitle: true },
+      select: { projectTitle: true, code: true },
     });
     const existingTitles = new Set(existingProjects.map(p => p.projectTitle.toLowerCase()));
+    const existingCodes = new Set(existingProjects.map(p => p.code));
+
+    // Find the actual highest numeric suffix (string sort is unreliable)
+    const allNumericSuffixes = existingProjects.map(p => parseInt(p.code.replace(/\D/g, ''), 10)).filter(n => !isNaN(n));
+    let nextCodeNum = allNumericSuffixes.length > 0 ? Math.max(...allNumericSuffixes) + 1 : 1;
 
     // Filter out duplicates and prepare projects for insertion
     const projectsToCreate = projects
       .filter((p: Record<string, unknown>) =>
         p.projectTitle && !existingTitles.has(String(p.projectTitle).toLowerCase())
       )
-      .map((p: Record<string, unknown>) => ({
+      .map((p: Record<string, unknown>) => {
+        // Use provided code if it doesn't collide, otherwise auto-generate
+        let code: string;
+        const providedCode = p.code ? String(p.code).trim() : '';
+        if (providedCode && !existingCodes.has(providedCode)) {
+          code = providedCode;
+          existingCodes.add(code);
+        } else {
+          let candidate = `CEST-${String(nextCodeNum).padStart(3, '0')}`;
+          while (existingCodes.has(candidate)) { nextCodeNum++; candidate = `CEST-${String(nextCodeNum).padStart(3, '0')}`; }
+          code = candidate;
+          nextCodeNum++;
+          existingCodes.add(code);
+        }
+        return {
         projectTitle: String(p.projectTitle),
-        code: p.code ? String(p.code) : null,
+        code,
         location: p.location ? String(p.location) : null,
         coordinates: p.coordinates ? String(p.coordinates) : null,
         beneficiaries: p.beneficiaries ? String(p.beneficiaries) : null,
@@ -61,7 +80,8 @@ export async function POST(req: NextRequest) {
         emails: Array.isArray(p.emails) ? p.emails.map(String) : null,
         contactNumbers: Array.isArray(p.contactNumbers) ? p.contactNumbers.map(String) : null,
         categories: Array.isArray(p.categories) ? p.categories.map(String) : null,
-      }));
+        };
+      });
 
     if (projectsToCreate.length === 0) {
       return NextResponse.json({
