@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
   const projects = await prisma.setupProject.findMany({
     where,
-    orderBy: { code: 'asc' },
+    orderBy: { createdAt: 'desc' },
   });
 
   return NextResponse.json(projects);
@@ -29,10 +29,10 @@ export async function POST(req: NextRequest) {
   const data = await req.json();
   const userId = getUserIdFromRequest(req);
 
-  // Auto-generate project code based on highest existing code
-  const last = await prisma.setupProject.findFirst({ orderBy: { code: 'desc' } });
-  const nextNum = last ? parseInt(last.code, 10) + 1 : 1;
-  const code = String(nextNum).padStart(3, '0');
+  // Use provided code if given, otherwise leave it null
+  const code: string | null = data.code && data.code.trim() ? data.code.trim() : null;
+  // Remove code from data to avoid duplicate field
+  delete data.code;
 
   // Get logged-in user info to set as assignee
   let assignee: string | null = null;

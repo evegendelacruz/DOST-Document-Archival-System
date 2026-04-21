@@ -23,6 +23,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   console.log('[Setup Projects API] PATCH - userId:', userId, 'data:', data);
 
+  // Handle code field - only update if provided and not empty
+  if (data.code === null || data.code === '') {
+    delete data.code;
+  } else if (data.code) {
+    data.code = data.code.trim();
+  }
+
   // Get the original project for logging
   const originalProject = await prisma.setupProject.findUnique({ where: { id } });
 

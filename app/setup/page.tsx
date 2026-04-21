@@ -40,7 +40,7 @@ const filterTabs = [
 
 interface Project {
   id: string;
-  code: string;
+  code: string | null;
   title: string;
   firm: string | null;
   typeOfFirm: string | null;
@@ -106,7 +106,7 @@ export default function SetupPage() {
   const [emails, setEmails] = useState(['']);
   const [contactNumbers, setContactNumbers] = useState(['']);
   const [formData, setFormData] = useState({
-    projectTitle: '', fund: '', typeOfFund: '', firmSize: '',
+    projectCode: '', projectTitle: '', fund: '', typeOfFund: '', firmSize: '',
     province: '', municipality: '', barangay: '', coordinates: '',
     firmName: '', firmType: '', cooperatorName: '',
     projectStatus: '', prioritySector: '', year: '', companyLogo: null as File | null,
@@ -148,6 +148,38 @@ export default function SetupPage() {
     isEdit: boolean;
     projectTitle: string;
   } | null>(null);
+
+  // Import modal states
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importData, setImportData] = useState<Record<string, string>[]>([]);
+  const [importColumns, setImportColumns] = useState<string[]>([]);
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState('');
+  const [importPreview, setImportPreview] = useState(false);
+  const [importResult, setImportResult] = useState<{ success: number; skipped: number; skippedTitles: string[] } | null>(null);
+  const importFileRef = useRef<HTMLInputElement>(null);
+
+  // Available fields for mapping
+  const setupFields = [
+    { key: '', label: '-- Skip this column --' },
+    { key: 'code', label: 'Project Code' },
+    { key: 'title', label: 'Project Title' },
+    { key: 'firm', label: 'Firm Name' },
+    { key: 'typeOfFirm', label: 'Type of Firm' },
+    { key: 'address', label: 'Address' },
+    { key: 'coordinates', label: 'Coordinates' },
+    { key: 'corporatorName', label: "Cooperator's Name" },
+    { key: 'contactNumbers', label: 'Contact Numbers' },
+    { key: 'emails', label: 'Emails' },
+    { key: 'status', label: 'Project Status' },
+    { key: 'prioritySector', label: 'Priority Sector' },
+    { key: 'firmSize', label: 'Firm Size' },
+    { key: 'fund', label: 'Fund' },
+    { key: 'typeOfFund', label: 'Type of Fund' },
+    { key: 'year', label: 'Year' },
+  ];
 
   const sortRef = useRef<HTMLDivElement>(null);
   const filterRef = useRef<HTMLDivElement>(null);
@@ -403,6 +435,7 @@ export default function SetupPage() {
 
       const payload: Record<string, unknown> = {
         title: formData.projectTitle,
+        code: formData.projectCode.trim() || null,
         fund: formData.fund,
         typeOfFund: formData.typeOfFund,
         firmSize: formData.firmSize,
@@ -443,7 +476,7 @@ export default function SetupPage() {
       setShowAddModal(false);
       setEditingProjectId(null);
       setSelectedProjects([]);
-      setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', year: '', companyLogo: null });
+      setFormData({ projectCode: '', projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', year: '', companyLogo: null });
       setEmails(['']); setContactNumbers(['']);
       await fetchProjects();
 
@@ -468,6 +501,7 @@ export default function SetupPage() {
     const municipality = addressParts[1] || '';
     const province = addressParts[2] || '';
     setFormData({
+      projectCode: project.code || '',
       projectTitle: project.title,
       fund: project.fund || '',
       typeOfFund: project.typeOfFund || '',
@@ -727,6 +761,231 @@ export default function SetupPage() {
   XLSX.writeFile(wb, `SETUP_Masterlist_${new Date().toISOString().slice(0, 10)}.xlsx`);
 };
 
+  // Import Excel handlers
+  const handleImportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImportFile(file);
+    setImportError('');
+    setImportResult(null);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = evt.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+
+        // Get all rows as array of arrays
+        const allRows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, defval: '' });
+
+        // Find the header row (look for row containing "Project Title" or similar)
+        let headerRowIndex = -1;
+        for (let i = 0; i < Math.min(allRows.length, 10); i++) {
+          const row = allRows[i];
+          if (Array.isArray(row)) {
+            const rowStr = row.map(cell => String(cell || '').toLowerCase()).join(' ');
+            if (rowStr.includes('project title') || rowStr.includes('project name') ||
+                (rowStr.includes('title') && rowStr.includes('code'))) {
+              headerRowIndex = i;
+              break;
+            }
+          }
+        }
+
+        // If no header row found, assume first row is header
+        if (headerRowIndex === -1) {
+          headerRowIndex = 0;
+        }
+
+        // Get headers from the identified header row
+        const headerRow = allRows[headerRowIndex];
+        const headers = (headerRow as string[]).map(h => String(h || '').trim()).filter(h => h && h !== '#');
+
+        if (headers.length === 0) {
+          setImportError('Could not find valid column headers in the Excel file.');
+          return;
+        }
+
+        setImportColumns(headers);
+
+        // Get data rows (everything after the header row)
+        const dataRowsRaw = allRows.slice(headerRowIndex + 1);
+
+        // Auto-map columns based on header names
+        const autoMapping: Record<string, string> = {};
+        headers.forEach((header) => {
+          const headerLower = header.toLowerCase();
+          if (headerLower.includes('code') && !headerLower.includes('contact')) autoMapping[header] = 'code';
+          else if (headerLower.includes('title') || headerLower.includes('project name')) autoMapping[header] = 'title';
+          else if (headerLower.includes('firm') && headerLower.includes('type')) autoMapping[header] = 'typeOfFirm';
+          else if (headerLower.includes('firm') || headerLower.includes('company')) autoMapping[header] = 'firm';
+          else if (headerLower.includes('address') || headerLower.includes('location')) autoMapping[header] = 'address';
+          else if (headerLower.includes('coordinate')) autoMapping[header] = 'coordinates';
+          else if (headerLower.includes('cooperator') || headerLower.includes('corporator') || headerLower.includes('owner')) autoMapping[header] = 'corporatorName';
+          else if (headerLower.includes('contact') || headerLower.includes('phone') || headerLower.includes('mobile')) autoMapping[header] = 'contactNumbers';
+          else if (headerLower.includes('email')) autoMapping[header] = 'emails';
+          else if (headerLower.includes('status')) autoMapping[header] = 'status';
+          else if (headerLower.includes('sector')) autoMapping[header] = 'prioritySector';
+          else if (headerLower.includes('size')) autoMapping[header] = 'firmSize';
+          else if (headerLower.includes('fund') && headerLower.includes('type')) autoMapping[header] = 'typeOfFund';
+          else if (headerLower.includes('fund')) autoMapping[header] = 'fund';
+          else if (headerLower.includes('year')) autoMapping[header] = 'year';
+          else if (headerLower.includes('assignee')) autoMapping[header] = 'assignee';
+        });
+        setColumnMapping(autoMapping);
+
+        // Build header index map (accounting for the # column which we skip)
+        const fullHeaderRow = headerRow as string[];
+        const headerIndexMap: Record<string, number> = {};
+        fullHeaderRow.forEach((h, idx) => {
+          const headerStr = String(h || '').trim();
+          if (headerStr && headerStr !== '#') {
+            headerIndexMap[headerStr] = idx;
+          }
+        });
+
+        // Convert data rows to objects
+        const dataRows = dataRowsRaw.map((row) => {
+          const rowArray = row as string[];
+          const obj: Record<string, string> = {};
+          headers.forEach((header) => {
+            const idx = headerIndexMap[header];
+            if (idx !== undefined) {
+              obj[header] = String(rowArray[idx] || '').trim();
+            }
+          });
+          return obj;
+        }).filter(row => {
+          // Filter out empty rows - must have at least one non-empty value
+          const values = Object.values(row);
+          return values.some(v => v && v.trim() !== '');
+        });
+
+        if (dataRows.length === 0) {
+          setImportError('No valid data rows found in the Excel file.');
+          return;
+        }
+
+        setImportData(dataRows);
+        setImportPreview(true);
+      } catch (err) {
+        setImportError('Failed to parse Excel file. Please ensure it is a valid .xlsx or .xls file.');
+        console.error(err);
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const handleImportSubmit = async () => {
+    // Validate that title column is mapped
+    const titleColumn = Object.entries(columnMapping).find(([, field]) => field === 'title')?.[0];
+    if (!titleColumn) {
+      setImportError('You must map a column to "Project Title"');
+      return;
+    }
+
+    setImporting(true);
+    setImportError('');
+
+    try {
+      // Transform data based on mapping
+      const projectsToImport = importData.map(row => {
+        const project: Record<string, unknown> = {};
+        Object.entries(columnMapping).forEach(([column, field]) => {
+          if (field && row[column]) {
+            if (field === 'contactNumbers' || field === 'emails') {
+              // Split by comma or semicolon for array fields
+              project[field] = row[column].split(/[,;]/).map(v => v.trim()).filter(v => v);
+            } else if (field === 'status') {
+              // Normalize status values
+              const statusMap: Record<string, string> = {
+                'proposal': 'PROPOSAL',
+                'approved': 'APPROVED',
+                'ongoing': 'ONGOING',
+                'withdrawal': 'WITHDRAWN',
+                'withdrawn': 'WITHDRAWN',
+                'terminated': 'TERMINATED',
+                'graduated': 'GRADUATED',
+              };
+              project[field] = statusMap[row[column].toLowerCase()] || 'PROPOSAL';
+            } else {
+              project[field] = row[column];
+            }
+          }
+        });
+        return project;
+      }).filter(p => p.title); // Only include projects with a title
+
+      // Get existing project titles
+      const existingTitles = projects.map(p => p.title.toLowerCase());
+
+      // Filter out duplicates
+      const uniqueProjects = projectsToImport.filter(p =>
+        !existingTitles.includes(String(p.title).toLowerCase())
+      );
+      const skippedProjects = projectsToImport.filter(p =>
+        existingTitles.includes(String(p.title).toLowerCase())
+      );
+
+      if (uniqueProjects.length === 0) {
+        setImportError('All projects already exist (duplicate titles). No projects imported.');
+        setImporting(false);
+        return;
+      }
+
+      // Import projects via API
+      const res = await fetch('/api/setup-projects/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ projects: uniqueProjects }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || 'Failed to import projects');
+      }
+
+      const result = await res.json();
+
+      setImportResult({
+        success: result.imported || uniqueProjects.length,
+        skipped: skippedProjects.length,
+        skippedTitles: skippedProjects.map(p => String(p.title)),
+      });
+
+      // Refresh projects list
+      await fetchProjects();
+
+      // Reset import state but keep result modal
+      setImportPreview(false);
+      setImportData([]);
+      setImportColumns([]);
+      setColumnMapping({});
+      setImportFile(null);
+      if (importFileRef.current) importFileRef.current.value = '';
+
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Failed to import projects');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const resetImportModal = () => {
+    setShowImportModal(false);
+    setImportFile(null);
+    setImportData([]);
+    setImportColumns([]);
+    setColumnMapping({});
+    setImportError('');
+    setImportPreview(false);
+    setImportResult(null);
+    if (importFileRef.current) importFileRef.current.value = '';
+  };
+
   const getStatusClass = (status: string) => statusColors[status] || statusColors.PROPOSAL;
 
   return (
@@ -746,11 +1005,13 @@ export default function SetupPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 py-3 px-5 bg-[#217346] text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-[#1a5c38]">
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="flex items-center gap-2 py-3 px-5 bg-[#217346] text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-[#1a5c38]">
               <Icon icon="mdi:upload" width={20} height={20} />
               Import Project
             </button>
-            <button className="flex items-center gap-2 py-3 px-5 bg-accent text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover" onClick={() => { setEditingProjectId(null); setFormData({ projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', year: '', companyLogo: null }); setEmails(['']); setContactNumbers(['']); setBarangaySearch(''); setFormErrors({}); setSaveError(''); setShowAddModal(true); }}>
+            <button className="flex items-center gap-2 py-3 px-5 bg-accent text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover" onClick={() => { setEditingProjectId(null); setFormData({ projectCode: '', projectTitle: '', fund: '', typeOfFund: '', firmSize: '', province: '', municipality: '', barangay: '', coordinates: '', firmName: '', firmType: '', cooperatorName: '', projectStatus: '', prioritySector: '', year: '', companyLogo: null }); setEmails(['']); setContactNumbers(['']); setBarangaySearch(''); setFormErrors({}); setSaveError(''); setShowAddModal(true); }}>
               <Icon icon="mdi:plus" width={20} height={20} />
               Add New Project
             </button>
@@ -876,7 +1137,7 @@ export default function SetupPage() {
                     <td className="w-9 min-w-[36px] text-center py-3 px-2.5 text-left border-b border-[#e0e0e0]">
                       <input type="checkbox" className="w-4 h-4 accent-accent cursor-pointer" checked={selectedProjects.includes(project.id)} onChange={(e) => setSelectedProjects(prev => e.target.checked ? [...prev, project.id] : prev.filter(id => id !== project.id))} />
                     </td>
-                      <td className="text-primary font-semibold whitespace-nowrap py-3 px-2 text-left border-b border-[#e0e0e0]">{project.code}</td>
+                      <td className="text-primary font-semibold whitespace-nowrap py-3 px-2 text-left border-b border-[#e0e0e0]">{project.code && !/^\d+$/.test(project.code) ? project.code : '-'}</td>
                       <td className="max-w-[250px] text-[#333] font-medium whitespace-normal break-words py-3 px-2 text-left border-b border-[#e0e0e0]"><Link href={`/setup/${project.id}`} className="text-primary no-underline font-medium hover:text-accent hover:underline">{project.title}</Link></td>
                       <td className="py-3 px-1.5 text-center border-b border-[#e0e0e0]">
                         {project.companyLogoUrl ? (
@@ -955,11 +1216,17 @@ export default function SetupPage() {
             <p className="text-xs text-[#888] m-0 mb-[15px]">{editingProjectId ? 'Update the project details below' : 'Complete the form to register a new project'}</p>
 
             <div className="flex flex-col gap-3">
-              {/* Project Title */}
-              <div className="flex flex-col gap-1 w-full">
-                <label className="text-[13px] font-semibold text-[#333]">Project Title<span className="text-[#dc3545] ml-0.5">*</span></label>
-                <input type="text" placeholder="Enter project title" value={formData.projectTitle} onChange={(e) => handleFormChange('projectTitle', e.target.value)} className={`${modalInputCls} ${formErrors.projectTitle ? 'border-[#dc3545]! focus:border-[#dc3545]! focus:shadow-[0_0_0_3px_rgba(220,53,69,0.1)]!' : ''}`} />
-                {formErrors.projectTitle && <span className="text-[#dc3545] text-[11px]">{formErrors.projectTitle}</span>}
+              {/* Project Code and Title Row */}
+              <div className="grid grid-cols-4 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-semibold text-[#333]">Project Code</label>
+                  <input type="text" placeholder="e.g. 001 (optional)" value={formData.projectCode} onChange={(e) => handleFormChange('projectCode', e.target.value)} className={modalInputCls} />
+                </div>
+                <div className="flex flex-col gap-1 col-span-3">
+                  <label className="text-[13px] font-semibold text-[#333]">Project Title<span className="text-[#dc3545] ml-0.5">*</span></label>
+                  <input type="text" placeholder="Enter project title" value={formData.projectTitle} onChange={(e) => handleFormChange('projectTitle', e.target.value)} className={`${modalInputCls} ${formErrors.projectTitle ? 'border-[#dc3545]! focus:border-[#dc3545]! focus:shadow-[0_0_0_3px_rgba(220,53,69,0.1)]!' : ''}`} />
+                  {formErrors.projectTitle && <span className="text-[#dc3545] text-[11px]">{formErrors.projectTitle}</span>}
+                </div>
               </div>
 
               {/* Fund Row */}
@@ -1320,6 +1587,201 @@ export default function SetupPage() {
             >
               Okay
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Import Project Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1100]" onClick={resetImportModal}>
+          <div className="bg-white rounded-[20px] py-[25px] px-[35px] w-full max-w-[800px] max-h-[85vh] overflow-y-auto relative shadow-[0_10px_40px_rgba(0,0,0,0.3)]" onClick={(e) => e.stopPropagation()}>
+            <button className="absolute top-[15px] right-[15px] bg-transparent border-none cursor-pointer text-[#999] p-[5px] flex items-center justify-center rounded-full transition-all duration-200 hover:bg-[#f0f0f0] hover:text-[#333]" onClick={resetImportModal}>
+              <Icon icon="mdi:close" width={20} height={20} />
+            </button>
+
+            <h2 className="text-xl font-bold text-primary m-0 mb-1">Import Projects</h2>
+            <p className="text-xs text-[#888] m-0 mb-4">Upload an Excel file (.xlsx, .xls) to import multiple projects at once</p>
+
+            {/* Import Result */}
+            {importResult && (
+              <div className="mb-4 p-4 rounded-lg bg-[#e8f5e9] border border-[#4caf50]">
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon icon="mdi:check-circle" width={24} height={24} className="text-[#2e7d32]" />
+                  <span className="text-[#2e7d32] font-semibold">Import Complete</span>
+                </div>
+                <p className="text-sm text-[#333] m-0">Successfully imported {importResult.success} project(s).</p>
+                {importResult.skipped > 0 && (
+                  <div className="mt-2">
+                    <p className="text-sm text-[#f57c00] m-0">Skipped {importResult.skipped} duplicate(s):</p>
+                    <ul className="text-xs text-[#666] m-0 mt-1 pl-4">
+                      {importResult.skippedTitles.slice(0, 5).map((title, idx) => (
+                        <li key={idx}>{title}</li>
+                      ))}
+                      {importResult.skippedTitles.length > 5 && (
+                        <li>...and {importResult.skippedTitles.length - 5} more</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+                <button
+                  className="mt-3 py-2 px-6 bg-[#2e7d32] text-white border-none rounded-lg text-sm font-semibold cursor-pointer hover:bg-[#1b5e20]"
+                  onClick={resetImportModal}
+                >
+                  Done
+                </button>
+              </div>
+            )}
+
+            {!importResult && (
+              <>
+                {/* File Upload */}
+                {!importPreview && (
+                  <div className="mb-4">
+                    <input
+                      ref={importFileRef}
+                      type="file"
+                      accept=".xlsx,.xls"
+                      onChange={handleImportFileChange}
+                      className="hidden"
+                      id="import-file-input"
+                    />
+                    <label
+                      htmlFor="import-file-input"
+                      className="flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed border-[#d0d0d0] rounded-xl cursor-pointer text-[#999] transition-all duration-200 hover:border-primary hover:text-primary hover:bg-[#f0f8ff]"
+                    >
+                      <Icon icon="mdi:file-excel" width={48} height={48} />
+                      <span className="text-sm font-medium">{importFile ? importFile.name : 'Click to upload Excel file'}</span>
+                      <span className="text-xs">Supports .xlsx and .xls files</span>
+                    </label>
+                  </div>
+                )}
+
+                {/* Column Mapping */}
+                {importPreview && importColumns.length > 0 && (
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-[#333] m-0">Map Excel Columns to Project Fields</h3>
+                      <span className="text-xs text-[#888]">{importData.length} row(s) found</span>
+                    </div>
+                    <div className="max-h-[150px] overflow-y-auto border border-[#e0e0e0] rounded-lg">
+                      <table className="w-full text-sm">
+                        <thead className="bg-[#f5f5f5] sticky top-0">
+                          <tr>
+                            <th className="py-2 px-3 text-left font-semibold text-[#333] border-b border-[#e0e0e0]">Excel Column</th>
+                            <th className="py-2 px-3 text-left font-semibold text-[#333] border-b border-[#e0e0e0]">Sample Data</th>
+                            <th className="py-2 px-3 text-left font-semibold text-[#333] border-b border-[#e0e0e0]">Map To</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {importColumns.map((col, idx) => (
+                            <tr key={idx} className="border-b border-[#eee] last:border-b-0">
+                              <td className="py-2 px-3 font-medium text-[#333]">{col}</td>
+                              <td className="py-2 px-3 text-[#666] max-w-[200px] truncate" title={importData[0]?.[col]}>
+                                {importData[0]?.[col] || '-'}
+                              </td>
+                              <td className="py-2 px-3">
+                                <select
+                                  value={columnMapping[col] || ''}
+                                  onChange={(e) => setColumnMapping(prev => ({ ...prev, [col]: e.target.value }))}
+                                  className="w-full py-1.5 px-2 border border-[#d0d0d0] rounded text-xs focus:outline-none focus:border-primary"
+                                >
+                                  {setupFields.map(field => (
+                                    <option key={field.key} value={field.key}>{field.label}</option>
+                                  ))}
+                                </select>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="mt-3 p-3 bg-[#fff3e0] rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <Icon icon="mdi:information" width={18} height={18} className="text-[#f57c00] mt-0.5" />
+                        <div className="text-xs text-[#333]">
+                          <p className="m-0 font-semibold">Note:</p>
+                          <p className="m-0">• "Project Title" mapping is required</p>
+                          <p className="m-0">• Projects with duplicate titles will be skipped</p>
+                          <p className="m-0">• Contact numbers and emails can be separated by commas</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Data Preview Table */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-semibold text-[#333] m-0 mb-2">Data Preview ({importData.length} rows)</h3>
+                      <div className="max-h-[200px] overflow-auto border border-[#e0e0e0] rounded-lg">
+                        <table className="w-full text-xs border-collapse">
+                          <thead className="bg-[#f5f5f5] sticky top-0">
+                            <tr>
+                              <th className="py-2 px-2 text-left font-semibold text-[#333] border-b border-[#e0e0e0] whitespace-nowrap">#</th>
+                              {importColumns.slice(0, 6).map((col, idx) => (
+                                <th key={idx} className="py-2 px-2 text-left font-semibold text-[#333] border-b border-[#e0e0e0] whitespace-nowrap max-w-[120px] truncate" title={col}>{col}</th>
+                              ))}
+                              {importColumns.length > 6 && (
+                                <th className="py-2 px-2 text-left font-semibold text-[#666] border-b border-[#e0e0e0] whitespace-nowrap">+{importColumns.length - 6} more</th>
+                              )}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {importData.map((row, rowIdx) => (
+                              <tr key={rowIdx} className="border-b border-[#eee] last:border-b-0 hover:bg-[#f9f9f9]">
+                                <td className="py-1.5 px-2 text-[#999] font-medium">{rowIdx + 1}</td>
+                                {importColumns.slice(0, 6).map((col, colIdx) => (
+                                  <td key={colIdx} className="py-1.5 px-2 text-[#333] max-w-[120px] truncate" title={row[col] || ''}>
+                                    {row[col] || '-'}
+                                  </td>
+                                ))}
+                                {importColumns.length > 6 && (
+                                  <td className="py-1.5 px-2 text-[#999]">...</td>
+                                )}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Error Message */}
+                {importError && (
+                  <div className="mb-4 p-3 bg-[#ffebee] border border-[#ef5350] rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Icon icon="mdi:alert-circle" width={18} height={18} className="text-[#c62828]" />
+                      <span className="text-sm text-[#c62828]">{importError}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex justify-end gap-3">
+                  {importPreview && (
+                    <button
+                      className="py-2.5 px-6 bg-[#f5f5f5] text-[#333] border border-[#d0d0d0] rounded-lg text-sm font-semibold cursor-pointer hover:bg-[#e0e0e0]"
+                      onClick={() => {
+                        setImportPreview(false);
+                        setImportData([]);
+                        setImportColumns([]);
+                        setColumnMapping({});
+                        setImportFile(null);
+                        if (importFileRef.current) importFileRef.current.value = '';
+                      }}
+                    >
+                      Back
+                    </button>
+                  )}
+                  <button
+                    className="py-2.5 px-6 bg-[#217346] text-white border-none rounded-lg text-sm font-semibold cursor-pointer hover:bg-[#1a5c38] disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleImportSubmit}
+                    disabled={!importPreview || importing}
+                  >
+                    {importing ? 'Importing...' : `Import ${importData.length} Project(s)`}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

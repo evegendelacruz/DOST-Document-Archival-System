@@ -27,7 +27,7 @@ function getAuthHeaders(): HeadersInit {
 
 interface Project {
   id: string;
-  code: string;
+  code: string | null;
   title: string;
   firm: string | null;
   typeOfFirm: string | null;

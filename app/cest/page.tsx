@@ -132,6 +132,42 @@ export default function CestPage() {
     projectTitle: string;
   } | null>(null);
 
+  // Import modal states
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importData, setImportData] = useState<Record<string, string>[]>([]);
+  const [importColumns, setImportColumns] = useState<string[]>([]);
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState('');
+  const [importPreview, setImportPreview] = useState(false);
+  const [importResult, setImportResult] = useState<{ success: number; skipped: number; skippedTitles: string[] } | null>(null);
+  const importFileRef = useRef<HTMLInputElement>(null);
+
+  // Available fields for CEST mapping
+  const cestFields = [
+    { key: '', label: '-- Skip this column --' },
+    { key: 'code', label: 'Project Code' },
+    { key: 'projectTitle', label: 'Project Title' },
+    { key: 'location', label: 'Location' },
+    { key: 'coordinates', label: 'Coordinates' },
+    { key: 'beneficiaries', label: 'Beneficiaries' },
+    { key: 'typeOfBeneficiary', label: 'Type of Beneficiary' },
+    { key: 'programFunding', label: 'Program/Funding' },
+    { key: 'stakeholderCounterparts', label: 'Partner Stakeholder' },
+    { key: 'status', label: 'Status' },
+    { key: 'approvedAmount', label: 'Approved Amount' },
+    { key: 'releasedAmount', label: 'Released Amount' },
+    { key: 'counterpartAmount', label: 'Counterpart Amount' },
+    { key: 'projectDuration', label: 'Project Duration' },
+    { key: 'staffAssigned', label: 'Staff Assigned' },
+    { key: 'year', label: 'Year' },
+    { key: 'dateOfApproval', label: 'Date of Approval' },
+    { key: 'emails', label: 'Emails' },
+    { key: 'contactNumbers', label: 'Contact Numbers' },
+    { key: 'categories', label: 'Categories' },
+  ];
+
   // Sort and filter state
   const [sortField, setSortField] = useState("code");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -759,7 +795,7 @@ export default function CestPage() {
 
     const wb = XLSX.utils.book_new();
 
-    // Title row + metadata
+    // Title row + metadata - columns match the table display order
     const titleRows = [
       ["CEST — Project Masterlist"],
       [
@@ -772,9 +808,10 @@ export default function CestPage() {
         "Project Title",
         "Location",
         "Beneficiaries",
-        "Beneficiary Type",
         "Program/Funding",
+        "Partner Stakeholder",
         "Status",
+        "Type of Beneficiary",
         "Entry Point",
         "Approved Amount",
         "Released Amount",
@@ -783,19 +820,17 @@ export default function CestPage() {
         "Year",
         "Date of Approval",
         "Assignee",
-        "Partner LGUs",
-        "Contact No.",
-        "Email",
       ],
       ...projectsToExport.map((p, i) => [
         i + 1,
-        p.code,
+        p.code || "—",
         p.projectTitle,
         p.location || "—",
         p.beneficiaries || "—",
-        p.typeOfBeneficiary || "—",
         p.programFunding || "—",
+        p.stakeholderCounterparts?.join(", ") || "—",
         p.status || "—",
+        p.typeOfBeneficiary || "—",
         p.categories?.join(", ") || "—",
         p.approvedAmount != null ? p.approvedAmount : "—",
         p.releasedAmount != null ? p.releasedAmount : "—",
@@ -804,15 +839,12 @@ export default function CestPage() {
         p.year || "—",
         p.dateOfApproval || "—",
         p.staffAssigned || "—",
-        p.partnerLGUs?.map((l) => l.name).join(", ") || "—",
-        p.contactNumbers?.join(", ") || "—",
-        p.emails?.join(", ") || "—",
       ]),
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(titleRows);
 
-    const totalCols = 19;
+    const totalCols = 17;
 
     // Merge title across all columns
     ws["!merges"] = [
@@ -820,16 +852,17 @@ export default function CestPage() {
       { s: { r: 1, c: 0 }, e: { r: 1, c: totalCols - 1 } }, // Subtitle
     ];
 
-    // Column widths
+    // Column widths - matches table column order
     ws["!cols"] = [
       { wch: 4 }, // #
       { wch: 12 }, // Code
       { wch: 40 }, // Project Title
       { wch: 28 }, // Location
       { wch: 25 }, // Beneficiaries
-      { wch: 18 }, // Type of Beneficiary
       { wch: 14 }, // Program/Funding
+      { wch: 28 }, // Partner Stakeholder
       { wch: 12 }, // Status
+      { wch: 18 }, // Type of Beneficiary
       { wch: 20 }, // Entry Point
       { wch: 14 }, // Approved Amount
       { wch: 14 }, // Released Amount
@@ -838,9 +871,6 @@ export default function CestPage() {
       { wch: 7 }, // Year
       { wch: 14 }, // Date of Approval
       { wch: 18 }, // Assignee
-      { wch: 22 }, // Partner LGUs
-      { wch: 16 }, // Contact No.
-      { wch: 26 }, // Email
     ];
 
     // Row heights
@@ -962,9 +992,9 @@ export default function CestPage() {
       19,
     );
 
-    // Column widths proportional to tableWidth
+    // Column widths proportional to tableWidth - matches table column order
     const colWidths = [
-      6, 12, 35, 30, 25, 18, 15, 22, 22, 22, 20, 10, 20, 20,
+      5, 10, 32, 22, 20, 14, 22, 12, 16, 18, 18, 18, 16, 8, 16, 18,
     ].map((w) => (w / 277) * tableWidth);
 
     autoTable(doc, {
@@ -977,11 +1007,13 @@ export default function CestPage() {
           "Location",
           "Beneficiaries",
           "Program",
+          "Partner Stakeholder",
           "Status",
+          "Beneficiary Type",
+          "Entry Point",
           "Approved Amt",
           "Released Amt",
           "Counterpart",
-          "Duration",
           "Year",
           "Date Approved",
           "Assignee",
@@ -989,16 +1021,18 @@ export default function CestPage() {
       ],
       body: projectsToExport.map((p, i) => [
         i + 1,
-        p.code,
+        p.code || "—",
         p.projectTitle,
         p.location || "—",
         p.beneficiaries || "—",
         p.programFunding || "—",
+        p.stakeholderCounterparts?.join(", ") || "—",
         p.status || "—",
+        p.typeOfBeneficiary || "—",
+        p.categories?.join(", ") || "—",
         p.approvedAmount != null ? formatCurrency(p.approvedAmount) : "—",
         p.releasedAmount != null ? formatCurrency(p.releasedAmount) : "—",
         p.counterpartAmount != null ? formatCurrency(p.counterpartAmount) : "—",
-        p.projectDuration || "—",
         p.year || "—",
         p.dateOfApproval || "—",
         p.staffAssigned || "—",
@@ -1019,6 +1053,210 @@ export default function CestPage() {
     });
 
     doc.save(`CEST_Masterlist_${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
+
+  // Import Excel handlers
+  const handleImportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImportFile(file);
+    setImportError('');
+    setImportResult(null);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = evt.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+
+        // Get all rows as array of arrays
+        const allRows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, defval: '' });
+
+        // Find the header row (look for row containing "Project Title" or similar)
+        let headerRowIndex = -1;
+        for (let i = 0; i < Math.min(allRows.length, 10); i++) {
+          const row = allRows[i];
+          if (Array.isArray(row)) {
+            const rowStr = row.map(cell => String(cell || '').toLowerCase()).join(' ');
+            if (rowStr.includes('project title') || rowStr.includes('project name') ||
+                (rowStr.includes('title') && rowStr.includes('code'))) {
+              headerRowIndex = i;
+              break;
+            }
+          }
+        }
+
+        if (headerRowIndex === -1) {
+          setImportError('Could not find header row. Please ensure your Excel file has a row with column headers like "Project Title", "Code", etc.');
+          return;
+        }
+
+        // Get headers from the identified header row
+        const headerRow = allRows[headerRowIndex];
+        const headers = (headerRow as string[]).map(h => String(h || '').trim()).filter(h => h && h !== '#');
+        setImportColumns(headers);
+
+        // Get data rows (everything after the header row)
+        const dataRowsRaw = allRows.slice(headerRowIndex + 1);
+
+        // Auto-map columns based on header names
+        const autoMapping: Record<string, string> = {};
+        headers.forEach((header) => {
+          const headerLower = header.toLowerCase();
+          if (headerLower.includes('code') && !headerLower.includes('contact')) autoMapping[header] = 'code';
+          else if (headerLower.includes('title') || headerLower.includes('project name')) autoMapping[header] = 'projectTitle';
+          else if (headerLower.includes('location') || headerLower.includes('address')) autoMapping[header] = 'location';
+          else if (headerLower.includes('coordinate')) autoMapping[header] = 'coordinates';
+          else if (headerLower.includes('beneficiar') && headerLower.includes('type')) autoMapping[header] = 'typeOfBeneficiary';
+          else if (headerLower.includes('beneficiar')) autoMapping[header] = 'beneficiaries';
+          else if (headerLower.includes('funding') || headerLower.includes('program')) autoMapping[header] = 'programFunding';
+          else if (headerLower.includes('status')) autoMapping[header] = 'status';
+          else if (headerLower.includes('approved') && headerLower.includes('amount')) autoMapping[header] = 'approvedAmount';
+          else if (headerLower.includes('released') && headerLower.includes('amount')) autoMapping[header] = 'releasedAmount';
+          else if (headerLower.includes('counterpart')) autoMapping[header] = 'counterpartAmount';
+          else if (headerLower.includes('duration')) autoMapping[header] = 'projectDuration';
+          else if (headerLower.includes('staff') || headerLower.includes('assigned') || headerLower.includes('assignee')) autoMapping[header] = 'staffAssigned';
+          else if (headerLower.includes('year')) autoMapping[header] = 'year';
+          else if (headerLower.includes('approval') && headerLower.includes('date')) autoMapping[header] = 'dateOfApproval';
+          else if (headerLower.includes('email')) autoMapping[header] = 'emails';
+          else if (headerLower.includes('contact') || headerLower.includes('phone')) autoMapping[header] = 'contactNumbers';
+          else if (headerLower.includes('categor')) autoMapping[header] = 'categories';
+          else if (headerLower.includes('partner') || headerLower.includes('lgu')) autoMapping[header] = 'partnerLGUs';
+        });
+        setColumnMapping(autoMapping);
+
+        // Build header index map (accounting for the # column which we skip)
+        const fullHeaderRow = headerRow as string[];
+        const headerIndexMap: Record<string, number> = {};
+        fullHeaderRow.forEach((h, idx) => {
+          const headerStr = String(h || '').trim();
+          if (headerStr && headerStr !== '#') {
+            headerIndexMap[headerStr] = idx;
+          }
+        });
+
+        // Convert data rows to objects
+        const dataRows = dataRowsRaw.map((row) => {
+          const rowArray = row as string[];
+          const obj: Record<string, string> = {};
+          headers.forEach((header) => {
+            const idx = headerIndexMap[header];
+            if (idx !== undefined) {
+              obj[header] = String(rowArray[idx] || '').trim();
+            }
+          });
+          return obj;
+        }).filter(row => {
+          // Filter out empty rows - must have at least one non-empty value
+          const values = Object.values(row);
+          return values.some(v => v && v.trim() !== '');
+        });
+
+        if (dataRows.length === 0) {
+          setImportError('No valid data rows found in the Excel file.');
+          return;
+        }
+
+        setImportData(dataRows);
+        setImportPreview(true);
+      } catch (err) {
+        setImportError('Failed to parse Excel file. Please ensure it is a valid .xlsx or .xls file.');
+        console.error(err);
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const handleImportSubmit = async () => {
+    const titleColumn = Object.entries(columnMapping).find(([, field]) => field === 'projectTitle')?.[0];
+    if (!titleColumn) {
+      setImportError('You must map a column to "Project Title"');
+      return;
+    }
+
+    setImporting(true);
+    setImportError('');
+
+    try {
+      const projectsToImport = importData.map(row => {
+        const project: Record<string, unknown> = {};
+        Object.entries(columnMapping).forEach(([column, field]) => {
+          if (field && row[column]) {
+            if (field === 'contactNumbers' || field === 'emails' || field === 'categories' || field === 'stakeholderCounterparts') {
+              project[field] = row[column].split(/[,;]/).map(v => v.trim()).filter(v => v);
+            } else if (field === 'approvedAmount' || field === 'releasedAmount' || field === 'counterpartAmount') {
+              const numValue = parseFloat(row[column].replace(/[^0-9.-]/g, ''));
+              project[field] = isNaN(numValue) ? null : numValue;
+            } else {
+              project[field] = row[column];
+            }
+          }
+        });
+        return project;
+      }).filter(p => p.projectTitle);
+
+      const existingTitles = projects.map(p => p.projectTitle.toLowerCase());
+      const uniqueProjects = projectsToImport.filter(p =>
+        !existingTitles.includes(String(p.projectTitle).toLowerCase())
+      );
+      const skippedProjects = projectsToImport.filter(p =>
+        existingTitles.includes(String(p.projectTitle).toLowerCase())
+      );
+
+      if (uniqueProjects.length === 0) {
+        setImportError('All projects already exist (duplicate titles). No projects imported.');
+        setImporting(false);
+        return;
+      }
+
+      const res = await fetch('/api/cest-projects/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projects: uniqueProjects }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || 'Failed to import projects');
+      }
+
+      const result = await res.json();
+
+      setImportResult({
+        success: result.imported || uniqueProjects.length,
+        skipped: skippedProjects.length,
+        skippedTitles: skippedProjects.map(p => String(p.projectTitle)),
+      });
+
+      await fetchProjects();
+
+      setImportPreview(false);
+      setImportData([]);
+      setImportColumns([]);
+      setColumnMapping({});
+      setImportFile(null);
+      if (importFileRef.current) importFileRef.current.value = '';
+
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Failed to import projects');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const resetImportModal = () => {
+    setShowImportModal(false);
+    setImportFile(null);
+    setImportData([]);
+    setImportColumns([]);
+    setColumnMapping({});
+    setImportError('');
+    setImportPreview(false);
+    setImportResult(null);
+    if (importFileRef.current) importFileRef.current.value = '';
   };
 
   const handleFormChange = (field: string, value: string) => {
@@ -1289,16 +1527,25 @@ export default function CestPage() {
               />
             </div>
           </div>
-          <button
-            className="flex items-center gap-2 py-3 px-5 bg-accent text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover"
-            onClick={() => {
-              resetForm();
-              setShowAddModal(true);
-            }}
-          >
-            <Icon icon="mdi:plus" width={20} height={20} />
-            Add New Project
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="flex items-center gap-2 py-3 px-5 bg-[#217346] text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-[#1a5c38]"
+            >
+              <Icon icon="mdi:upload" width={20} height={20} />
+              Import Project
+            </button>
+            <button
+              className="flex items-center gap-2 py-3 px-5 bg-accent text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover"
+              onClick={() => {
+                resetForm();
+                setShowAddModal(true);
+              }}
+            >
+              <Icon icon="mdi:plus" width={20} height={20} />
+              Add New Project
+            </button>
+          </div>
         </div>
 
         {/* Filter Cards */}
@@ -2840,6 +3087,201 @@ export default function CestPage() {
             >
               Okay
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Import Project Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1100]" onClick={resetImportModal}>
+          <div className="bg-white rounded-[20px] py-[25px] px-[35px] w-full max-w-[800px] max-h-[85vh] overflow-y-auto relative shadow-[0_10px_40px_rgba(0,0,0,0.3)]" onClick={(e) => e.stopPropagation()}>
+            <button className="absolute top-[15px] right-[15px] bg-transparent border-none cursor-pointer text-[#999] p-[5px] flex items-center justify-center rounded-full transition-all duration-200 hover:bg-[#f0f0f0] hover:text-[#333]" onClick={resetImportModal}>
+              <Icon icon="mdi:close" width={20} height={20} />
+            </button>
+
+            <h2 className="text-xl font-bold text-primary m-0 mb-1">Import CEST Projects</h2>
+            <p className="text-xs text-[#888] m-0 mb-4">Upload an Excel file (.xlsx, .xls) to import multiple projects at once</p>
+
+            {/* Import Result */}
+            {importResult && (
+              <div className="mb-4 p-4 rounded-lg bg-[#e8f5e9] border border-[#4caf50]">
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon icon="mdi:check-circle" width={24} height={24} className="text-[#2e7d32]" />
+                  <span className="text-[#2e7d32] font-semibold">Import Complete</span>
+                </div>
+                <p className="text-sm text-[#333] m-0">Successfully imported {importResult.success} project(s).</p>
+                {importResult.skipped > 0 && (
+                  <div className="mt-2">
+                    <p className="text-sm text-[#f57c00] m-0">Skipped {importResult.skipped} duplicate(s):</p>
+                    <ul className="text-xs text-[#666] m-0 mt-1 pl-4">
+                      {importResult.skippedTitles.slice(0, 5).map((title, idx) => (
+                        <li key={idx}>{title}</li>
+                      ))}
+                      {importResult.skippedTitles.length > 5 && (
+                        <li>...and {importResult.skippedTitles.length - 5} more</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+                <button
+                  className="mt-3 py-2 px-6 bg-[#2e7d32] text-white border-none rounded-lg text-sm font-semibold cursor-pointer hover:bg-[#1b5e20]"
+                  onClick={resetImportModal}
+                >
+                  Done
+                </button>
+              </div>
+            )}
+
+            {!importResult && (
+              <>
+                {/* File Upload */}
+                {!importPreview && (
+                  <div className="mb-4">
+                    <input
+                      ref={importFileRef}
+                      type="file"
+                      accept=".xlsx,.xls"
+                      onChange={handleImportFileChange}
+                      className="hidden"
+                      id="cest-import-file-input"
+                    />
+                    <label
+                      htmlFor="cest-import-file-input"
+                      className="flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed border-[#d0d0d0] rounded-xl cursor-pointer text-[#999] transition-all duration-200 hover:border-primary hover:text-primary hover:bg-[#f0f8ff]"
+                    >
+                      <Icon icon="mdi:file-excel" width={48} height={48} />
+                      <span className="text-sm font-medium">{importFile ? importFile.name : 'Click to upload Excel file'}</span>
+                      <span className="text-xs">Supports .xlsx and .xls files</span>
+                    </label>
+                  </div>
+                )}
+
+                {/* Column Mapping */}
+                {importPreview && importColumns.length > 0 && (
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-[#333] m-0">Map Excel Columns to Project Fields</h3>
+                      <span className="text-xs text-[#888]">{importData.length} row(s) found</span>
+                    </div>
+                    <div className="max-h-[200px] overflow-y-auto border border-[#e0e0e0] rounded-lg mb-4">
+                      <table className="w-full text-sm">
+                        <thead className="bg-[#f5f5f5] sticky top-0">
+                          <tr>
+                            <th className="py-2 px-3 text-left font-semibold text-[#333] border-b border-[#e0e0e0]">Excel Column</th>
+                            <th className="py-2 px-3 text-left font-semibold text-[#333] border-b border-[#e0e0e0]">Map To</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {importColumns.map((col, idx) => (
+                            <tr key={idx} className="border-b border-[#eee] last:border-b-0">
+                              <td className="py-2 px-3 font-medium text-[#333]">{col}</td>
+                              <td className="py-2 px-3">
+                                <select
+                                  value={columnMapping[col] || ''}
+                                  onChange={(e) => setColumnMapping(prev => ({ ...prev, [col]: e.target.value }))}
+                                  className="w-full py-1.5 px-2 border border-[#d0d0d0] rounded text-xs focus:outline-none focus:border-primary"
+                                >
+                                  {cestFields.map(field => (
+                                    <option key={field.key} value={field.key}>{field.label}</option>
+                                  ))}
+                                </select>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Data Preview Table */}
+                    <div className="mb-4">
+                      <h3 className="text-sm font-semibold text-[#333] m-0 mb-2">Data Preview ({importData.length} rows)</h3>
+                      <div className="max-h-[250px] overflow-auto border border-[#e0e0e0] rounded-lg">
+                        <table className="w-full text-xs border-collapse">
+                          <thead className="bg-[#f5f5f5] sticky top-0">
+                            <tr>
+                              <th className="py-2 px-2 text-left font-semibold text-[#333] border-b border-[#e0e0e0] whitespace-nowrap">#</th>
+                              {importColumns.slice(0, 6).map((col, idx) => (
+                                <th key={idx} className="py-2 px-2 text-left font-semibold text-[#333] border-b border-[#e0e0e0] whitespace-nowrap max-w-[150px]">
+                                  {col}
+                                </th>
+                              ))}
+                              {importColumns.length > 6 && (
+                                <th className="py-2 px-2 text-left font-semibold text-[#888] border-b border-[#e0e0e0]">
+                                  +{importColumns.length - 6} more
+                                </th>
+                              )}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {importData.map((row, rowIdx) => (
+                              <tr key={rowIdx} className={`border-b border-[#eee] last:border-b-0 ${rowIdx % 2 === 0 ? 'bg-white' : 'bg-[#fafafa]'}`}>
+                                <td className="py-1.5 px-2 text-[#999] font-medium">{rowIdx + 1}</td>
+                                {importColumns.slice(0, 6).map((col, colIdx) => (
+                                  <td key={colIdx} className="py-1.5 px-2 text-[#333] max-w-[150px] truncate" title={row[col] || ''}>
+                                    {row[col] || '-'}
+                                  </td>
+                                ))}
+                                {importColumns.length > 6 && (
+                                  <td className="py-1.5 px-2 text-[#888]">...</td>
+                                )}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-[#fff3e0] rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <Icon icon="mdi:information" width={18} height={18} className="text-[#f57c00] mt-0.5" />
+                        <div className="text-xs text-[#333]">
+                          <p className="m-0 font-semibold">Note:</p>
+                          <p className="m-0">• "Project Title" mapping is required</p>
+                          <p className="m-0">• Projects with duplicate titles will be skipped</p>
+                          <p className="m-0">• Contact numbers, emails, and categories can be separated by commas</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Error Message */}
+                {importError && (
+                  <div className="mb-4 p-3 bg-[#ffebee] border border-[#ef5350] rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Icon icon="mdi:alert-circle" width={18} height={18} className="text-[#c62828]" />
+                      <span className="text-sm text-[#c62828]">{importError}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex justify-end gap-3">
+                  {importPreview && (
+                    <button
+                      className="py-2.5 px-6 bg-[#f5f5f5] text-[#333] border border-[#d0d0d0] rounded-lg text-sm font-semibold cursor-pointer hover:bg-[#e0e0e0]"
+                      onClick={() => {
+                        setImportPreview(false);
+                        setImportData([]);
+                        setImportColumns([]);
+                        setColumnMapping({});
+                        setImportFile(null);
+                        if (importFileRef.current) importFileRef.current.value = '';
+                      }}
+                    >
+                      Back
+                    </button>
+                  )}
+                  <button
+                    className="py-2.5 px-6 bg-[#217346] text-white border-none rounded-lg text-sm font-semibold cursor-pointer hover:bg-[#1a5c38] disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleImportSubmit}
+                    disabled={!importPreview || importing}
+                  >
+                    {importing ? 'Importing...' : `Import ${importData.length} Project(s)`}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

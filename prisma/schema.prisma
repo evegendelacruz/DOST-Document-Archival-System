@@ -78,7 +78,7 @@ model UserPermission {
 
 model SetupProject {
   id                 String            @id @default(uuid()) @db.Uuid
-  code               String            @unique
+  code               String?
   title              String
   firm               String?
   typeOfFirm         String?
