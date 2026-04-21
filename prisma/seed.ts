@@ -31,27 +31,23 @@ async function main() {
 
   const firmSizes = ['Small', 'Small', 'Small', 'Medium', 'Small', 'Small', 'Large', 'Small'];
 
-  for (let i = 0; i < 8; i++) {
-    const code = String(i + 1).padStart(3, '0');
-    await prisma.setupProject.upsert({
-      where: { code },
-      update: {},
-      create: {
-        code,
-        title: 'Acquisition of Equipment for the Mass Production',
-        firm: 'Best Friend Goodies',
-        typeOfFirm: 'Agri-processing',
-        address: 'Purok 4, Dansolihon, Cagayan de Oro City',
-        corporatorName: 'Sergio Maria Lucia Sanico',
-        contactNumbers: ['09123456789'],
-        emails: ['sample@gmail.com'],
-        status: setupStatuses[i],
-        prioritySector: 'Food Processing',
-        firmSize: firmSizes[i],
-        assignee: 'Jane Doe',
-      },
-    });
-  }
+  await prisma.setupProject.createMany({
+    data: Array.from({ length: 8 }, (_, i) => ({
+      code: String(i + 1).padStart(3, '0'),
+      title: 'Acquisition of Equipment for the Mass Production',
+      firm: 'Best Friend Goodies',
+      typeOfFirm: 'Agri-processing',
+      address: 'Purok 4, Dansolihon, Cagayan de Oro City',
+      corporatorName: 'Sergio Maria Lucia Sanico',
+      contactNumbers: ['09123456789'],
+      emails: ['sample@gmail.com'],
+      status: setupStatuses[i],
+      prioritySector: 'Food Processing',
+      firmSize: firmSizes[i],
+      assignee: 'Jane Doe',
+    })),
+    skipDuplicates: true,
+  });
   console.log('  SETUP projects seeded');
 
   // ─── 3. CEST Projects ───────────────────────────────────────────
