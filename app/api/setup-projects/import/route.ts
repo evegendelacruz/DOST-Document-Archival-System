@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
     if (userId) {
       await logActivity({
         userId,
-        action: 'IMPORT',
+        action: 'CREATE',
         resourceType: 'SETUP_PROJECT',
         resourceId: 'bulk',
         resourceTitle: `Imported ${result.count} projects`,
