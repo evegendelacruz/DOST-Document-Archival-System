@@ -3,12 +3,6 @@ import prisma from '@/lib/prisma';
 
 // Test endpoint to verify activity logging works
 export async function GET() {
-  // Env check — remove after debugging
-  const dbUrl = process.env.DATABASE_URL;
-  const localUrl = process.env.LOCAL_DATABASE_URL;
-  console.log('[env-check] DATABASE_URL:', dbUrl ? dbUrl.substring(0, 50) + '...' : 'UNDEFINED');
-  console.log('[env-check] LOCAL_DATABASE_URL:', localUrl ? localUrl.substring(0, 40) + '...' : 'UNDEFINED');
-
   try {
     // Get all logs from the database
     const logs = await prisma.userLog.findMany({

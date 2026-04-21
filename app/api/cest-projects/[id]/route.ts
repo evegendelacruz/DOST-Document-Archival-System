@@ -22,6 +22,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   // Get the original project for logging
   const originalProject = await prisma.cestProject.findUnique({ where: { id } });
 
+  // If code is being updated, check for uniqueness
+  if (data.code && data.code.trim()) {
+    const existingProject = await prisma.cestProject.findFirst({
+      where: {
+        code: data.code.trim(),
+        NOT: { id },
+      },
+    });
+    if (existingProject) {
+      return NextResponse.json({ error: 'Project code already exists' }, { status: 400 });
+    }
+    data.code = data.code.trim();
+  }
+
   const project = await prisma.cestProject.update({
     where: { id },
     data,
