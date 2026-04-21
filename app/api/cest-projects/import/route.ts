@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
           ? p.stakeholderCounterparts.map(String)
           : p.stakeholderCounterparts
             ? String(p.stakeholderCounterparts).split(',').map(s => s.trim()).filter(Boolean)
-            : null,
+            : undefined,
         status: p.status ? String(p.status) : null,
         approvedAmount: typeof p.approvedAmount === 'number' ? p.approvedAmount : null,
         releasedAmount: typeof p.releasedAmount === 'number' ? p.releasedAmount : null,
@@ -77,9 +77,9 @@ export async function POST(req: NextRequest) {
         assigneeProfileUrl: assigneeProfileUrl,
         year: p.year ? String(p.year) : null,
         dateOfApproval: p.dateOfApproval ? String(p.dateOfApproval) : null,
-        emails: Array.isArray(p.emails) ? p.emails.map(String) : null,
-        contactNumbers: Array.isArray(p.contactNumbers) ? p.contactNumbers.map(String) : null,
-        categories: Array.isArray(p.categories) ? p.categories.map(String) : null,
+        emails: Array.isArray(p.emails) ? p.emails.map(String) : undefined,
+        contactNumbers: Array.isArray(p.contactNumbers) ? p.contactNumbers.map(String) : undefined,
+        categories: Array.isArray(p.categories) ? p.categories.map(String) : undefined,
         };
       });
 
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
     if (userId) {
       await logActivity({
         userId,
-        action: 'IMPORT',
+        action: 'CREATE',
         resourceType: 'CEST_PROJECT',
         resourceId: 'bulk',
         resourceTitle: `Imported ${result.count} CEST projects`,
