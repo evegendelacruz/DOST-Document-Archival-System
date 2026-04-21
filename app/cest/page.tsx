@@ -35,7 +35,7 @@ interface PartnerLGU {
 
 interface CestProject {
   id: string;
-  code: string;
+  code: string | null;
   projectTitle: string;
   location: string | null;
   coordinates: string | null;
@@ -531,7 +531,7 @@ export default function CestPage() {
     .filter(p => {
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
-      return p.code.toLowerCase().includes(q) ||
+      return (p.code ?? '').toLowerCase().includes(q) ||
         p.projectTitle.toLowerCase().includes(q) ||
         (p.location?.toLowerCase().includes(q) ?? false) ||
         (p.staffAssigned?.toLowerCase().includes(q) ?? false) ||

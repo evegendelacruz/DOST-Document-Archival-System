@@ -30,10 +30,10 @@ export async function POST(req: NextRequest) {
       select: { title: true, code: true },
     });
     const existingTitles = new Set(existingProjects.map(p => p.title.toLowerCase()));
-    const existingCodes = new Set(existingProjects.map(p => p.code));
+    const existingCodes = new Set(existingProjects.map(p => p.code).filter((c): c is string => c != null));
 
     // Find the actual highest numeric code (string sort is unreliable for padded numbers)
-    const allNumericCodes = existingProjects.map(p => parseInt(p.code, 10)).filter(n => !isNaN(n));
+    const allNumericCodes = existingProjects.map(p => parseInt(p.code ?? '', 10)).filter(n => !isNaN(n));
     let nextCodeNum = allNumericCodes.length > 0 ? Math.max(...allNumericCodes) + 1 : 1;
 
     // Filter out duplicates and prepare projects for insertion

@@ -40,7 +40,7 @@ const filterTabs = [
 
 interface Project {
   id: string;
-  code: string;
+  code: string | null;
   title: string;
   firm: string | null;
   typeOfFirm: string | null;
@@ -286,7 +286,7 @@ export default function SetupPage() {
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase().replace(/^#/, '');
       return (
-        p.code.toLowerCase().includes(q) ||
+        (p.code ?? '').toLowerCase().includes(q) ||
         p.title.toLowerCase().includes(q) ||
         (p.firm?.toLowerCase().includes(q)) ||
         (p.address?.toLowerCase().includes(q)) ||
@@ -311,8 +311,8 @@ export default function SetupPage() {
         return dir * (new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime());
       }
       if (sortField === 'code') {
-        const numA = parseInt(a.code.replace(/\D/g, '')) || 0;
-        const numB = parseInt(b.code.replace(/\D/g, '')) || 0;
+        const numA = parseInt((a.code ?? '').replace(/\D/g, '')) || 0;
+        const numB = parseInt((b.code ?? '').replace(/\D/g, '')) || 0;
         return dir * (numA - numB);
       }
       const valA = ((a as unknown as Record<string, string>)[sortField]) || '';

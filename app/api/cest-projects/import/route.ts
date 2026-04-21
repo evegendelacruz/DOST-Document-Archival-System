@@ -30,10 +30,10 @@ export async function POST(req: NextRequest) {
       select: { projectTitle: true, code: true },
     });
     const existingTitles = new Set(existingProjects.map(p => p.projectTitle.toLowerCase()));
-    const existingCodes = new Set(existingProjects.map(p => p.code));
+    const existingCodes = new Set(existingProjects.map(p => p.code).filter((c): c is string => c != null));
 
     // Find the actual highest numeric suffix (string sort is unreliable)
-    const allNumericSuffixes = existingProjects.map(p => parseInt(p.code.replace(/\D/g, ''), 10)).filter(n => !isNaN(n));
+    const allNumericSuffixes = existingProjects.map(p => parseInt((p.code ?? '').replace(/\D/g, ''), 10)).filter(n => !isNaN(n));
     let nextCodeNum = allNumericSuffixes.length > 0 ? Math.max(...allNumericSuffixes) + 1 : 1;
 
     // Filter out duplicates and prepare projects for insertion
