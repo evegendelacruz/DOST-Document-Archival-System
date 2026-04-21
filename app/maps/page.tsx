@@ -605,6 +605,7 @@ export default function MapsPage() {
   const [flyToCoords, setFlyToCoords] = useState<{ lat: number; lng: number; key: number } | null>(null);
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [activePanel, setActivePanel] = useState<string>('setup');
+
   const fetchPins = useCallback(() => {
     fetch('/api/setup-projects')
       .then(res => res.json())

@@ -29,10 +29,16 @@ export async function POST(req: NextRequest) {
   const data = await req.json();
   const userId = getUserIdFromRequest(req);
 
-  // Auto-generate project code based on highest existing code
-  const last = await prisma.setupProject.findFirst({ orderBy: { code: 'desc' } });
-  const nextNum = last ? parseInt(last.code, 10) + 1 : 1;
-  const code = String(nextNum).padStart(3, '0');
+  // Use provided code if given, otherwise auto-generate
+  let code: string;
+  if (data.code && String(data.code).trim()) {
+    code = String(data.code).trim();
+  } else {
+    const all = await prisma.setupProject.findMany({ select: { code: true } });
+    const maxNum = Math.max(0, ...all.map(p => parseInt(p.code, 10)).filter(n => !isNaN(n)));
+    code = String(maxNum + 1).padStart(3, '0');
+  }
+  delete data.code;
 
   // Get logged-in user info to set as assignee
   let assignee: string | null = null;

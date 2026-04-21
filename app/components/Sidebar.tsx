@@ -139,21 +139,6 @@ export default function Sidebar({ activePath, items }: SidebarProps) {
           );
         })}
       </nav>
-
-      {/* Settings — Admin only, pinned to bottom */}
-      {userRole === 'ADMIN' && (
-        <div className="mt-auto pb-4 px-2.5">
-          <Link
-            href="/settings"
-            className={`h-11 bg-transparent border-none rounded-[10px] cursor-pointer flex items-center gap-3 text-white/70 transition-all duration-200 no-underline whitespace-nowrap px-[13px] hover:bg-white/10 hover:text-white ${activePath === '/settings' ? 'bg-white/20 text-white' : ''}`}
-          >
-            <span className="flex items-center justify-center min-w-[24px]">
-              <Icon icon="mdi:cog-outline" width={22} height={22} />
-            </span>
-            <span className={`text-sm font-medium transition-opacity duration-200 ${expanded ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>Settings</span>
-          </Link>
-        </div>
-      )}
     </aside>
   );
 }

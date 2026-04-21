@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AuthLayout from './components/AuthLayout';
-import LoadingScreen from './components/LoadingScreen';
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
@@ -13,7 +12,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [redirecting, setRedirecting] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -37,7 +35,6 @@ export default function LoginPage() {
 
       // Store user info in localStorage
       localStorage.setItem('user', JSON.stringify(data));
-      setRedirecting(true);
       router.push('/dashboard');
     } catch {
       setError('Something went wrong. Please try again.');
@@ -47,8 +44,6 @@ export default function LoginPage() {
   };
 
   return (
-    <>
-    <LoadingScreen visible={redirecting} />
     <AuthLayout>
       <div className="w-[85vw] sm:w-full sm:max-w-[290px] bg-white rounded-[18px] shadow-[0_10px_40px_rgba(0,0,0,0.2),0_4px_12px_rgba(0,0,0,0.1)] px-4 sm:px-[25px] py-6 min-h-[300px] max-h-[95vh] overflow-y-auto z-10 relative">
         <h2 className="text-[17px] sm:text-[19px] font-bold text-primary mb-1 text-left">Log In</h2>
@@ -98,6 +93,5 @@ export default function LoginPage() {
         </form>
       </div>
     </AuthLayout>
-    </>
   );
 }

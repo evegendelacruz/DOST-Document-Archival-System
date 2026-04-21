@@ -29,7 +29,19 @@
       "Bash(mkdir -p \"/mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/view-doc/[docId]\")",
       "Bash(cp \"/mnt/c/Users/Admin/Desktop/DOST/DOST-Document-Archival-System/app/api/local-ip/route.ts\" \"/mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/api/local-ip/route.ts\")",
       "Bash(cp \"/mnt/c/Users/Admin/Desktop/DOST/DOST-Document-Archival-System/app/api/view-doc/[docId]/route.ts\" \"/mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/api/view-doc/[docId]/route.ts\")",
-      "Bash(cp \"/mnt/c/Users/Admin/Desktop/DOST/DOST-Document-Archival-System/app/view-doc/[docId]/page.tsx\" \"/mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/view-doc/[docId]/page.tsx\")"
+      "Bash(cp \"/mnt/c/Users/Admin/Desktop/DOST/DOST-Document-Archival-System/app/view-doc/[docId]/page.tsx\" \"/mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/view-doc/[docId]/page.tsx\")",
+      "Bash(npx tsx:*)",
+      "Bash(tsx --version)",
+      "Bash(npm list:*)",
+      "Read(//home/nerrenze/.npm-global/**)",
+      "Bash(npx --yes tsx --version)",
+      "Bash(npx:*)",
+      "Bash(cp /mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/api/setup-projects/import/route.ts /mnt/c/Users/Admin/Desktop/FrontEnd/app/api/setup-projects/import/route.ts)",
+      "Bash(cp /mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/api/cest-projects/import/route.ts /mnt/c/Users/Admin/Desktop/FrontEnd/app/api/cest-projects/import/route.ts)",
+      "Bash(mkdir -p /mnt/c/Users/Admin/Desktop/FrontEnd/app/api/cest-projects/geocode-batch)",
+      "Bash(cp /mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/api/cest-projects/geocode-batch/route.ts /mnt/c/Users/Admin/Desktop/FrontEnd/app/api/cest-projects/geocode-batch/route.ts)",
+      "Bash(git -C /mnt/c/Users/Admin/Desktop/FrontEnd status --short)",
+      "Bash(git:*)"
     ]
   }
 }

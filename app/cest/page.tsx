@@ -35,7 +35,7 @@ interface PartnerLGU {
 
 interface CestProject {
   id: string;
-  code: string;
+  code: string | null;
   projectTitle: string;
   location: string | null;
   coordinates: string | null;
@@ -98,12 +98,27 @@ export default function CestPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [deleteProgress, setDeleteProgress] = useState<{ current: number; total: number } | null>(null);
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [showAddFunding, setShowAddFunding] = useState(false);
   const [newFundingName, setNewFundingName] = useState('');
   const [showAddBeneficiaryType, setShowAddBeneficiaryType] = useState(false);
   const [newBeneficiaryTypeName, setNewBeneficiaryTypeName] = useState('');
   const [mapFlyTarget, setMapFlyTarget] = useState<[number, number] | null>(null);
+
+  // Import modal states
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importData, setImportData] = useState<Record<string, string>[]>([]);
+  const [importColumns, setImportColumns] = useState<string[]>([]);
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
+  const [importing, setImporting] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
+  const [geocodingProgress, setGeocodingProgress] = useState<{ current: number; total: number } | null>(null);
+  const [importError, setImportError] = useState('');
+  const [importPreview, setImportPreview] = useState(false);
+  const [importResult, setImportResult] = useState<{ success: number; geocoded: number; skipped: number; skippedTitles: string[] } | null>(null);
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   // Confirmation modal state
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -516,7 +531,7 @@ export default function CestPage() {
     .filter(p => {
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
-      return p.code.toLowerCase().includes(q) ||
+      return (p.code ?? '').toLowerCase().includes(q) ||
         p.projectTitle.toLowerCase().includes(q) ||
         (p.location?.toLowerCase().includes(q) ?? false) ||
         (p.staffAssigned?.toLowerCase().includes(q) ?? false) ||
@@ -546,8 +561,8 @@ export default function CestPage() {
       }
       if (sortField === 'code') {
         // Extract numeric part for proper sorting
-        const numA = parseInt(a.code.replace(/\D/g, '')) || 0;
-        const numB = parseInt(b.code.replace(/\D/g, '')) || 0;
+        const numA = parseInt((a.code ?? '').replace(/\D/g, '')) || 0;
+        const numB = parseInt((b.code ?? '').replace(/\D/g, '')) || 0;
         return dir * (numA - numB);
       }
       const valA = ((a as unknown as Record<string, string>)[sortField]) || '';
@@ -574,17 +589,21 @@ export default function CestPage() {
       ? 'Are you sure you want to delete this project?'
       : `Are you sure you want to delete ${selectedProjects.length} projects?`;
     if (!confirm(confirmMsg)) return;
+    const total = selectedProjects.length;
     setDeleting(true);
+    setDeleteProgress({ current: 0, total });
     try {
-      await Promise.all(selectedProjects.map(id =>
-        fetch(`/api/cest-projects/${id}`, { method: 'DELETE', headers: getAuthHeaders() })
-      ));
+      for (let i = 0; i < selectedProjects.length; i++) {
+        await fetch(`/api/cest-projects/${selectedProjects[i]}`, { method: 'DELETE', headers: getAuthHeaders() });
+        setDeleteProgress({ current: i + 1, total });
+      }
       setSelectedProjects([]);
       await fetchProjects();
     } catch {
       console.error('Failed to delete projects');
     } finally {
       setDeleting(false);
+      setDeleteProgress(null);
     }
   };
 
@@ -883,6 +902,216 @@ export default function CestPage() {
     setShowAddModal(true);
   };
 
+  // Available fields for CEST column mapping
+  const cestFields = [
+    { key: '', label: '-- Skip this column --' },
+    { key: 'code', label: 'Project Code' },
+    { key: 'projectTitle', label: 'Project Title' },
+    { key: 'location', label: 'Location' },
+    { key: 'coordinates', label: 'Coordinates' },
+    { key: 'beneficiaries', label: 'Beneficiaries' },
+    { key: 'typeOfBeneficiary', label: 'Type of Beneficiary' },
+    { key: 'programFunding', label: 'Program/Funding' },
+    { key: 'stakeholderCounterparts', label: 'Partner Stakeholder' },
+    { key: 'status', label: 'Status' },
+    { key: 'approvedAmount', label: 'Approved Amount' },
+    { key: 'releasedAmount', label: 'Released Amount' },
+    { key: 'counterpartAmount', label: 'Counterpart Amount' },
+    { key: 'projectDuration', label: 'Project Duration' },
+    { key: 'staffAssigned', label: 'Staff Assigned' },
+    { key: 'year', label: 'Year' },
+    { key: 'dateOfApproval', label: 'Date of Approval' },
+    { key: 'emails', label: 'Emails' },
+    { key: 'contactNumbers', label: 'Contact Numbers' },
+    { key: 'categories', label: 'Categories' },
+  ];
+
+  const handleImportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportFile(file);
+    setImportError('');
+    setImportResult(null);
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = evt.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const allRows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, defval: '' });
+
+        let headerRowIndex = -1;
+        for (let i = 0; i < Math.min(allRows.length, 10); i++) {
+          const row = allRows[i];
+          if (Array.isArray(row)) {
+            const rowStr = row.map(cell => String(cell || '').toLowerCase()).join(' ');
+            if (rowStr.includes('project title') || rowStr.includes('project name') ||
+                (rowStr.includes('title') && rowStr.includes('code'))) {
+              headerRowIndex = i;
+              break;
+            }
+          }
+        }
+        if (headerRowIndex === -1) {
+          setImportError('Could not find header row. Please ensure your Excel file has a row with column headers like "Project Title", "Code", etc.');
+          return;
+        }
+
+        const headerRow = allRows[headerRowIndex];
+        const headers = (headerRow as string[]).map(h => String(h || '').trim()).filter(h => h && h !== '#');
+        setImportColumns(headers);
+
+        const autoMapping: Record<string, string> = {};
+        headers.forEach((header) => {
+          const h = header.toLowerCase();
+          if (h.includes('code') && !h.includes('contact')) autoMapping[header] = 'code';
+          else if (h.includes('title') || h.includes('project name')) autoMapping[header] = 'projectTitle';
+          else if (h.includes('location') || h.includes('address')) autoMapping[header] = 'location';
+          else if (h.includes('coordinate')) autoMapping[header] = 'coordinates';
+          else if (h.includes('beneficiar') && h.includes('type')) autoMapping[header] = 'typeOfBeneficiary';
+          else if (h.includes('beneficiar')) autoMapping[header] = 'beneficiaries';
+          else if (h.includes('funding') || h.includes('program')) autoMapping[header] = 'programFunding';
+          else if (h.includes('status')) autoMapping[header] = 'status';
+          else if (h.includes('approved') && h.includes('amount')) autoMapping[header] = 'approvedAmount';
+          else if (h.includes('released') && h.includes('amount')) autoMapping[header] = 'releasedAmount';
+          else if (h.includes('counterpart')) autoMapping[header] = 'counterpartAmount';
+          else if (h.includes('duration')) autoMapping[header] = 'projectDuration';
+          else if (h.includes('staff') || h.includes('assigned') || h.includes('assignee')) autoMapping[header] = 'staffAssigned';
+          else if (h.includes('year')) autoMapping[header] = 'year';
+          else if (h.includes('approval') && h.includes('date')) autoMapping[header] = 'dateOfApproval';
+          else if (h.includes('email')) autoMapping[header] = 'emails';
+          else if (h.includes('contact') || h.includes('phone')) autoMapping[header] = 'contactNumbers';
+          else if (h.includes('categor')) autoMapping[header] = 'categories';
+          else if (h.includes('partner') || h.includes('lgu') || h.includes('stakeholder')) autoMapping[header] = 'stakeholderCounterparts';
+        });
+        setColumnMapping(autoMapping);
+
+        const fullHeaderRow = headerRow as string[];
+        const headerIndexMap: Record<string, number> = {};
+        fullHeaderRow.forEach((h, idx) => { const s = String(h || '').trim(); if (s && s !== '#') headerIndexMap[s] = idx; });
+
+        const dataRows = allRows.slice(headerRowIndex + 1).map((row) => {
+          const rowArray = row as string[];
+          const obj: Record<string, string> = {};
+          headers.forEach((header) => { const idx = headerIndexMap[header]; if (idx !== undefined) obj[header] = String(rowArray[idx] || '').trim(); });
+          return obj;
+        }).filter(row => Object.values(row).some(v => v && v.trim() !== ''));
+
+        if (dataRows.length === 0) { setImportError('No valid data rows found in the Excel file.'); return; }
+        setImportData(dataRows);
+        setImportPreview(true);
+      } catch { setImportError('Failed to parse Excel file. Please ensure it is a valid .xlsx or .xls file.'); }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const handleImportSubmit = async () => {
+    const titleColumn = Object.entries(columnMapping).find(([, field]) => field === 'projectTitle')?.[0];
+    if (!titleColumn) { setImportError('You must map a column to "Project Title"'); return; }
+    setImporting(true);
+    setImportError('');
+    try {
+      const projectsToImport = importData.map(row => {
+        const project: Record<string, unknown> = {};
+        Object.entries(columnMapping).forEach(([column, field]) => {
+          if (field && row[column]) {
+            if (field === 'contactNumbers' || field === 'emails' || field === 'categories' || field === 'stakeholderCounterparts') {
+              project[field] = row[column].split(/[,;]/).map(v => v.trim()).filter(v => v);
+            } else if (field === 'approvedAmount' || field === 'releasedAmount' || field === 'counterpartAmount') {
+              const numValue = parseFloat(row[column].replace(/[^0-9.-]/g, ''));
+              project[field] = isNaN(numValue) ? null : numValue;
+            } else {
+              project[field] = row[column];
+            }
+          }
+        });
+        return project;
+      }).filter(p => p.projectTitle);
+
+      const existingTitles = projects.map(p => p.projectTitle.toLowerCase());
+      const uniqueProjects = projectsToImport.filter(p => !existingTitles.includes(String(p.projectTitle).toLowerCase()));
+      const skippedProjects = projectsToImport.filter(p => existingTitles.includes(String(p.projectTitle).toLowerCase()));
+
+      if (uniqueProjects.length === 0) { setImportError('All projects already exist (duplicate titles). No projects imported.'); setImporting(false); return; }
+
+      const res = await fetch('/api/cest-projects/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ projects: uniqueProjects }),
+      });
+      if (!res.ok) { const errData = await res.json().catch(() => null); throw new Error(errData?.error || 'Failed to import projects'); }
+      const result = await res.json();
+
+      await fetchProjects();
+
+      // Geocode missing pins with float loader
+      let geocodedCount = 0;
+      try {
+        setGeocoding(true);
+        let geoTotal = 0;
+        try {
+          const snapRes = await fetch('/api/cest-projects', { headers: getAuthHeaders() });
+          const snapData: { coordinates: string | null }[] = await snapRes.json();
+          geoTotal = snapData.filter(p => !p.coordinates).length;
+          if (geoTotal > 0) setGeocodingProgress({ current: 0, total: geoTotal });
+        } catch { /* non-fatal */ }
+
+        const batchPromise = fetch('/api/cest-projects/geocode-batch', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }, body: JSON.stringify({}),
+        });
+        let pollInterval: ReturnType<typeof setInterval> | null = null;
+        if (geoTotal > 0) {
+          const baseline = geoTotal;
+          pollInterval = setInterval(async () => {
+            try {
+              const pollRes = await fetch('/api/cest-projects', { headers: getAuthHeaders() });
+              const pollData: { coordinates: string | null }[] = await pollRes.json();
+              const done = baseline - pollData.filter(p => !p.coordinates).length;
+              setGeocodingProgress({ current: Math.max(0, done), total: baseline });
+            } catch { /* non-fatal */ }
+          }, 2000);
+        }
+        const geoRes = await batchPromise;
+        if (pollInterval) clearInterval(pollInterval);
+        if (geoRes.ok) {
+          const geoData = await geoRes.json();
+          geocodedCount = geoData.updated ?? 0;
+          if (geoTotal > 0) setGeocodingProgress({ current: geoTotal, total: geoTotal });
+          await fetchProjects();
+        }
+      } catch { /* non-fatal */ } finally { setGeocoding(false); setGeocodingProgress(null); }
+
+      setImportResult({
+        success: result.imported || uniqueProjects.length,
+        geocoded: geocodedCount,
+        skipped: skippedProjects.length,
+        skippedTitles: skippedProjects.map(p => String(p.projectTitle)),
+      });
+      setImportPreview(false);
+      setImportData([]);
+      setImportColumns([]);
+      setColumnMapping({});
+      setImportFile(null);
+      if (importFileRef.current) importFileRef.current.value = '';
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Failed to import projects');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const resetImportModal = () => {
+    setShowImportModal(false);
+    setImportFile(null);
+    setImportData([]);
+    setImportColumns([]);
+    setColumnMapping({});
+    setImportError('');
+    setImportPreview(false);
+    setImportResult(null);
+    if (importFileRef.current) importFileRef.current.value = '';
+  };
+
   const handleSaveProject = async () => {
     const errors: Record<string, string> = {};
     if (!formData.projectCode.trim()) errors.projectCode = 'Project code is required';
@@ -977,10 +1206,20 @@ export default function CestPage() {
                 />
             </div>
           </div>
-          <button className="flex items-center gap-2 py-3 px-5 bg-accent text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover" onClick={() => { resetForm(); setShowAddModal(true); }}>
-            <Icon icon="mdi:plus" width={20} height={20} />
-            Add New Project
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              className="flex items-center gap-2 py-3 px-5 bg-[#217346] text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-[#1a5c38] disabled:opacity-60 disabled:cursor-not-allowed"
+              onClick={() => setShowImportModal(true)}
+              disabled={importing || geocoding}
+            >
+              <Icon icon="mdi:upload" width={20} height={20} />
+              Import Project
+            </button>
+            <button className="flex items-center gap-2 py-3 px-5 bg-accent text-white border-none rounded-[10px] text-sm font-semibold cursor-pointer transition-colors duration-200 whitespace-nowrap hover:bg-accent-hover" onClick={() => { resetForm(); setShowAddModal(true); }}>
+              <Icon icon="mdi:plus" width={20} height={20} />
+              Add New Project
+            </button>
+          </div>
         </div>
 
 
@@ -1658,6 +1897,207 @@ export default function CestPage() {
                 {savingOption ? 'Saving...' : 'Add'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Geocoding Float Loader */}
+      {geocoding && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[1300] backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.25)] p-8 w-[380px] flex flex-col items-center gap-5">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center bg-[#e0f7fa]">
+              <Icon icon="mdi:map-marker-radius-outline" width={30} height={30} color="#00838f" />
+            </div>
+            <div className="text-center w-full">
+              <h3 className="text-[17px] font-bold text-[#1a1a2e] mb-1">Setting Up Map Pins...</h3>
+              <p className="text-[13px] text-[#666] mb-4">
+                {geocodingProgress ? `${geocodingProgress.current} of ${geocodingProgress.total} pins geocoded` : 'Preparing pins...'}
+              </p>
+              <div className="w-full h-2.5 bg-[#e0eaf0] rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-300 bg-[#00838f]"
+                  style={{ width: geocodingProgress && geocodingProgress.total > 0 ? `${Math.round((geocodingProgress.current / geocodingProgress.total) * 100)}%` : '4%' }} />
+              </div>
+              <p className="text-[12px] font-semibold mt-2 text-[#00838f]">
+                {geocodingProgress && geocodingProgress.total > 0 ? `${Math.round((geocodingProgress.current / geocodingProgress.total) * 100)}%` : '...'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Float Progress Loader */}
+      {deleteProgress && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[1300] backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.25)] p-8 w-[380px] flex flex-col items-center gap-5">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center bg-[#fdecea]">
+              <Icon icon="mdi:delete-sweep-outline" width={30} height={30} color="#c62828" />
+            </div>
+            <div className="text-center w-full">
+              <h3 className="text-[17px] font-bold text-[#1a1a2e] mb-1">Deleting Projects...</h3>
+              <p className="text-[13px] text-[#666] mb-4">
+                {deleteProgress.current} of {deleteProgress.total} project{deleteProgress.total > 1 ? 's' : ''} deleted
+              </p>
+              <div className="w-full h-2.5 bg-[#f5e0e0] rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-300 bg-[#c62828]"
+                  style={{ width: deleteProgress.total > 0 ? `${Math.round((deleteProgress.current / deleteProgress.total) * 100)}%` : '4%' }} />
+              </div>
+              <p className="text-[12px] font-semibold mt-2 text-[#c62828]">
+                {deleteProgress.total > 0 ? `${Math.round((deleteProgress.current / deleteProgress.total) * 100)}%` : '...'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Project Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1100]" onClick={resetImportModal}>
+          <div className="bg-white rounded-[20px] py-[25px] px-[35px] w-full max-w-[800px] max-h-[85vh] overflow-y-auto relative shadow-[0_10px_40px_rgba(0,0,0,0.3)]" onClick={(e) => e.stopPropagation()}>
+            <input ref={importFileRef} type="file" accept=".xlsx,.xls" onChange={handleImportFileChange} className="hidden" id="cest-import-file-input" />
+            <button className="absolute top-[15px] right-[15px] bg-transparent border-none cursor-pointer text-[#999] p-[5px] flex items-center justify-center rounded-full transition-all duration-200 hover:bg-[#f0f0f0] hover:text-[#333]" onClick={resetImportModal}>
+              <Icon icon="mdi:close" width={20} height={20} />
+            </button>
+            <h2 className="text-xl font-bold text-primary m-0 mb-1">Import CEST Projects</h2>
+            <p className="text-xs text-[#888] m-0 mb-4">Upload an Excel file (.xlsx, .xls) to import multiple projects at once</p>
+
+            {importResult && (
+              <div className="mb-4 p-4 rounded-lg bg-[#e8f5e9] border border-[#4caf50]">
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon icon="mdi:check-circle" width={24} height={24} className="text-[#2e7d32]" />
+                  <span className="text-[#2e7d32] font-semibold">Import Complete</span>
+                </div>
+                <div className="flex gap-6 mb-2">
+                  <div className="text-center">
+                    <p className="text-[22px] font-bold text-[#2e7d32] m-0">{importResult.success}</p>
+                    <p className="text-[11px] text-[#666] m-0">Imported</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[22px] font-bold text-[#00838f] m-0">{importResult.geocoded}</p>
+                    <p className="text-[11px] text-[#666] m-0">Map Pins Set</p>
+                  </div>
+                  {importResult.skipped > 0 && (
+                    <div className="text-center">
+                      <p className="text-[22px] font-bold text-[#f57c00] m-0">{importResult.skipped}</p>
+                      <p className="text-[11px] text-[#666] m-0">Skipped</p>
+                    </div>
+                  )}
+                </div>
+                {importResult.skipped > 0 && (
+                  <div className="mt-2">
+                    <p className="text-sm text-[#f57c00] m-0">Skipped duplicates:</p>
+                    <ul className="text-xs text-[#666] m-0 mt-1 pl-4">
+                      {importResult.skippedTitles.slice(0, 5).map((title, idx) => <li key={idx}>{title}</li>)}
+                      {importResult.skippedTitles.length > 5 && <li>...and {importResult.skippedTitles.length - 5} more</li>}
+                    </ul>
+                  </div>
+                )}
+                <button className="mt-3 py-2 px-6 bg-[#2e7d32] text-white border-none rounded-lg text-sm font-semibold cursor-pointer hover:bg-[#1b5e20]" onClick={resetImportModal}>Done</button>
+              </div>
+            )}
+
+            {!importResult && (
+              <>
+                {!importPreview && (
+                  <div className="mb-4">
+                    <label htmlFor="cest-import-file-input" className="flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed border-[#d0d0d0] rounded-xl cursor-pointer text-[#999] transition-all duration-200 hover:border-primary hover:text-primary hover:bg-[#f0f8ff]">
+                      <Icon icon="mdi:file-excel" width={48} height={48} />
+                      <span className="text-sm font-medium">{importFile ? importFile.name : 'Click to upload Excel file'}</span>
+                      <span className="text-xs">Supports .xlsx and .xls files</span>
+                    </label>
+                  </div>
+                )}
+
+                {importPreview && importColumns.length > 0 && (
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-[#333] m-0">Map Excel Columns to Project Fields</h3>
+                      <span className="text-xs text-[#888]">{importData.length} row(s) found</span>
+                    </div>
+                    <div className="max-h-[200px] overflow-y-auto border border-[#e0e0e0] rounded-lg mb-4">
+                      <table className="w-full text-sm">
+                        <thead className="bg-[#f5f5f5] sticky top-0">
+                          <tr>
+                            <th className="py-2 px-3 text-left font-semibold text-[#333] border-b border-[#e0e0e0]">Excel Column</th>
+                            <th className="py-2 px-3 text-left font-semibold text-[#333] border-b border-[#e0e0e0]">Map To</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {importColumns.map((col, idx) => (
+                            <tr key={idx} className="border-b border-[#eee] last:border-b-0">
+                              <td className="py-2 px-3 font-medium text-[#333]">{col}</td>
+                              <td className="py-2 px-3">
+                                <select value={columnMapping[col] || ''} onChange={(e) => setColumnMapping(prev => ({ ...prev, [col]: e.target.value }))} className="w-full py-1.5 px-2 border border-[#d0d0d0] rounded text-xs focus:outline-none focus:border-primary">
+                                  {cestFields.map(field => <option key={field.key} value={field.key}>{field.label}</option>)}
+                                </select>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="mb-4">
+                      <h3 className="text-sm font-semibold text-[#333] m-0 mb-2">Data Preview ({importData.length} rows)</h3>
+                      <div className="max-h-[250px] overflow-auto border border-[#e0e0e0] rounded-lg">
+                        <table className="w-full text-xs border-collapse">
+                          <thead className="bg-[#f5f5f5] sticky top-0">
+                            <tr>
+                              <th className="py-2 px-2 text-left font-semibold text-[#333] border-b border-[#e0e0e0] whitespace-nowrap">#</th>
+                              {importColumns.slice(0, 6).map((col, idx) => <th key={idx} className="py-2 px-2 text-left font-semibold text-[#333] border-b border-[#e0e0e0] whitespace-nowrap max-w-[150px]">{col}</th>)}
+                              {importColumns.length > 6 && <th className="py-2 px-2 text-left font-semibold text-[#888] border-b border-[#e0e0e0]">+{importColumns.length - 6} more</th>}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {importData.map((row, rowIdx) => (
+                              <tr key={rowIdx} className={`border-b border-[#eee] last:border-b-0 ${rowIdx % 2 === 0 ? 'bg-white' : 'bg-[#fafafa]'}`}>
+                                <td className="py-1.5 px-2 text-[#999] font-medium">{rowIdx + 1}</td>
+                                {importColumns.slice(0, 6).map((col, colIdx) => <td key={colIdx} className="py-1.5 px-2 text-[#333] max-w-[150px] truncate" title={row[col] || ''}>{row[col] || '-'}</td>)}
+                                {importColumns.length > 6 && <td className="py-1.5 px-2 text-[#888]">...</td>}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-[#fff3e0] rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <Icon icon="mdi:information" width={18} height={18} className="text-[#f57c00] mt-0.5" />
+                        <div className="text-xs text-[#333]">
+                          <p className="m-0 font-semibold">Note:</p>
+                          <p className="m-0">• "Project Title" mapping is required</p>
+                          <p className="m-0">• Projects with duplicate titles will be skipped</p>
+                          <p className="m-0">• Contact numbers, emails, and categories can be separated by commas</p>
+                          <p className="m-0">• Map pins will be auto-generated after import</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {importError && (
+                  <div className="mb-4 p-3 bg-[#ffebee] border border-[#ef5350] rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Icon icon="mdi:alert-circle" width={18} height={18} className="text-[#c62828]" />
+                      <span className="text-sm text-[#c62828]">{importError}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3">
+                  {importPreview && (
+                    <button className="py-2.5 px-6 bg-[#f5f5f5] text-[#333] border border-[#d0d0d0] rounded-lg text-sm font-semibold cursor-pointer hover:bg-[#e0e0e0]"
+                      onClick={() => { setImportPreview(false); setImportData([]); setImportColumns([]); setColumnMapping({}); setImportFile(null); if (importFileRef.current) importFileRef.current.value = ''; }}>
+                      Back
+                    </button>
+                  )}
+                  <button className="py-2.5 px-6 bg-[#217346] text-white border-none rounded-lg text-sm font-semibold cursor-pointer hover:bg-[#1a5c38] disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleImportSubmit} disabled={!importPreview || importing}>
+                    {importing ? 'Importing...' : `Import ${importData.length} Project(s)`}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

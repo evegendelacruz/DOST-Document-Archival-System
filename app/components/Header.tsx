@@ -8,9 +8,6 @@ import { useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import NotificationDropdown from './notification';
 import MessengerDropdown from './MessengerDropdown';
-import dynamic from 'next/dynamic';
-
-const DesktopDestroyer = dynamic(() => import('./DesktopDestroyer'), { ssr: false });
 
 
 interface UserPermissions {
@@ -27,7 +24,6 @@ export default function Header() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [permissions, setPermissions] = useState<UserPermissions | null>(null);
-  const [gameActive, setGameActive] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -137,17 +133,6 @@ export default function Header() {
             <Icon icon="mdi:compass-outline" width={24} height={24} />
           </Link>
         )}
-
-        {/* Desktop Destroyer game button */}
-        <button
-          onClick={() => setGameActive(true)}
-          className="flex items-center justify-center w-8 h-8 rounded-full text-gray-500 bg-transparent border-none cursor-pointer transition-all duration-300 hover:bg-red-500 hover:text-white hover:scale-115 hover:shadow-[0_4px_14px_rgba(239,68,68,0.45)] active:scale-90 active:transition-all active:duration-100"
-          title="Desktop Destroyer"
-        >
-          <Icon icon="game-icons:dynamite" width={22} height={22} />
-        </button>
-
-        {gameActive && <DesktopDestroyer onClose={() => setGameActive(false)} />}
 
         <MessengerDropdown />
         <NotificationDropdown />

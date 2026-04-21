@@ -55,13 +55,6 @@ interface CurrentUser {
   profileImageUrl: string | null;
 }
 
-interface BirthdayUser {
-  id: string;
-  fullName: string;
-  birthday: string;
-  profileImageUrl: string | null;
-}
-
 interface StaffUser {
   id: string;
   fullName: string;
@@ -123,14 +116,6 @@ const getEventsForDate = (year: number, month: number, day: number, events: Cale
   return events.filter(e => e.date === dateStr);
 };
 
-const getBirthdaysForDate = (month: number, day: number, users: BirthdayUser[]) => {
-  // match by month (1-based) and day regardless of year
-  return users.filter(u => {
-    const d = new Date(u.birthday);
-    return d.getUTCMonth() + 1 === month + 1 && d.getUTCDate() === day;
-  });
-};
-
 const isToday = (year: number, month: number, day: number) => {
   const today = new Date();
   return today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
@@ -170,7 +155,6 @@ export default function DashboardPage() {
   const [showAddService, setShowAddService] = useState(false);
   const [newServiceName, setNewServiceName] = useState('');
   const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [birthdayUsers, setBirthdayUsers] = useState<BirthdayUser[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showEventDetailModal, setShowEventDetailModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -254,14 +238,6 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
-
-  // Fetch user birthdays
-  useEffect(() => {
-    fetch('/api/users/birthdays')
-      .then(r => r.json())
-      .then(setBirthdayUsers)
-      .catch(() => {});
-  }, []);
 
   // Listen for openEventModal custom event from notifications
   useEffect(() => {
@@ -657,10 +633,6 @@ export default function DashboardPage() {
                   <div className="w-3 h-3 rounded-sm bg-[#00AEEF]"></div>
                   <span className="text-xs text-[#666]">Today</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-sm bg-[#fce4ec]"></div>
-                  <span className="text-xs text-[#666]">Birthday</span>
-                </div>
               </div>
               <div className="w-full">
                 <div className="grid grid-cols-7 mb-2.5">
@@ -671,7 +643,6 @@ export default function DashboardPage() {
                <div className="grid grid-cols-7 border border-[#e0e0e0] border-r-0 border-b-0">
                 {calendarDays.map((day, index) => {
                   const dayEvents = day.currentMonth ? getEventsForDate(currentYear, currentMonth, day.day, events) : [];
-                  const dayBirthdays = day.currentMonth ? getBirthdaysForDate(currentMonth, day.day, birthdayUsers) : [];
                   const isTodayDate = day.currentMonth && isToday(currentYear, currentMonth, day.day);
                   return (
                     <div
@@ -723,30 +694,6 @@ export default function DashboardPage() {
                         ))}
                         {dayEvents.length > 2 && (
                           <span className="text-[9px] text-[#999] pl-1">+{dayEvents.length - 2} more</span>
-                        )}
-                        {dayBirthdays.slice(0, 2).map((user) => (
-                          <div
-                            key={`bday-${user.id}`}
-                            className="flex items-center gap-1 px-1 py-0.5 rounded text-[10px] truncate bg-[#fce4ec] group relative"
-                            title={`🎂 ${user.fullName}'s Birthday`}
-                          >
-                            <Icon icon="mdi:cake-variant" width={10} height={10} className="text-[#e91e63] shrink-0" />
-                            <span className="truncate text-[#c2185b]">{user.fullName.split(' ')[0]}</span>
-                            <div className="absolute left-0 bottom-full mb-1 hidden group-hover:block z-50 w-44 p-2 bg-white rounded-lg shadow-lg border border-gray-200 text-left">
-                              <div className="flex items-center gap-1.5 mb-1">
-                                {user.profileImageUrl ? (
-                                  <img src={user.profileImageUrl} alt={user.fullName} className="w-5 h-5 rounded-full object-cover" />
-                                ) : (
-                                  <Icon icon="mdi:account-circle" width={16} height={16} className="text-gray-400" />
-                                )}
-                                <p className="text-xs font-bold text-primary">{user.fullName}</p>
-                              </div>
-                              <p className="text-[10px] text-[#e91e63] font-semibold">🎂 Birthday</p>
-                            </div>
-                          </div>
-                        ))}
-                        {dayBirthdays.length > 2 && (
-                          <span className="text-[9px] text-[#e91e63] pl-1">+{dayBirthdays.length - 2} bday</span>
                         )}
                       </div>
                     </div>
@@ -858,48 +805,6 @@ export default function DashboardPage() {
                 )}
               </div>
               </div>
-              {/* Birthdays this month */}
-              {(() => {
-                const thisMonthBirthdays = birthdayUsers.filter(u => {
-                  const d = new Date(u.birthday);
-                  return d.getUTCMonth() + 1 === currentMonth + 1;
-                }).sort((a, b) => new Date(a.birthday).getUTCDate() - new Date(b.birthday).getUTCDate());
-                if (thisMonthBirthdays.length === 0) return null;
-                return (
-                  <div className="bg-white rounded-[15px] p-5 shadow-[0_2px_10px_rgba(0,0,0,0.05)] mt-4">
-                    <h3 className="text-base font-bold text-[#c2185b] mb-3 flex items-center gap-2">
-                      <Icon icon="mdi:cake-variant" width={18} height={18} />
-                      Birthdays in {monthNames[currentMonth]}
-                    </h3>
-                    <div className="flex flex-col gap-2">
-                      {thisMonthBirthdays.map(user => {
-                        const d = new Date(user.birthday);
-                        const dayNum = d.getUTCDate();
-                        const isToday2 = isToday(currentYear, currentMonth, dayNum);
-                        return (
-                          <div key={user.id} className={`flex items-center gap-2.5 p-2 rounded-lg ${isToday2 ? 'bg-[#fce4ec]' : 'bg-[#fdf2f5]'}`}>
-                            {user.profileImageUrl ? (
-                              <img src={user.profileImageUrl} alt={user.fullName} className="w-8 h-8 rounded-full object-cover shrink-0" />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-[#f8bbd0] flex items-center justify-center shrink-0">
-                                <Icon icon="mdi:account" width={16} height={16} className="text-[#c2185b]" />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[12px] font-semibold text-[#333] truncate">{user.fullName}</p>
-                              <p className="text-[11px] text-[#e91e63]">
-                                {monthNames[currentMonth]} {dayNum}
-                                {isToday2 && <span className="ml-1 font-bold">🎉 Today!</span>}
-                              </p>
-                            </div>
-                            {isToday2 && <Icon icon="mdi:cake-variant" width={18} height={18} className="text-[#e91e63] shrink-0" />}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
             </div>
           </div>
         )}
