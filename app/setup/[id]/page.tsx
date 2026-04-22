@@ -212,6 +212,7 @@ function DocumentTable({
   isEditMode = true,
   isAssigneeEditMode = false,
   isAssigneeUploadMode = false,
+  canViewDeadlineNotification = false,
 }: {
   title: string;
   docs: DocRow[];
@@ -222,6 +223,7 @@ function DocumentTable({
   isEditMode?: boolean;
   isAssigneeEditMode?: boolean;
   isAssigneeUploadMode?: boolean;
+  canViewDeadlineNotification?: boolean;
 }) {
   const [expandedDropdowns, setExpandedDropdowns] = useState<Record<string, boolean>>({});
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
@@ -2449,12 +2451,59 @@ function DocumentTable({
                   return sum + months;
                 }, 0);
 
-                // Helper function to add months to a date
-                const addMonthsToDate = (dateStr: string, months: number): string => {
-                  if (!dateStr || months === 0) return '';
+                // Base project duration is 12 months
+                const BASE_PROJECT_DURATION_MONTHS = 12;
+
+                // Helper function to add months to a date and return Date object
+                const addMonthsToDateObj = (dateStr: string, months: number): Date | null => {
+                  if (!dateStr) return null;
                   const date = new Date(dateStr);
                   date.setMonth(date.getMonth() + months);
+                  return date;
+                };
+
+                // Helper function to add months to a date and return formatted string
+                const addMonthsToDate = (dateStr: string, months: number): string => {
+                  const date = addMonthsToDateObj(dateStr, months);
+                  if (!date) return '';
                   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                };
+
+                // Helper function to calculate days remaining until deadline
+                const calculateDaysRemaining = (releaseDateStr: string): { daysRemaining: number; deadline: Date; isWithinWindow: boolean } | null => {
+                  if (!releaseDateStr) return null;
+
+                  // Deadline = Fund Release Date + 12 months (base) + PDE extension months
+                  const totalMonths = BASE_PROJECT_DURATION_MONTHS + totalPdeMonths;
+                  const deadline = addMonthsToDateObj(releaseDateStr, totalMonths);
+                  if (!deadline) return null;
+
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  deadline.setHours(0, 0, 0, 0);
+
+                  const diffTime = deadline.getTime() - today.getTime();
+                  const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                  // Check if we're within the 12-month window (365 days or less)
+                  const isWithinWindow = daysRemaining <= 365 && daysRemaining >= 0;
+
+                  return { daysRemaining, deadline, isWithinWindow };
+                };
+
+                // Helper function to get countdown status color and message
+                const getCountdownStatus = (daysRemaining: number): { color: string; bgColor: string; borderColor: string; icon: string; message: string } => {
+                  if (daysRemaining <= 0) {
+                    return { color: '#c62828', bgColor: '#ffebee', borderColor: '#ef9a9a', icon: 'mdi:alert-circle', message: 'DEADLINE REACHED' };
+                  } else if (daysRemaining <= 30) {
+                    return { color: '#c62828', bgColor: '#ffebee', borderColor: '#ef9a9a', icon: 'mdi:alert', message: 'URGENT' };
+                  } else if (daysRemaining <= 90) {
+                    return { color: '#e65100', bgColor: '#fff3e0', borderColor: '#ffcc80', icon: 'mdi:clock-alert', message: 'Due Soon' };
+                  } else if (daysRemaining <= 180) {
+                    return { color: '#f57c00', bgColor: '#fff8e1', borderColor: '#ffe082', icon: 'mdi:clock-outline', message: 'Approaching' };
+                  } else {
+                    return { color: '#1976d2', bgColor: '#e3f2fd', borderColor: '#90caf9', icon: 'mdi:calendar-clock', message: 'On Track' };
+                  }
                 };
 
                 return (
@@ -2550,35 +2599,114 @@ function DocumentTable({
                                     </button>
                                   </div>
 
-                                  {/* Extended Deadline Display (based on PDE months) */}
-                                  {row.releaseDate && totalPdeMonths > 0 && (
-                                    <div className="mb-3 p-3 bg-[#e3f2fd] border border-[#90caf9] rounded-lg">
-                                      <div className="flex items-center gap-2 mb-2">
-                                        <Icon icon="mdi:calendar-clock" width={16} height={16} className="text-[#1565c0]" />
-                                        <span className="text-xs font-semibold text-[#1565c0]">Project Duration Extension Applied</span>
+                                  {/* Deadline Countdown Display - Only visible to project owner and admin */}
+                                  {row.releaseDate && canViewDeadlineNotification && (() => {
+                                    const countdownInfo = calculateDaysRemaining(row.releaseDate);
+                                    if (!countdownInfo) return null;
+
+                                    const { daysRemaining, deadline, isWithinWindow } = countdownInfo;
+                                    const status = getCountdownStatus(daysRemaining);
+                                    const baseDeadline = addMonthsToDateObj(row.releaseDate, BASE_PROJECT_DURATION_MONTHS);
+
+                                    return (
+                                      <div className="mb-3 space-y-3">
+                                        {/* Countdown Notification - Always visible when release date is set */}
+                                        <div
+                                          className="p-3 rounded-lg border"
+                                          style={{ backgroundColor: status.bgColor, borderColor: status.borderColor }}
+                                        >
+                                          <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2">
+                                              <Icon icon={status.icon} width={18} height={18} style={{ color: status.color }} />
+                                              <span className="text-xs font-bold" style={{ color: status.color }}>
+                                                {status.message}
+                                              </span>
+                                            </div>
+                                            {isWithinWindow && (
+                                              <div className="flex items-center gap-1 px-2 py-1 rounded-full" style={{ backgroundColor: status.color }}>
+                                                <Icon icon="mdi:bell-ring" width={12} height={12} className="text-white" />
+                                                <span className="text-[10px] text-white font-semibold">COUNTDOWN ACTIVE</span>
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          <div className="flex items-center gap-4">
+                                            <div className="flex items-baseline gap-1">
+                                              <span
+                                                className="text-3xl font-bold"
+                                                style={{ color: status.color }}
+                                              >
+                                                {daysRemaining <= 0 ? '0' : daysRemaining}
+                                              </span>
+                                              <span className="text-xs font-semibold" style={{ color: status.color }}>
+                                                {daysRemaining === 1 ? 'day' : 'days'} remaining
+                                              </span>
+                                            </div>
+                                            <div className="text-xs text-[#666]">
+                                              <span>Deadline: </span>
+                                              <span className="font-semibold" style={{ color: status.color }}>
+                                                {deadline.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* Project Duration Details */}
+                                        <div className="p-3 bg-[#f5f5f5] border border-[#e0e0e0] rounded-lg">
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <Icon icon="mdi:information-outline" width={14} height={14} className="text-[#666]" />
+                                            <span className="text-xs font-semibold text-[#555]">Project Duration Details</span>
+                                          </div>
+                                          <div className="grid grid-cols-4 gap-3 text-xs">
+                                            <div>
+                                              <span className="text-[#888]">Fund Release:</span>
+                                              <div className="font-semibold text-[#333]">
+                                                {new Date(row.releaseDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <span className="text-[#888]">Base Duration:</span>
+                                              <div className="font-semibold text-[#333]">
+                                                {BASE_PROJECT_DURATION_MONTHS} months
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <span className="text-[#888]">Extension:</span>
+                                              <div className="font-semibold" style={{ color: totalPdeMonths > 0 ? '#f57c00' : '#888' }}>
+                                                {totalPdeMonths > 0 ? `+${totalPdeMonths} month${totalPdeMonths > 1 ? 's' : ''}` : 'None'}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <span className="text-[#888]">Total Duration:</span>
+                                              <div className="font-semibold text-[#2e7d32]">
+                                                {BASE_PROJECT_DURATION_MONTHS + totalPdeMonths} months
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          {/* Base vs Extended Deadline comparison */}
+                                          {totalPdeMonths > 0 && baseDeadline && (
+                                            <div className="mt-3 pt-3 border-t border-[#e0e0e0]">
+                                              <div className="grid grid-cols-2 gap-3 text-xs">
+                                                <div>
+                                                  <span className="text-[#888]">Original Deadline (without extension):</span>
+                                                  <div className="font-semibold text-[#999] line-through">
+                                                    {baseDeadline.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                  </div>
+                                                </div>
+                                                <div>
+                                                  <span className="text-[#888]">Extended Deadline:</span>
+                                                  <div className="font-semibold text-[#2e7d32]">
+                                                    {deadline.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
                                       </div>
-                                      <div className="grid grid-cols-3 gap-4 text-xs">
-                                        <div>
-                                          <span className="text-[#666]">Original Deadline:</span>
-                                          <div className="font-semibold text-[#333]">
-                                            {new Date(row.releaseDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                                          </div>
-                                        </div>
-                                        <div>
-                                          <span className="text-[#666]">Total Extension:</span>
-                                          <div className="font-semibold text-[#f57c00]">
-                                            +{totalPdeMonths} month{totalPdeMonths > 1 ? 's' : ''}
-                                          </div>
-                                        </div>
-                                        <div>
-                                          <span className="text-[#666]">Extended Deadline:</span>
-                                          <div className="font-semibold text-[#2e7d32]">
-                                            {addMonthsToDate(row.releaseDate, totalPdeMonths)}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
+                                    );
+                                  })()}
 
                                   <div className="space-y-2">
                                     {/* DV Upload */}
@@ -3944,11 +4072,76 @@ function DocumentTable({
                                         )}
                                       </div>
 
+                                      {/* PDE Summary - Show calculated deadline info (only for project owner and admin) */}
+                                      {canViewDeadlineNotification && (() => {
+                                        const firstFundReleaseDate = fundReleaseDateRows.find(r => r.releaseDate)?.releaseDate;
+                                        const totalPdeMonthsCalc = pdeRows.reduce((sum, r) => sum + (parseInt(r.months) || 0), 0);
+                                        const baseMonths = 12;
+
+                                        if (firstFundReleaseDate && totalPdeMonthsCalc > 0) {
+                                          const originalDeadline = new Date(firstFundReleaseDate);
+                                          originalDeadline.setMonth(originalDeadline.getMonth() + baseMonths);
+
+                                          const extendedDeadline = new Date(firstFundReleaseDate);
+                                          extendedDeadline.setMonth(extendedDeadline.getMonth() + baseMonths + totalPdeMonthsCalc);
+
+                                          return (
+                                            <div className="mb-4 p-3 bg-[#e8f5e9] border border-[#a5d6a7] rounded-lg">
+                                              <div className="flex items-center gap-2 mb-2">
+                                                <Icon icon="mdi:calendar-check" width={16} height={16} className="text-[#2e7d32]" />
+                                                <span className="text-xs font-bold text-[#2e7d32]">Project Duration Summary</span>
+                                              </div>
+                                              <div className="grid grid-cols-4 gap-3 text-xs">
+                                                <div>
+                                                  <span className="text-[#666]">Fund Release:</span>
+                                                  <div className="font-semibold text-[#333]">
+                                                    {new Date(firstFundReleaseDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                  </div>
+                                                </div>
+                                                <div>
+                                                  <span className="text-[#666]">Original Deadline:</span>
+                                                  <div className="font-semibold text-[#999] line-through">
+                                                    {originalDeadline.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                  </div>
+                                                </div>
+                                                <div>
+                                                  <span className="text-[#666]">Total Extension:</span>
+                                                  <div className="font-semibold text-[#f57c00]">
+                                                    +{totalPdeMonthsCalc} month{totalPdeMonthsCalc > 1 ? 's' : ''}
+                                                  </div>
+                                                </div>
+                                                <div>
+                                                  <span className="text-[#666]">New Deadline:</span>
+                                                  <div className="font-semibold text-[#2e7d32]">
+                                                    {extendedDeadline.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          );
+                                        }
+
+                                        if (!firstFundReleaseDate) {
+                                          return (
+                                            <div className="mb-4 p-3 bg-[#fff3e0] border border-[#ffcc80] rounded-lg">
+                                              <div className="flex items-center gap-2">
+                                                <Icon icon="mdi:alert" width={16} height={16} className="text-[#f57c00]" />
+                                                <span className="text-xs text-[#e65100]">
+                                                  Please set a Fund Release Date first to calculate extended deadlines.
+                                                </span>
+                                              </div>
+                                            </div>
+                                          );
+                                        }
+
+                                        return null;
+                                      })()}
+
                                       {/* PDE Table Header */}
-                                      <div className="grid grid-cols-[minmax(100px,1fr)_minmax(150px,1.5fr)_minmax(150px,1.5fr)_minmax(200px,2fr)_100px] gap-2 mb-2 px-2">
+                                      <div className="grid grid-cols-[minmax(100px,1fr)_minmax(150px,1.5fr)_minmax(200px,2fr)_minmax(200px,2fr)_100px] gap-2 mb-2 px-2">
                                         <span className="text-xs font-semibold text-[#555]">PDE</span>
                                         <span className="text-xs font-semibold text-[#555]">No. of Months Extension</span>
-                                        <span className="text-xs font-semibold text-[#555]">Date</span>
+                                        <span className="text-xs font-semibold text-[#555]">Extended Deadline</span>
                                         <span className="text-xs font-semibold text-[#555]">File</span>
                                         <span className="text-xs font-semibold text-[#555]">Actions</span>
                                       </div>
@@ -3960,14 +4153,34 @@ function DocumentTable({
                                           const isPdeUploading = uploadingItemId === pdeTemplateItemId;
                                           const hasPdeFile = !!pdeUploadedDoc;
 
+                                          // Calculate cumulative months up to and including this row
+                                          const cumulativeMonths = pdeRows.slice(0, idx + 1).reduce((sum, r) => {
+                                            const months = parseInt(r.months) || 0;
+                                            return sum + months;
+                                          }, 0);
+
+                                          // Get the first approved fund release date
+                                          const firstFundReleaseDate = fundReleaseDateRows.find(r => r.releaseDate)?.releaseDate;
+
+                                          // Calculate the extended deadline: Fund Release + 12 months (base) + cumulative PDE months
+                                          const calculateExtendedDeadline = (): string => {
+                                            if (!firstFundReleaseDate) return 'Set Fund Release Date first';
+                                            const baseMonths = 12; // Base project duration
+                                            const totalMonths = baseMonths + cumulativeMonths;
+                                            const date = new Date(firstFundReleaseDate);
+                                            date.setMonth(date.getMonth() + totalMonths);
+                                            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                                          };
+
                                           return (
-                                            <div key={idx} className="grid grid-cols-[minmax(100px,1fr)_minmax(150px,1.5fr)_minmax(150px,1.5fr)_minmax(200px,2fr)_100px] gap-2 items-center border border-[#eee] rounded p-2 bg-[#fafafa]">
+                                            <div key={idx} className="grid grid-cols-[minmax(100px,1fr)_minmax(150px,1.5fr)_minmax(200px,2fr)_minmax(200px,2fr)_100px] gap-2 items-center border border-[#eee] rounded p-2 bg-[#fafafa]">
                                               {/* PDE Label */}
                                               <span className="text-xs font-semibold text-[#2e7d32]">{getOrdinal(idx + 1)} PDE</span>
 
                                               {/* No. of Months Extension */}
                                               <input
-                                                type="text"
+                                                type="number"
+                                                min="1"
                                                 value={row.months}
                                                 onChange={(e) => {
                                                   const updated = [...pdeRows];
@@ -3979,18 +4192,17 @@ function DocumentTable({
                                                 className={`w-full border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                                               />
 
-                                              {/* Date */}
-                                              <input
-                                                type="date"
-                                                value={row.date}
-                                                onChange={(e) => {
-                                                  const updated = [...pdeRows];
-                                                  updated[idx].date = e.target.value;
-                                                  setPdeRows(updated);
-                                                }}
-                                                disabled={!isEditMode}
-                                                className={`w-full border border-[#ddd] rounded px-2 py-1.5 text-xs ${!isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                                              />
+                                              {/* Extended Deadline - Auto-calculated */}
+                                              <div className="flex flex-col">
+                                                <span className={`text-xs font-semibold ${firstFundReleaseDate && cumulativeMonths > 0 ? 'text-[#2e7d32]' : 'text-[#999] italic'}`}>
+                                                  {calculateExtendedDeadline()}
+                                                </span>
+                                                {firstFundReleaseDate && cumulativeMonths > 0 && (
+                                                  <span className="text-[10px] text-[#888]">
+                                                    (+{cumulativeMonths} month{cumulativeMonths > 1 ? 's' : ''} from base)
+                                                  </span>
+                                                )}
+                                              </div>
 
                                               {/* File */}
                                               <div className="flex-1 min-w-0">
@@ -8475,6 +8687,7 @@ export default function ProjectDetailPage() {
             isEditMode={isEditMode}
             isAssigneeEditMode={isAssigneeEditModeActive()}
             isAssigneeUploadMode={isAssigneeUploadModeActive()}
+            canViewDeadlineNotification={isOwnerOrAdmin()}
           />
 
           {/* Project Management */}

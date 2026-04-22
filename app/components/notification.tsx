@@ -3,11 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Icon } from '@iconify/react';
-import { Cake, FileEdit, Clock, Tag, X, CalendarPlus } from 'lucide-react';
+import { Cake, FileEdit, Clock, Tag, X, CalendarPlus, AlertTriangle } from 'lucide-react';
 
 interface Notification {
   id: string;
-  type: 'birthday' | 'edit-request' | 'edit_request' | 'cest_edit_request' | 'liquidation' | 'untagging' | 'event-mention';
+  type: 'birthday' | 'edit-request' | 'edit_request' | 'cest_edit_request' | 'liquidation' | 'untagging' | 'event-mention' | 'deadline';
   title: string;
   message: string;
   time: string;
@@ -51,6 +51,8 @@ const getNotificationIcon = (type: Notification['type'], size: 'sm' | 'md' = 'sm
       return <Tag className={`${className} text-purple-500`} />;
     case 'event-mention':
       return <CalendarPlus className={`${className} text-cyan-500`} />;
+    case 'deadline':
+      return <AlertTriangle className={`${className} text-red-500`} />;
     default:
       return <Icon icon="mdi:bell" className={`${className} text-gray-500 transition-all duration-300 hover:text-accent hover:scale-110 active:scale-90 active:transition-all active:duration-100`} />;
   }
@@ -72,6 +74,8 @@ const getNotificationBgColor = (type: Notification['type']) => {
       return 'bg-purple-50';
     case 'event-mention':
       return 'bg-cyan-50';
+    case 'deadline':
+      return 'bg-red-50';
     default:
       return 'bg-gray-50';
   }
@@ -93,13 +97,34 @@ const getNotificationBorderColor = (type: Notification['type']) => {
       return 'border-l-purple-500';
     case 'event-mention':
       return 'border-l-cyan-500';
+    case 'deadline':
+      return 'border-l-red-500';
     default:
       return 'border-l-gray-500';
   }
 };
 
-// Render toast icon - profile picture for event-mention, edit_request, and cest_edit_request, otherwise standard icon
+// Render toast icon - profile picture for event-mention, edit_request, cest_edit_request, and project logo for deadline
 const renderToastIcon = (notification: ToastNotification) => {
+  // For deadline notifications, show project logo
+  if (notification.type === 'deadline') {
+    if (notification.bookedByProfileUrl) {
+      return (
+        <img
+          src={notification.bookedByProfileUrl}
+          alt="Project"
+          className="w-10 h-10 rounded-full object-cover border-2 border-red-500"
+        />
+      );
+    }
+    // Default icon if no project logo
+    return (
+      <div className="w-10 h-10 rounded-full border-2 border-red-500 bg-red-50 flex items-center justify-center">
+        <AlertTriangle className="w-6 h-6 text-red-500" />
+      </div>
+    );
+  }
+
   if (notification.type === 'event-mention' || notification.type === 'edit_request' || notification.type === 'cest_edit_request') {
     const borderColor = notification.type === 'edit_request' ? 'border-[#f57c00]' : notification.type === 'cest_edit_request' ? 'border-[#d97706]' : 'border-[#00AEEF]';
     if (notification.bookedByProfileUrl) {
@@ -183,6 +208,7 @@ export default function NotificationDropdown() {
   const isInitialLoad = useRef(true);
   const previousNotificationIdsRef = useRef<Set<string>>(new Set());
   const shownToastIdsRef = useRef<Set<string>>(new Set());
+  const hasShownLoginDeadlineToasts = useRef(false); // Track if we've shown deadline toasts this session
   const router = useRouter();
   const pathname = usePathname();
 
@@ -305,9 +331,44 @@ export default function NotificationDropdown() {
             }, 8000);
           });
         } else {
-          // On initial load, just record all IDs without showing toasts
+          // Check if this is a fresh login (not just page navigation)
+          const hasShownDeadlineToastsThisSession = sessionStorage.getItem('hasShownDeadlineToasts');
+
+          // Only show deadline toasts on fresh login (when session flag is not set)
+          if (!hasShownDeadlineToastsThisSession && !hasShownLoginDeadlineToasts.current) {
+            const deadlineNotifications = data.filter(
+              (n: Notification) => n.type === 'deadline'
+            );
+
+            // Show toast for EVERY deadline notification on login
+            deadlineNotifications.forEach((n: Notification, index: number) => {
+              // Stagger the toasts slightly for better UX
+              setTimeout(() => {
+                const toastNotification: ToastNotification = { ...n, isExiting: false };
+                setToasts((prev) => [...prev, toastNotification]);
+                playNotificationSound();
+
+                // Auto-remove after 10 seconds (longer for deadline notifications)
+                setTimeout(() => {
+                  setToasts((prev) =>
+                    prev.map((t) => (t.id === n.id ? { ...t, isExiting: true } : t))
+                  );
+                  setTimeout(() => {
+                    setToasts((prev) => prev.filter((t) => t.id !== n.id));
+                  }, 300);
+                }, 10000);
+              }, index * 800); // 800ms delay between each toast
+            });
+
+            // Mark that we've shown deadline toasts this session
+            sessionStorage.setItem('hasShownDeadlineToasts', 'true');
+            hasShownLoginDeadlineToasts.current = true;
+          }
+
+          // Record all notification IDs
           data.forEach((n: Notification) => {
             previousNotificationIdsRef.current.add(n.id);
+            shownToastIdsRef.current.add(n.id);
           });
         }
 
@@ -323,12 +384,35 @@ export default function NotificationDropdown() {
     }
   }, [playNotificationSound]);
 
+  // Check deadlines and create notifications
+  const checkDeadlines = useCallback(async () => {
+    const userId = getUserId();
+    if (!userId) return;
+
+    try {
+      await fetch('/api/notifications/deadline-check', {
+        headers: { 'x-user-id': userId },
+      });
+    } catch (error) {
+      console.error('Failed to check deadlines:', error);
+    }
+  }, []);
+
   // Fetch notifications on mount and poll every 5 seconds
+  // Also check deadlines on initial mount
   useEffect(() => {
-    fetchNotifications();
+    // Check deadlines first, then fetch notifications
+    checkDeadlines().then(() => {
+      fetchNotifications();
+    });
     const interval = setInterval(fetchNotifications, 5000);
-    return () => clearInterval(interval);
-  }, [fetchNotifications]);
+    // Check deadlines every 5 minutes (less frequent as it creates notifications)
+    const deadlineInterval = setInterval(checkDeadlines, 5 * 60 * 1000);
+    return () => {
+      clearInterval(interval);
+      clearInterval(deadlineInterval);
+    };
+  }, [fetchNotifications, checkDeadlines]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -462,7 +546,13 @@ export default function NotificationDropdown() {
         router.push(projectPath);
       }
     }
-  }, [pathname, router]);
+
+    // Handle deadline notification (SETUP projects)
+    if (notification.type === 'deadline' && notification.eventId) {
+      setIsOpen(false);
+      router.push(`/setup/${notification.eventId}`);
+    }
+  }, [pathname, router, setIsOpen]);
 
   // Handle toast notification click
   const handleToastClick = useCallback((notification: ToastNotification) => {
@@ -544,12 +634,37 @@ export default function NotificationDropdown() {
         router.push(projectPath);
       }
     }
+
+    // Handle deadline notification (SETUP projects)
+    if (notification.type === 'deadline' && notification.eventId) {
+      router.push(`/setup/${notification.eventId}`);
+    }
   }, [pathname, router, closeToast]);
 
-  // Render notification icon - profile picture for event-mention, edit_request, and cest_edit_request, otherwise standard icon
+  // Render notification icon - profile picture for event-mention, edit_request, cest_edit_request, and project logo for deadline
   const renderNotificationIcon = (notification: Notification, size: 'sm' | 'md' = 'sm') => {
+    const imgSize = size === 'sm' ? 'w-10 h-10' : 'w-10 h-10';
+
+    // For deadline notifications, show project logo
+    if (notification.type === 'deadline') {
+      if (notification.bookedByProfileUrl) {
+        return (
+          <img
+            src={notification.bookedByProfileUrl}
+            alt="Project"
+            className={`${imgSize} rounded-full object-cover border-2 border-red-500`}
+          />
+        );
+      }
+      // Default icon if no project logo
+      return (
+        <div className={`${imgSize} rounded-full border-2 border-red-500 bg-red-50 flex items-center justify-center`}>
+          <AlertTriangle className="w-5 h-5 text-red-500" />
+        </div>
+      );
+    }
+
     if (notification.type === 'event-mention' || notification.type === 'edit_request' || notification.type === 'cest_edit_request') {
-      const imgSize = size === 'sm' ? 'w-10 h-10' : 'w-10 h-10';
       const borderColor = notification.type === 'edit_request' ? 'border-[#f57c00]' : notification.type === 'cest_edit_request' ? 'border-[#d97706]' : 'border-[#00AEEF]';
       if (notification.bookedByProfileUrl) {
         return (
@@ -620,7 +735,11 @@ export default function NotificationDropdown() {
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
                     className={`flex items-start gap-3 px-4 py-3 border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-50 ${
-                      !notification.read ? 'bg-cyan-50/50' : ''
+                      !notification.read
+                        ? notification.type === 'deadline'
+                          ? 'bg-red-50/70'
+                          : 'bg-cyan-50/50'
+                        : ''
                     }`}
                   >
                     {/* Icon / Profile Picture */}
@@ -629,11 +748,15 @@ export default function NotificationDropdown() {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-gray-800 truncate">
+                        <p className={`text-sm font-medium truncate ${
+                          notification.type === 'deadline' ? 'text-red-700' : 'text-gray-800'
+                        }`}>
                           {notification.title}
                         </p>
                         {!notification.read && (
-                          <span className="w-2 h-2 bg-cyan-500 rounded-full flex-shrink-0"></span>
+                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                            notification.type === 'deadline' ? 'bg-red-500' : 'bg-cyan-500'
+                          }`}></span>
                         )}
                       </div>
                       <p className="text-xs text-gray-600 mt-0.5 line-clamp-2">

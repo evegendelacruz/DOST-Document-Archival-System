@@ -112,6 +112,7 @@ export default function Header() {
   const handleLogout = () => {
     setIsDropdownOpen(false);
     localStorage.removeItem('user');
+    sessionStorage.removeItem('hasShownDeadlineToasts'); // Clear deadline toast flag on logout
     router.push('/');
   };
 
