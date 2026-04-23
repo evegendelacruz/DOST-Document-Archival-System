@@ -30,6 +30,7 @@ interface CestProject {
   dateOfApproval: string | null;
   dropdownData: Record<string, unknown> | null;
   partnerLGUs: PartnerLGU[] | null;
+  companyLogoUrl: string | null;
   typeOfBeneficiary: string | null;
   stakeholderCounterparts: string[] | null;
   createdAt: string;
@@ -4347,13 +4348,28 @@ export default function CestProfilePage() {
 
           {/* Project Content */}
           <div className="flex gap-5 items-start">
-            <div className="w-[100px] h-[100px] min-w-[100px] rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-              <Icon
-                icon="mdi:office-building"
-                width={48}
-                height={48}
-                color="#999"
-              />
+            <div className="w-[100px] h-[100px] min-w-[100px] rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-4 border-[#00AEEF]">
+              {/* Display partner LGU logo if available, else companyLogoUrl, else placeholder */}
+              {project.partnerLGUs && project.partnerLGUs.length > 0 && project.partnerLGUs[0].logoUrl ? (
+                <img
+                  src={project.partnerLGUs[0].logoUrl}
+                  alt={project.partnerLGUs[0].name || "Partner Logo"}
+                  className="w-full h-full object-cover"
+                />
+              ) : project.companyLogoUrl ? (
+                <img
+                  src={project.companyLogoUrl}
+                  alt="Project Logo"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Icon
+                  icon="mdi:office-building"
+                  width={48}
+                  height={48}
+                  color="#999"
+                />
+              )}
             </div>
             <div className="flex-1 flex gap-5">
               <div className="flex-1">

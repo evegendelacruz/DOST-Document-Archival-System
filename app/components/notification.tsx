@@ -3,11 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Icon } from '@iconify/react';
-import { Cake, FileEdit, Clock, Tag, X, CalendarPlus, AlertTriangle } from 'lucide-react';
+import { Cake, FileEdit, Clock, Tag, X, CalendarPlus, AlertTriangle, UserCheck } from 'lucide-react';
 
 interface Notification {
   id: string;
-  type: 'birthday' | 'edit-request' | 'edit_request' | 'cest_edit_request' | 'liquidation' | 'untagging' | 'event-mention' | 'deadline';
+  type: 'birthday' | 'edit-request' | 'edit_request' | 'cest_edit_request' | 'liquidation' | 'untagging' | 'event-mention' | 'deadline' | 'pending_approval';
   title: string;
   message: string;
   time: string;
@@ -34,6 +34,18 @@ function getUserId(): string | null {
   }
 }
 
+// Helper to get user role from localStorage
+function getUserRole(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem('user');
+    if (!stored) return null;
+    return JSON.parse(stored)?.role || null;
+  } catch {
+    return null;
+  }
+}
+
 const getNotificationIcon = (type: Notification['type'], size: 'sm' | 'md' = 'sm') => {
   const className = size === 'sm' ? 'w-5 h-5' : 'w-6 h-6';
   switch (type) {
@@ -53,6 +65,8 @@ const getNotificationIcon = (type: Notification['type'], size: 'sm' | 'md' = 'sm
       return <CalendarPlus className={`${className} text-cyan-500`} />;
     case 'deadline':
       return <AlertTriangle className={`${className} text-red-500`} />;
+    case 'pending_approval':
+      return <UserCheck className={`${className} text-emerald-500`} />;
     default:
       return <Icon icon="mdi:bell" className={`${className} text-gray-500 transition-all duration-300 hover:text-accent hover:scale-110 active:scale-90 active:transition-all active:duration-100`} />;
   }
@@ -76,6 +90,8 @@ const getNotificationBgColor = (type: Notification['type']) => {
       return 'bg-cyan-50';
     case 'deadline':
       return 'bg-red-50';
+    case 'pending_approval':
+      return 'bg-emerald-50';
     default:
       return 'bg-gray-50';
   }
@@ -99,12 +115,14 @@ const getNotificationBorderColor = (type: Notification['type']) => {
       return 'border-l-cyan-500';
     case 'deadline':
       return 'border-l-red-500';
+    case 'pending_approval':
+      return 'border-l-emerald-500';
     default:
       return 'border-l-gray-500';
   }
 };
 
-// Render toast icon - profile picture for event-mention, edit_request, cest_edit_request, and project logo for deadline
+// Render toast icon - profile picture for event-mention, edit_request, cest_edit_request, project logo for deadline, and user profile for pending_approval
 const renderToastIcon = (notification: ToastNotification) => {
   // For deadline notifications, show project logo
   if (notification.type === 'deadline') {
@@ -121,6 +139,25 @@ const renderToastIcon = (notification: ToastNotification) => {
     return (
       <div className="w-10 h-10 rounded-full border-2 border-red-500 bg-red-50 flex items-center justify-center">
         <AlertTriangle className="w-6 h-6 text-red-500" />
+      </div>
+    );
+  }
+
+  // For pending_approval notifications, show user profile picture
+  if (notification.type === 'pending_approval') {
+    if (notification.bookedByProfileUrl) {
+      return (
+        <img
+          src={notification.bookedByProfileUrl}
+          alt={notification.bookedByName || 'User'}
+          className="w-10 h-10 rounded-full object-cover border-2 border-emerald-500"
+        />
+      );
+    }
+    // Default icon if no profile picture
+    return (
+      <div className="w-10 h-10 rounded-full border-2 border-emerald-500 bg-emerald-50 flex items-center justify-center">
+        <UserCheck className="w-6 h-6 text-emerald-500" />
       </div>
     );
   }
@@ -334,21 +371,29 @@ export default function NotificationDropdown() {
           // Check if this is a fresh login (not just page navigation)
           const hasShownDeadlineToastsThisSession = sessionStorage.getItem('hasShownDeadlineToasts');
 
-          // Only show deadline toasts on fresh login (when session flag is not set)
+          // Only show deadline and pending_approval toasts on fresh login (when session flag is not set)
           if (!hasShownDeadlineToastsThisSession && !hasShownLoginDeadlineToasts.current) {
             const deadlineNotifications = data.filter(
               (n: Notification) => n.type === 'deadline'
             );
 
-            // Show toast for EVERY deadline notification on login
-            deadlineNotifications.forEach((n: Notification, index: number) => {
+            // Also show pending_approval toasts for admin users
+            const pendingApprovalNotifications = getUserRole() === 'ADMIN'
+              ? data.filter((n: Notification) => n.type === 'pending_approval')
+              : [];
+
+            // Combine all login toasts (deadlines first, then pending approvals)
+            const loginToasts = [...deadlineNotifications, ...pendingApprovalNotifications];
+
+            // Show toast for EVERY deadline and pending_approval notification on login
+            loginToasts.forEach((n: Notification, index: number) => {
               // Stagger the toasts slightly for better UX
               setTimeout(() => {
                 const toastNotification: ToastNotification = { ...n, isExiting: false };
                 setToasts((prev) => [...prev, toastNotification]);
                 playNotificationSound();
 
-                // Auto-remove after 10 seconds (longer for deadline notifications)
+                // Auto-remove after 10 seconds (longer for these notifications)
                 setTimeout(() => {
                   setToasts((prev) =>
                     prev.map((t) => (t.id === n.id ? { ...t, isExiting: true } : t))
@@ -398,21 +443,54 @@ export default function NotificationDropdown() {
     }
   }, []);
 
+  // Check pending approvals and create notifications (admin only)
+  const checkPendingApprovals = useCallback(async () => {
+    const userId = getUserId();
+    const userRole = getUserRole();
+    if (!userId || userRole !== 'ADMIN') return;
+
+    try {
+      await fetch('/api/notifications/pending-approvals', {
+        headers: { 'x-user-id': userId },
+      });
+    } catch (error) {
+      console.error('Failed to check pending approvals:', error);
+    }
+  }, []);
+
   // Fetch notifications on mount and poll every 5 seconds
-  // Also check deadlines on initial mount
+  // Also check deadlines and pending approvals on initial mount
   useEffect(() => {
-    // Check deadlines first, then fetch notifications
-    checkDeadlines().then(() => {
-      fetchNotifications();
-    });
+    // Function to initialize notifications with retry
+    const initializeNotifications = async () => {
+      // Wait for user to be available (max 5 retries with 500ms delay)
+      let retries = 0;
+      while (!getUserId() && retries < 5) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        retries++;
+      }
+
+      // If user is available, check deadlines, pending approvals, and fetch notifications
+      if (getUserId()) {
+        await checkDeadlines();
+        await checkPendingApprovals();
+        await fetchNotifications();
+      }
+    };
+
+    initializeNotifications();
+
     const interval = setInterval(fetchNotifications, 5000);
     // Check deadlines every 5 minutes (less frequent as it creates notifications)
     const deadlineInterval = setInterval(checkDeadlines, 5 * 60 * 1000);
+    // Check pending approvals every 5 minutes (admin only)
+    const pendingApprovalInterval = setInterval(checkPendingApprovals, 5 * 60 * 1000);
     return () => {
       clearInterval(interval);
       clearInterval(deadlineInterval);
+      clearInterval(pendingApprovalInterval);
     };
-  }, [fetchNotifications, checkDeadlines]);
+  }, [fetchNotifications, checkDeadlines, checkPendingApprovals]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -552,6 +630,15 @@ export default function NotificationDropdown() {
       setIsOpen(false);
       router.push(`/setup/${notification.eventId}`);
     }
+
+    // Handle pending_approval notification (navigate to user management)
+    if (notification.type === 'pending_approval') {
+      setIsOpen(false);
+      // Set sessionStorage flag to open user management tab
+      sessionStorage.setItem('openUserManagement', 'true');
+      // Navigate to profile page which contains user management
+      router.push('/profile');
+    }
   }, [pathname, router, setIsOpen]);
 
   // Handle toast notification click
@@ -639,9 +726,17 @@ export default function NotificationDropdown() {
     if (notification.type === 'deadline' && notification.eventId) {
       router.push(`/setup/${notification.eventId}`);
     }
+
+    // Handle pending_approval notification (navigate to user management)
+    if (notification.type === 'pending_approval') {
+      // Set sessionStorage flag to open user management tab
+      sessionStorage.setItem('openUserManagement', 'true');
+      // Navigate to profile page which contains user management
+      router.push('/profile');
+    }
   }, [pathname, router, closeToast]);
 
-  // Render notification icon - profile picture for event-mention, edit_request, cest_edit_request, and project logo for deadline
+  // Render notification icon - profile picture for event-mention, edit_request, cest_edit_request, project logo for deadline, and user profile for pending_approval
   const renderNotificationIcon = (notification: Notification, size: 'sm' | 'md' = 'sm') => {
     const imgSize = size === 'sm' ? 'w-10 h-10' : 'w-10 h-10';
 
@@ -660,6 +755,25 @@ export default function NotificationDropdown() {
       return (
         <div className={`${imgSize} rounded-full border-2 border-red-500 bg-red-50 flex items-center justify-center`}>
           <AlertTriangle className="w-5 h-5 text-red-500" />
+        </div>
+      );
+    }
+
+    // For pending_approval notifications, show user profile picture
+    if (notification.type === 'pending_approval') {
+      if (notification.bookedByProfileUrl) {
+        return (
+          <img
+            src={notification.bookedByProfileUrl}
+            alt={notification.bookedByName || 'User'}
+            className={`${imgSize} rounded-full object-cover border-2 border-emerald-500`}
+          />
+        );
+      }
+      // Default icon if no profile picture
+      return (
+        <div className={`${imgSize} rounded-full border-2 border-emerald-500 bg-emerald-50 flex items-center justify-center`}>
+          <UserCheck className="w-5 h-5 text-emerald-500" />
         </div>
       );
     }
@@ -738,6 +852,8 @@ export default function NotificationDropdown() {
                       !notification.read
                         ? notification.type === 'deadline'
                           ? 'bg-red-50/70'
+                          : notification.type === 'pending_approval'
+                          ? 'bg-emerald-50/70'
                           : 'bg-cyan-50/50'
                         : ''
                     }`}
@@ -749,13 +865,21 @@ export default function NotificationDropdown() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className={`text-sm font-medium truncate ${
-                          notification.type === 'deadline' ? 'text-red-700' : 'text-gray-800'
+                          notification.type === 'deadline'
+                            ? 'text-red-700'
+                            : notification.type === 'pending_approval'
+                            ? 'text-emerald-700'
+                            : 'text-gray-800'
                         }`}>
                           {notification.title}
                         </p>
                         {!notification.read && (
                           <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                            notification.type === 'deadline' ? 'bg-red-500' : 'bg-cyan-500'
+                            notification.type === 'deadline'
+                              ? 'bg-red-500'
+                              : notification.type === 'pending_approval'
+                              ? 'bg-emerald-500'
+                              : 'bg-cyan-500'
                           }`}></span>
                         )}
                       </div>

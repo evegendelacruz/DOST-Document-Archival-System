@@ -60,6 +60,15 @@ const ProfilePage = () => {
     fetchUser();
   }, [fetchUser]);
 
+  // Check if we should open user management (from notification click)
+  useEffect(() => {
+    const shouldOpenUserManagement = sessionStorage.getItem('openUserManagement');
+    if (shouldOpenUserManagement && user?.role === 'ADMIN') {
+      setCurrentView('user-management');
+      sessionStorage.removeItem('openUserManagement');
+    }
+  }, [user]);
+
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
