@@ -41,7 +41,19 @@
       "Bash(mkdir -p /mnt/c/Users/Admin/Desktop/FrontEnd/app/api/cest-projects/geocode-batch)",
       "Bash(cp /mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/api/cest-projects/geocode-batch/route.ts /mnt/c/Users/Admin/Desktop/FrontEnd/app/api/cest-projects/geocode-batch/route.ts)",
       "Bash(git -C /mnt/c/Users/Admin/Desktop/FrontEnd status --short)",
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "Bash(cp \"/mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/setup/[id]/page.tsx\" \"/mnt/c/Users/Admin/Desktop/FrontEnd/app/setup/[id]/page.tsx\")",
+      "Bash(cp \"/mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/cest/[id]/page.tsx\" \"/mnt/c/Users/Admin/Desktop/FrontEnd/app/cest/[id]/page.tsx\")",
+      "Bash(cp \"/mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/components/BirthdayPopup.tsx\" \"/mnt/c/Users/Admin/Desktop/FrontEnd/app/components/BirthdayPopup.tsx\")",
+      "Bash(cp \"/mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/components/DashboardLayout.tsx\" \"/mnt/c/Users/Admin/Desktop/FrontEnd/app/components/DashboardLayout.tsx\")",
+      "Bash(cp \"/mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/middleware.ts\" \"/mnt/c/Users/Admin/Desktop/FrontEnd/middleware.ts\")",
+      "Bash(cp \"/mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/api/auth/login/route.ts\" \"/mnt/c/Users/Admin/Desktop/FrontEnd/app/api/auth/login/route.ts\")",
+      "Bash(mkdir -p \"/mnt/c/Users/Admin/Desktop/FrontEnd/app/api/auth/logout\")",
+      "Bash(cp \"/mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/api/auth/logout/route.ts\" \"/mnt/c/Users/Admin/Desktop/FrontEnd/app/api/auth/logout/route.ts\")",
+      "Bash(powershell.exe:*)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('version'\\), d.get\\('optionalDependencies', {}\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('version'\\)\\)\")",
+      "Bash(diff -q /mnt/c/Users/Admin/Desktop/Main/DOST-Document-Archival-System/app/components/*.tsx /mnt/c/Users/Admin/Desktop/FrontEnd/app/components/*.tsx)"
     ]
   }
 }

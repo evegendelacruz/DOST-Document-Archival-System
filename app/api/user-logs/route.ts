@@ -10,8 +10,6 @@ export async function GET(req: NextRequest) {
   const limit = searchParams.get('limit');
   const offset = searchParams.get('offset');
 
-  console.log('[User Logs API] GET - params:', { userId, action, resourceType, search });
-
   const where: Record<string, unknown> = {};
 
   // Filter by specific user
@@ -76,8 +74,6 @@ export async function GET(req: NextRequest) {
       },
     }),
   ]);
-
-  console.log('[User Logs API] Returning', logs.length, 'logs, stats:', { totalCount, todayCount, weekCount });
 
   return NextResponse.json({
     logs,

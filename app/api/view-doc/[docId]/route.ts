@@ -48,8 +48,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ docI
     }
 
     return NextResponse.json({ error: 'Document not found' }, { status: 404 });
-  } catch (err) {
-    console.error('[view-doc GET]', err);
+  } catch {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
@@ -86,8 +85,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ doc
         'Cache-Control': 'no-store',
       },
     });
-  } catch (err) {
-    console.error('[view-doc POST]', err);
+  } catch {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
@@ -124,8 +122,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ do
     }
 
     return NextResponse.json({ id: updated.id, fileName: updated.fileName, hasPin: !!updated.qrPin });
-  } catch (err) {
-    console.error('[view-doc PATCH]', err);
+  } catch {
     return NextResponse.json({ error: 'Failed to save PIN' }, { status: 500 });
   }
 }

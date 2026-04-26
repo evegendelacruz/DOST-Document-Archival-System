@@ -105,7 +105,6 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Import error:', error);
     return NextResponse.json({
       error: 'Failed to import projects',
       details: error instanceof Error ? error.message : 'Unknown error'

@@ -3,11 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Icon } from '@iconify/react';
-import { Cake, FileEdit, Clock, Tag, X, CalendarPlus } from 'lucide-react';
+import { Cake, FileEdit, Clock, Tag, X, CalendarPlus, AlertTriangle, UserCheck } from 'lucide-react';
 
 interface Notification {
   id: string;
-  type: 'birthday' | 'edit-request' | 'edit_request' | 'cest_edit_request' | 'liquidation' | 'untagging' | 'event-mention';
+  type: 'birthday' | 'edit-request' | 'edit_request' | 'cest_edit_request' | 'liquidation' | 'untagging' | 'event-mention' | 'deadline' | 'pending_approval';
   title: string;
   message: string;
   time: string;
@@ -34,6 +34,18 @@ function getUserId(): string | null {
   }
 }
 
+// Helper to get user role from localStorage
+function getUserRole(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem('user');
+    if (!stored) return null;
+    return JSON.parse(stored)?.role || null;
+  } catch {
+    return null;
+  }
+}
+
 const getNotificationIcon = (type: Notification['type'], size: 'sm' | 'md' = 'sm') => {
   const className = size === 'sm' ? 'w-5 h-5' : 'w-6 h-6';
   switch (type) {
@@ -51,6 +63,10 @@ const getNotificationIcon = (type: Notification['type'], size: 'sm' | 'md' = 'sm
       return <Tag className={`${className} text-purple-500`} />;
     case 'event-mention':
       return <CalendarPlus className={`${className} text-cyan-500`} />;
+    case 'deadline':
+      return <AlertTriangle className={`${className} text-red-500`} />;
+    case 'pending_approval':
+      return <UserCheck className={`${className} text-emerald-500`} />;
     default:
       return <Icon icon="mdi:bell" className={`${className} text-gray-500 transition-all duration-300 hover:text-accent hover:scale-110 active:scale-90 active:transition-all active:duration-100`} />;
   }
@@ -72,6 +88,10 @@ const getNotificationBgColor = (type: Notification['type']) => {
       return 'bg-purple-50';
     case 'event-mention':
       return 'bg-cyan-50';
+    case 'deadline':
+      return 'bg-red-50';
+    case 'pending_approval':
+      return 'bg-emerald-50';
     default:
       return 'bg-gray-50';
   }
@@ -93,13 +113,51 @@ const getNotificationBorderColor = (type: Notification['type']) => {
       return 'border-l-purple-500';
     case 'event-mention':
       return 'border-l-cyan-500';
+    case 'deadline':
+      return 'border-l-red-500';
+    case 'pending_approval':
+      return 'border-l-emerald-500';
     default:
       return 'border-l-gray-500';
   }
 };
 
-// Render toast icon - profile picture for event-mention, edit_request, and cest_edit_request, otherwise standard icon
+// Render toast icon
 const renderToastIcon = (notification: ToastNotification) => {
+  if (notification.type === 'deadline') {
+    if (notification.bookedByProfileUrl) {
+      return (
+        <img
+          src={notification.bookedByProfileUrl}
+          alt="Project"
+          className="w-10 h-10 rounded-full object-cover border-2 border-red-500"
+        />
+      );
+    }
+    return (
+      <div className="w-10 h-10 rounded-full border-2 border-red-500 bg-red-50 flex items-center justify-center">
+        <AlertTriangle className="w-6 h-6 text-red-500" />
+      </div>
+    );
+  }
+
+  if (notification.type === 'pending_approval') {
+    if (notification.bookedByProfileUrl) {
+      return (
+        <img
+          src={notification.bookedByProfileUrl}
+          alt={notification.bookedByName || 'User'}
+          className="w-10 h-10 rounded-full object-cover border-2 border-emerald-500"
+        />
+      );
+    }
+    return (
+      <div className="w-10 h-10 rounded-full border-2 border-emerald-500 bg-emerald-50 flex items-center justify-center">
+        <UserCheck className="w-6 h-6 text-emerald-500" />
+      </div>
+    );
+  }
+
   if (notification.type === 'event-mention' || notification.type === 'edit_request' || notification.type === 'cest_edit_request') {
     const borderColor = notification.type === 'edit_request' ? 'border-[#f57c00]' : notification.type === 'cest_edit_request' ? 'border-[#d97706]' : 'border-[#00AEEF]';
     if (notification.bookedByProfileUrl) {
@@ -111,7 +169,6 @@ const renderToastIcon = (notification: ToastNotification) => {
         />
       );
     }
-    // Default avatar with colored border
     return (
       <div className={`w-10 h-10 rounded-full border-2 ${borderColor} bg-gray-100 flex items-center justify-center`}>
         <Icon icon="mdi:account" className="w-6 h-6 text-gray-400" />
@@ -119,7 +176,6 @@ const renderToastIcon = (notification: ToastNotification) => {
     );
   }
 
-  // Standard icon for other notification types
   return (
     <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${getNotificationBgColor(notification.type)}`}>
       {getNotificationIcon(notification.type, 'md')}
@@ -138,9 +194,7 @@ const ToastNotificationItem = ({
   onClick?: (notification: ToastNotification) => void;
 }) => {
   const handleClick = () => {
-    if (onClick) {
-      onClick(notification);
-    }
+    if (onClick) onClick(notification);
   };
 
   return (
@@ -149,22 +203,15 @@ const ToastNotificationItem = ({
       className={`flex items-start gap-3 p-4 bg-white rounded-lg shadow-lg border-l-4 ${getNotificationBorderColor(
         notification.type
       )} min-w-[320px] max-w-[400px] transform transition-all duration-300 cursor-pointer hover:bg-gray-50 ${
-        notification.isExiting
-          ? 'translate-x-full opacity-0'
-          : 'translate-x-0 opacity-100'
+        notification.isExiting ? 'translate-x-full opacity-0' : 'translate-x-0 opacity-100'
       }`}
     >
-      {/* Icon / Profile Picture */}
       {renderToastIcon(notification)}
-
-      {/* Content */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-gray-800">{notification.title}</p>
         <p className="text-xs text-gray-600 mt-1 line-clamp-2">{notification.message}</p>
         <p className="text-xs text-gray-400 mt-1">{notification.time}</p>
       </div>
-
-      {/* Close Button */}
       <button
         onClick={(e) => { e.stopPropagation(); onClose(notification.id); }}
         className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 transition-colors"
@@ -183,89 +230,64 @@ export default function NotificationDropdown() {
   const isInitialLoad = useRef(true);
   const previousNotificationIdsRef = useRef<Set<string>>(new Set());
   const shownToastIdsRef = useRef<Set<string>>(new Set());
+  const hasShownLoginDeadlineToasts = useRef(false);
   const router = useRouter();
   const pathname = usePathname();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // Audio context for notification sounds (persistent)
   const audioContextRef = useRef<AudioContext | null>(null);
 
-  // Initialize audio context on first user interaction
   useEffect(() => {
     const initAudio = () => {
       if (!audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       }
-      // Resume if suspended
       if (audioContextRef.current.state === 'suspended') {
         audioContextRef.current.resume();
       }
     };
-
-    // Initialize on any user interaction
     document.addEventListener('click', initAudio, { once: true });
     document.addEventListener('keydown', initAudio, { once: true });
-
     return () => {
       document.removeEventListener('click', initAudio);
       document.removeEventListener('keydown', initAudio);
     };
   }, []);
 
-  // Play notification sound using Web Audio API
   const playNotificationSound = useCallback(() => {
     try {
-      // Create new context if needed
       if (!audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       }
-
       const audioContext = audioContextRef.current;
+      if (audioContext.state === 'suspended') audioContext.resume();
 
-      // Resume if suspended
-      if (audioContext.state === 'suspended') {
-        audioContext.resume();
-      }
-
-      // Create oscillator for the notification tone
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
-
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
 
-      // Set up a pleasant notification tone (two-tone chime)
-      oscillator.frequency.setValueAtTime(830, audioContext.currentTime); // G#5
-      oscillator.frequency.setValueAtTime(1046, audioContext.currentTime + 0.15); // C6
+      oscillator.frequency.setValueAtTime(830, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(1046, audioContext.currentTime + 0.15);
       oscillator.type = 'sine';
-
-      // Volume envelope
       gainNode.gain.setValueAtTime(0, audioContext.currentTime);
       gainNode.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + 0.02);
       gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.15);
       gainNode.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + 0.17);
       gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.4);
-
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.4);
-    } catch (error) {
-      console.error('Failed to play notification sound:', error);
-    }
+    } catch { /* audio not available */ }
   }, []);
 
-  // Close toast with animation
   const closeToast = useCallback((id: string) => {
-    setToasts((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, isExiting: true } : t))
-    );
-    // Remove from DOM after animation
+    setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, isExiting: true } : t)));
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 300);
   }, []);
 
-  // Fetch notifications from API
   const fetchNotifications = useCallback(async () => {
     const userId = getUserId();
     if (!userId) return;
@@ -277,72 +299,124 @@ export default function NotificationDropdown() {
       if (res.ok) {
         const data = await res.json();
 
-        // Check for new notifications (after initial load)
         if (!isInitialLoad.current) {
           const newNotifications = data.filter(
             (n: Notification) =>
               !previousNotificationIdsRef.current.has(n.id) &&
               !shownToastIdsRef.current.has(n.id)
           );
-
-          // Show toast for each new notification
           newNotifications.forEach((n: Notification) => {
-            // Mark as shown to avoid duplicate toasts
             shownToastIdsRef.current.add(n.id);
-
             const toastNotification: ToastNotification = { ...n, isExiting: false };
             setToasts((prev) => [...prev, toastNotification]);
             playNotificationSound();
-
-            // Auto-remove after 8 seconds
             setTimeout(() => {
-              setToasts((prev) =>
-                prev.map((t) => (t.id === n.id ? { ...t, isExiting: true } : t))
-              );
+              setToasts((prev) => prev.map((t) => (t.id === n.id ? { ...t, isExiting: true } : t)));
               setTimeout(() => {
                 setToasts((prev) => prev.filter((t) => t.id !== n.id));
               }, 300);
             }, 8000);
           });
         } else {
-          // On initial load, just record all IDs without showing toasts
+          // On fresh login: show deadline + pending_approval toasts (once per session)
+          const hasShownDeadlineToastsThisSession = sessionStorage.getItem('hasShownDeadlineToasts');
+
+          if (!hasShownDeadlineToastsThisSession && !hasShownLoginDeadlineToasts.current) {
+            const deadlineNotifications = data.filter((n: Notification) => n.type === 'deadline');
+            const pendingApprovalNotifications = getUserRole() === 'ADMIN'
+              ? data.filter((n: Notification) => n.type === 'pending_approval')
+              : [];
+
+            const loginToasts = [...deadlineNotifications, ...pendingApprovalNotifications];
+            loginToasts.forEach((n: Notification, index: number) => {
+              setTimeout(() => {
+                const toastNotification: ToastNotification = { ...n, isExiting: false };
+                setToasts((prev) => [...prev, toastNotification]);
+                playNotificationSound();
+                setTimeout(() => {
+                  setToasts((prev) => prev.map((t) => (t.id === n.id ? { ...t, isExiting: true } : t)));
+                  setTimeout(() => {
+                    setToasts((prev) => prev.filter((t) => t.id !== n.id));
+                  }, 300);
+                }, 10000);
+              }, index * 800);
+            });
+
+            sessionStorage.setItem('hasShownDeadlineToasts', 'true');
+            hasShownLoginDeadlineToasts.current = true;
+          }
+
           data.forEach((n: Notification) => {
             previousNotificationIdsRef.current.add(n.id);
+            shownToastIdsRef.current.add(n.id);
           });
         }
 
         setNotifications(data);
-        // Update the ref with current IDs
         data.forEach((n: Notification) => {
           previousNotificationIdsRef.current.add(n.id);
         });
         isInitialLoad.current = false;
       }
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
-    }
+    } catch { /* silently ignore fetch errors */ }
   }, [playNotificationSound]);
 
-  // Fetch notifications on mount and poll every 5 seconds
-  useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 5000);
-    return () => clearInterval(interval);
-  }, [fetchNotifications]);
+  const checkDeadlines = useCallback(async () => {
+    const userId = getUserId();
+    if (!userId) return;
+    try {
+      await fetch('/api/notifications/deadline-check', {
+        headers: { 'x-user-id': userId },
+      });
+    } catch { /* silently ignore */ }
+  }, []);
 
-  // Close dropdown when clicking outside
+  const checkPendingApprovals = useCallback(async () => {
+    const userId = getUserId();
+    const userRole = getUserRole();
+    if (!userId || userRole !== 'ADMIN') return;
+    try {
+      await fetch('/api/notifications/pending-approvals', {
+        headers: { 'x-user-id': userId },
+      });
+    } catch { /* silently ignore */ }
+  }, []);
+
+  useEffect(() => {
+    const initializeNotifications = async () => {
+      let retries = 0;
+      while (!getUserId() && retries < 5) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        retries++;
+      }
+      if (getUserId()) {
+        await checkDeadlines();
+        await checkPendingApprovals();
+        await fetchNotifications();
+      }
+    };
+
+    initializeNotifications();
+    const interval = setInterval(fetchNotifications, 5000);
+    const deadlineInterval = setInterval(checkDeadlines, 5 * 60 * 1000);
+    const pendingApprovalInterval = setInterval(checkPendingApprovals, 5 * 60 * 1000);
+    return () => {
+      clearInterval(interval);
+      clearInterval(deadlineInterval);
+      clearInterval(pendingApprovalInterval);
+    };
+  }, [fetchNotifications, checkDeadlines, checkPendingApprovals]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Mark notification as read via API
   const markAsReadApi = async (id: string) => {
     try {
       await fetch(`/api/notifications/${id}`, {
@@ -350,17 +424,12 @@ export default function NotificationDropdown() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ read: true }),
       });
-    } catch {
-      // Silently fail
-    }
+    } catch { /* silently fail */ }
   };
 
-  // Mark all as read when dropdown is opened
   const handleToggleDropdown = () => {
     const newIsOpen = !isOpen;
     setIsOpen(newIsOpen);
-
-    // Mark all as read when opening the dropdown
     if (newIsOpen) {
       const unreadNotifications = notifications.filter((n) => !n.read);
       unreadNotifications.forEach((n) => markAsReadApi(n.id));
@@ -370,9 +439,7 @@ export default function NotificationDropdown() {
 
   const markAsRead = (id: string) => {
     markAsReadApi(id);
-    setNotifications(
-      notifications.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+    setNotifications(notifications.map((n) => (n.id === id ? { ...n, read: true } : n)));
   };
 
   const markAllAsRead = () => {
@@ -380,187 +447,152 @@ export default function NotificationDropdown() {
     setNotifications(notifications.map((n) => ({ ...n, read: true })));
   };
 
-  // Handle notification click - navigate to event for event-mention or edit_request
   const handleNotificationClick = useCallback((notification: Notification) => {
-    // Mark as read
     markAsReadApi(notification.id);
     setNotifications((prev) => prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n)));
 
     if (notification.type === 'event-mention' && notification.eventId) {
       setIsOpen(false);
-
-      // If not on dashboard, navigate there first with the eventId as query param
       if (pathname !== '/dashboard') {
-        // Store eventId in sessionStorage so dashboard can open it after navigation
         sessionStorage.setItem('pendingEventId', notification.eventId);
         router.push('/dashboard');
       } else {
-        // Already on dashboard, dispatch custom event to open event modal
-        const event = new CustomEvent('openEventModal', {
-          detail: { eventId: notification.eventId }
-        });
-        window.dispatchEvent(event);
+        window.dispatchEvent(new CustomEvent('openEventModal', { detail: { eventId: notification.eventId } }));
       }
     }
 
-    // Handle edit_request notification (SETUP projects)
     if (notification.type === 'edit_request' && notification.eventId) {
       setIsOpen(false);
       const projectPath = `/setup/${notification.eventId}`;
-
-      // Only open Edit Permission Modal for "Edit Access Request" (sent to owner)
-      // For "Edit Access Approved/Declined/Revoked" (sent to requestor), just navigate to project
       const isRequestToOwner = notification.title === 'Edit Access Request';
-
       if (isRequestToOwner) {
-        // This is a request notification sent to the owner - open the modal
         if (pathname !== projectPath) {
           sessionStorage.setItem('pendingEditRequestModal', notification.eventId);
           sessionStorage.setItem('pendingEditRequestUserId', notification.bookedByUserId || '');
           router.push(projectPath);
         } else {
-          const event = new CustomEvent('openEditRequestModal', {
-            detail: {
-              projectId: notification.eventId,
-              requesterId: notification.bookedByUserId
-            }
-          });
-          window.dispatchEvent(event);
+          window.dispatchEvent(new CustomEvent('openEditRequestModal', { detail: { projectId: notification.eventId, requesterId: notification.bookedByUserId } }));
         }
       } else {
-        // This is a response notification sent to the requestor - just navigate to project
         router.push(projectPath);
       }
     }
 
-    // Handle cest_edit_request notification (CEST projects)
     if (notification.type === 'cest_edit_request' && notification.eventId) {
       setIsOpen(false);
       const projectPath = `/cest/${notification.eventId}`;
-
-      // Only open Edit Permission Modal for "Edit Access Request" (sent to owner)
-      // For "Edit Access Approved/Declined/Revoked" (sent to requestor), just navigate to project
       const isRequestToOwner = notification.title === 'Edit Access Request';
-
       if (isRequestToOwner) {
-        // This is a request notification sent to the owner - open the modal
         if (pathname !== projectPath) {
           sessionStorage.setItem('pendingCestEditRequestModal', notification.eventId);
           sessionStorage.setItem('pendingCestEditRequestUserId', notification.bookedByUserId || '');
           router.push(projectPath);
         } else {
-          const event = new CustomEvent('openCestEditRequestModal', {
-            detail: {
-              projectId: notification.eventId,
-              requesterId: notification.bookedByUserId
-            }
-          });
-          window.dispatchEvent(event);
+          window.dispatchEvent(new CustomEvent('openCestEditRequestModal', { detail: { projectId: notification.eventId, requesterId: notification.bookedByUserId } }));
         }
       } else {
-        // This is a response notification sent to the requestor - just navigate to project
         router.push(projectPath);
       }
+    }
+
+    if (notification.type === 'deadline' && notification.eventId) {
+      setIsOpen(false);
+      router.push(`/setup/${notification.eventId}`);
+    }
+
+    if (notification.type === 'pending_approval') {
+      setIsOpen(false);
+      sessionStorage.setItem('openUserManagement', 'true');
+      router.push('/profile');
     }
   }, [pathname, router]);
 
-  // Handle toast notification click
   const handleToastClick = useCallback((notification: ToastNotification) => {
-    // Mark as read
     markAsReadApi(notification.id);
     setNotifications((prev) => prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n)));
-
-    // Close the toast
     closeToast(notification.id);
 
     if (notification.type === 'event-mention' && notification.eventId) {
-      // If not on dashboard, navigate there first
       if (pathname !== '/dashboard') {
         sessionStorage.setItem('pendingEventId', notification.eventId);
         router.push('/dashboard');
       } else {
-        // Already on dashboard, dispatch custom event to open event modal
-        const event = new CustomEvent('openEventModal', {
-          detail: { eventId: notification.eventId }
-        });
-        window.dispatchEvent(event);
+        window.dispatchEvent(new CustomEvent('openEventModal', { detail: { eventId: notification.eventId } }));
       }
     }
 
-    // Handle edit_request notification (SETUP projects)
     if (notification.type === 'edit_request' && notification.eventId) {
       const projectPath = `/setup/${notification.eventId}`;
-
-      // Only open Edit Permission Modal for "Edit Access Request" (sent to owner)
-      // For "Edit Access Approved/Declined/Revoked" (sent to requestor), just navigate to project
       const isRequestToOwner = notification.title === 'Edit Access Request';
-
       if (isRequestToOwner) {
-        // This is a request notification sent to the owner - open the modal
         if (pathname !== projectPath) {
           sessionStorage.setItem('pendingEditRequestModal', notification.eventId);
           sessionStorage.setItem('pendingEditRequestUserId', notification.bookedByUserId || '');
           router.push(projectPath);
         } else {
-          const event = new CustomEvent('openEditRequestModal', {
-            detail: {
-              projectId: notification.eventId,
-              requesterId: notification.bookedByUserId
-            }
-          });
-          window.dispatchEvent(event);
+          window.dispatchEvent(new CustomEvent('openEditRequestModal', { detail: { projectId: notification.eventId, requesterId: notification.bookedByUserId } }));
         }
       } else {
-        // This is a response notification sent to the requestor - just navigate to project
         router.push(projectPath);
       }
     }
 
-    // Handle cest_edit_request notification (CEST projects)
     if (notification.type === 'cest_edit_request' && notification.eventId) {
       const projectPath = `/cest/${notification.eventId}`;
-
-      // Only open Edit Permission Modal for "Edit Access Request" (sent to owner)
-      // For "Edit Access Approved/Declined/Revoked" (sent to requestor), just navigate to project
       const isRequestToOwner = notification.title === 'Edit Access Request';
-
       if (isRequestToOwner) {
-        // This is a request notification sent to the owner - open the modal
         if (pathname !== projectPath) {
           sessionStorage.setItem('pendingCestEditRequestModal', notification.eventId);
           sessionStorage.setItem('pendingCestEditRequestUserId', notification.bookedByUserId || '');
           router.push(projectPath);
         } else {
-          const event = new CustomEvent('openCestEditRequestModal', {
-            detail: {
-              projectId: notification.eventId,
-              requesterId: notification.bookedByUserId
-            }
-          });
-          window.dispatchEvent(event);
+          window.dispatchEvent(new CustomEvent('openCestEditRequestModal', { detail: { projectId: notification.eventId, requesterId: notification.bookedByUserId } }));
         }
       } else {
-        // This is a response notification sent to the requestor - just navigate to project
         router.push(projectPath);
       }
     }
+
+    if (notification.type === 'deadline' && notification.eventId) {
+      router.push(`/setup/${notification.eventId}`);
+    }
+
+    if (notification.type === 'pending_approval') {
+      sessionStorage.setItem('openUserManagement', 'true');
+      router.push('/profile');
+    }
   }, [pathname, router, closeToast]);
 
-  // Render notification icon - profile picture for event-mention, edit_request, and cest_edit_request, otherwise standard icon
   const renderNotificationIcon = (notification: Notification, size: 'sm' | 'md' = 'sm') => {
+    const imgSize = 'w-10 h-10';
+
+    if (notification.type === 'deadline') {
+      if (notification.bookedByProfileUrl) {
+        return <img src={notification.bookedByProfileUrl} alt="Project" className={`${imgSize} rounded-full object-cover border-2 border-red-500`} />;
+      }
+      return (
+        <div className={`${imgSize} rounded-full border-2 border-red-500 bg-red-50 flex items-center justify-center`}>
+          <AlertTriangle className="w-5 h-5 text-red-500" />
+        </div>
+      );
+    }
+
+    if (notification.type === 'pending_approval') {
+      if (notification.bookedByProfileUrl) {
+        return <img src={notification.bookedByProfileUrl} alt={notification.bookedByName || 'User'} className={`${imgSize} rounded-full object-cover border-2 border-emerald-500`} />;
+      }
+      return (
+        <div className={`${imgSize} rounded-full border-2 border-emerald-500 bg-emerald-50 flex items-center justify-center`}>
+          <UserCheck className="w-5 h-5 text-emerald-500" />
+        </div>
+      );
+    }
+
     if (notification.type === 'event-mention' || notification.type === 'edit_request' || notification.type === 'cest_edit_request') {
-      const imgSize = size === 'sm' ? 'w-10 h-10' : 'w-10 h-10';
       const borderColor = notification.type === 'edit_request' ? 'border-[#f57c00]' : notification.type === 'cest_edit_request' ? 'border-[#d97706]' : 'border-[#00AEEF]';
       if (notification.bookedByProfileUrl) {
-        return (
-          <img
-            src={notification.bookedByProfileUrl}
-            alt={notification.bookedByName || 'User'}
-            className={`${imgSize} rounded-full object-cover border-2 ${borderColor}`}
-          />
-        );
+        return <img src={notification.bookedByProfileUrl} alt={notification.bookedByName || 'User'} className={`${imgSize} rounded-full object-cover border-2 ${borderColor}`} />;
       }
-      // Default avatar with colored border
       return (
         <div className={`${imgSize} rounded-full border-2 ${borderColor} bg-gray-100 flex items-center justify-center`}>
           <Icon icon="mdi:account" className="w-6 h-6 text-gray-400" />
@@ -568,13 +600,15 @@ export default function NotificationDropdown() {
       );
     }
 
-    // Standard icon for other notification types
     return (
       <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${getNotificationBgColor(notification.type)}`}>
         {getNotificationIcon(notification.type, size)}
       </div>
     );
   };
+
+  // Suppress unused variable warning
+  void markAsRead;
 
   return (
     <>
@@ -620,20 +654,35 @@ export default function NotificationDropdown() {
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
                     className={`flex items-start gap-3 px-4 py-3 border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-50 ${
-                      !notification.read ? 'bg-cyan-50/50' : ''
+                      !notification.read
+                        ? notification.type === 'deadline'
+                          ? 'bg-red-50/70'
+                          : notification.type === 'pending_approval'
+                          ? 'bg-emerald-50/70'
+                          : 'bg-cyan-50/50'
+                        : ''
                     }`}
                   >
-                    {/* Icon / Profile Picture */}
                     {renderNotificationIcon(notification)}
-
-                    {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-gray-800 truncate">
+                        <p className={`text-sm font-medium truncate ${
+                          notification.type === 'deadline'
+                            ? 'text-red-700'
+                            : notification.type === 'pending_approval'
+                            ? 'text-emerald-700'
+                            : 'text-gray-800'
+                        }`}>
                           {notification.title}
                         </p>
                         {!notification.read && (
-                          <span className="w-2 h-2 bg-cyan-500 rounded-full flex-shrink-0"></span>
+                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                            notification.type === 'deadline'
+                              ? 'bg-red-500'
+                              : notification.type === 'pending_approval'
+                              ? 'bg-emerald-500'
+                              : 'bg-cyan-500'
+                          }`}></span>
                         )}
                       </div>
                       <p className="text-xs text-gray-600 mt-0.5 line-clamp-2">

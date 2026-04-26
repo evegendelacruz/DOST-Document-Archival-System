@@ -29,8 +29,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     }
 
     return NextResponse.json(user);
-  } catch (error) {
-    console.error('Get user error:', error);
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
   }
 }

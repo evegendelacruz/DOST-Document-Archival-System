@@ -106,9 +106,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         });
       }
     }
-  } catch (notifError) {
-    console.error('Failed to create notifications:', notifError);
-  }
+  } catch { /* notification failure is non-critical */ }
 
   // Log activity
   if (userId && originalEvent) {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import LoadingProvider from "./components/LoadingProvider";
+import IconifySetup from "./components/IconifySetup";
 
 export const metadata: Metadata = {
   title: "DOST - Department of Science and Technology",
@@ -14,7 +15,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
+      <body suppressHydrationWarning>
+        <IconifySetup />
         <LoadingProvider>{children}</LoadingProvider>
       </body>
     </html>

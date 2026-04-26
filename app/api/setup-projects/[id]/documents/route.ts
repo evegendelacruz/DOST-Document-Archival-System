@@ -28,8 +28,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const formData = await req.formData();
   const userId = formData.get('userId') as string | null;
 
-  console.log('[Documents API] POST - userId:', userId);
-
   const file = formData.get('file') as File | null;
   const phase = formData.get('phase') as string;
   const templateItemId = formData.get('templateItemId') as string;
@@ -67,7 +65,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   });
 
   // Log activity directly
-  console.log('[Documents API] Attempting to log activity, userId:', userId);
   if (userId) {
     try {
       const logEntry = await prisma.userLog.create({
@@ -85,12 +82,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           }),
         },
       });
-      console.log('[Documents API] Activity logged successfully! Log ID:', logEntry.id);
-    } catch (error) {
-      console.error('[Documents API] FAILED to log activity:', error);
-    }
-  } else {
-    console.warn('[Documents API] No userId provided in formData, skipping activity log');
+    } catch { /* activity log failure is non-critical */ }
   }
 
   return NextResponse.json(document, { status: 201 });

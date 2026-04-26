@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       resourceTitle: 'User Login',
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       id: user.id,
       email: user.email,
       fullName: user.fullName,
@@ -44,8 +44,17 @@ export async function POST(req: NextRequest) {
       birthday: user.birthday,
       profileImageUrl: user.profileImageUrl,
     });
-  } catch (error) {
-    console.error('Login error:', error);
+
+    // Set auth cookie so middleware can protect routes server-side
+    response.cookies.set('auth-token', user.id, {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    });
+
+    return response;
+  } catch {
     return NextResponse.json({ error: 'Login failed. Please try again.' }, { status: 500 });
   }
 }

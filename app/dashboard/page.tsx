@@ -111,9 +111,37 @@ const getFirstDayOfMonth = (year: number, month: number) => {
 
 const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
+interface BirthdayUser {
+  id: string;
+  fullName: string;
+  birthday: string;
+  profileImageUrl: string | null;
+}
+
 const getEventsForDate = (year: number, month: number, day: number, events: CalendarEvent[]) => {
   const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   return events.filter(e => e.date === dateStr);
+};
+
+// Parse birthday as a plain date string (YYYY-MM-DD) to avoid any timezone shift.
+// birthday from the API may look like "1990-04-22T00:00:00.000Z" or "1990-04-22".
+const parseBirthdayMonthDay = (birthday: string): { month: number; day: number } | null => {
+  const datePart = birthday.slice(0, 10); // "1990-04-22"
+  const parts = datePart.split('-');
+  if (parts.length !== 3) return null;
+  const month = parseInt(parts[1], 10) - 1; // 0-indexed month
+  const day = parseInt(parts[2], 10);
+  if (isNaN(month) || isNaN(day)) return null;
+  return { month, day };
+};
+
+const getBirthdaysForDate = (month: number, day: number, users: BirthdayUser[]) => {
+  return users.filter(u => {
+    if (!u.birthday) return false;
+    const parsed = parseBirthdayMonthDay(u.birthday);
+    if (!parsed) return false;
+    return parsed.month === month && parsed.day === day;
+  });
 };
 
 const isToday = (year: number, month: number, day: number) => {
@@ -155,6 +183,7 @@ export default function DashboardPage() {
   const [showAddService, setShowAddService] = useState(false);
   const [newServiceName, setNewServiceName] = useState('');
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [birthdayUsers, setBirthdayUsers] = useState<BirthdayUser[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [showEventDetailModal, setShowEventDetailModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -238,6 +267,14 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
+
+  // Fetch birthday users
+  useEffect(() => {
+    fetch('/api/users/birthdays')
+      .then(r => r.json())
+      .then(setBirthdayUsers)
+      .catch(() => {});
+  }, []);
 
   // Listen for openEventModal custom event from notifications
   useEffect(() => {
@@ -573,6 +610,24 @@ export default function DashboardPage() {
 
   const calendarDays = generateCalendarDays();
 
+  // Compute upcoming birthdays (hoisted out of JSX to avoid TS-cast-in-JSX parse error)
+  const upcomingBirthdays: (BirthdayUser & { nextBirthday: Date; daysUntil: number })[] = birthdayUsers
+    .map(u => {
+      const parsed = parseBirthdayMonthDay(u.birthday);
+      if (!parsed) return null;
+      const today = new Date();
+      const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      let next = new Date(today.getFullYear(), parsed.month, parsed.day);
+      if (next < todayMidnight) {
+        next = new Date(today.getFullYear() + 1, parsed.month, parsed.day);
+      }
+      const diffDays = Math.round((next.getTime() - todayMidnight.getTime()) / 86400000);
+      return { ...u, nextBirthday: next, daysUntil: diffDays };
+    })
+    .filter((x): x is BirthdayUser & { nextBirthday: Date; daysUntil: number } => x !== null)
+    .sort((a, b) => a.daysUntil - b.daysUntil)
+    .slice(0, 5);
+
   // Build sidebar items based on permissions
   const sidebarItems: NavItem[] = [
     // Only show Dashboard/Calendar if user has calendar access
@@ -633,6 +688,10 @@ export default function DashboardPage() {
                   <div className="w-3 h-3 rounded-sm bg-[#00AEEF]"></div>
                   <span className="text-xs text-[#666]">Today</span>
                 </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs">🎂</span>
+                  <span className="text-xs text-[#666]">Birthday</span>
+                </div>
               </div>
               <div className="w-full">
                 <div className="grid grid-cols-7 mb-2.5">
@@ -643,7 +702,9 @@ export default function DashboardPage() {
                <div className="grid grid-cols-7 border border-[#e0e0e0] border-r-0 border-b-0">
                 {calendarDays.map((day, index) => {
                   const dayEvents = day.currentMonth ? getEventsForDate(currentYear, currentMonth, day.day, events) : [];
+                  const dayBirthdays = day.currentMonth ? getBirthdaysForDate(currentMonth, day.day, birthdayUsers) : [];
                   const isTodayDate = day.currentMonth && isToday(currentYear, currentMonth, day.day);
+                  const totalItems = dayEvents.length + dayBirthdays.length;
                   return (
                     <div
                       key={index}
@@ -659,7 +720,34 @@ export default function DashboardPage() {
                         </span>
                       )}
                       <div className="mt-1 flex flex-col gap-0.5">
-                        {dayEvents.slice(0, 2).map((event) => (
+                        {/* Birthday chips */}
+                        {dayBirthdays.slice(0, 2).map((buser) => (
+                          <div
+                            key={`bday-${buser.id}`}
+                            className="flex items-center gap-1 px-1 py-0.5 rounded text-[10px] truncate group relative cursor-default"
+                            style={{ background: '#fce4ec' }}
+                            title={`🎂 ${buser.fullName}'s Birthday`}
+                          >
+                            <span className="shrink-0 text-[10px]">🎂</span>
+                            <span className="truncate font-medium" style={{ color: '#c2185b' }}>{buser.fullName.split(' ')[0]}</span>
+                            {/* Tooltip */}
+                            <div className="absolute left-0 bottom-full mb-1 hidden group-hover:block z-50 w-44 p-2 bg-white rounded-lg shadow-lg border border-pink-100 text-left">
+                              <div className="flex items-center gap-2 mb-1">
+                                {buser.profileImageUrl ? (
+                                  <img src={buser.profileImageUrl} alt={buser.fullName} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                                ) : (
+                                  <div className="w-7 h-7 rounded-full bg-pink-100 flex items-center justify-center shrink-0">
+                                    <span className="text-sm">🎂</span>
+                                  </div>
+                                )}
+                                <p className="text-xs font-bold text-pink-700 leading-tight">{buser.fullName}</p>
+                              </div>
+                              <p className="text-[10px] text-pink-500">🎉 Birthday today!</p>
+                            </div>
+                          </div>
+                        ))}
+                        {/* Event chips */}
+                        {dayEvents.slice(0, Math.max(0, 2 - dayBirthdays.length)).map((event) => (
                           <div
                             key={event.id}
                             onClick={() => handleEventClick(event)}
@@ -692,8 +780,8 @@ export default function DashboardPage() {
                             </div>
                           </div>
                         ))}
-                        {dayEvents.length > 2 && (
-                          <span className="text-[9px] text-[#999] pl-1">+{dayEvents.length - 2} more</span>
+                        {totalItems > 2 && (
+                          <span className="text-[9px] text-[#999] pl-1">+{totalItems - 2} more</span>
                         )}
                       </div>
                     </div>
@@ -805,6 +893,40 @@ export default function DashboardPage() {
                 )}
               </div>
               </div>
+
+              {/* Upcoming Birthdays */}
+              {upcomingBirthdays.length > 0 && (
+                <div className="bg-white rounded-[15px] p-5 shadow-[0_2px_10px_rgba(0,0,0,0.05)] mt-4">
+                  <h3 className="text-base font-bold text-primary mb-3 flex items-center gap-2">
+                    <span>🎂</span> Upcoming Birthdays
+                  </h3>
+                  <div className="flex flex-col gap-2.5">
+                    {upcomingBirthdays.map(u => {
+                      const isBdayToday = u.daysUntil === 0;
+                      return (
+                        <div key={u.id} className={`flex items-center gap-2.5 p-2 rounded-lg ${isBdayToday ? 'bg-pink-50 border border-pink-200' : 'bg-gray-50'}`}>
+                          {u.profileImageUrl ? (
+                            <img src={u.profileImageUrl} alt={u.fullName} className="w-8 h-8 rounded-full object-cover shrink-0" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center shrink-0 text-sm">🎂</div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-[#333] truncate">{u.fullName}</p>
+                            <p className="text-[10px] text-[#999]">
+                              {u.nextBirthday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </p>
+                          </div>
+                          {isBdayToday ? (
+                            <span className="shrink-0 text-[10px] font-bold text-pink-600 bg-pink-100 px-2 py-0.5 rounded-full">Today! 🎉</span>
+                          ) : (
+                            <span className="shrink-0 text-[10px] text-[#999]">{u.daysUntil}d</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

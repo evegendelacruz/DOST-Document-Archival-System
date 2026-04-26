@@ -9,37 +9,43 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const notifications = await prisma.notification.findMany({
-    where: { userId },
-    orderBy: { createdAt: 'desc' },
-  });
+  try {
+    const notifications = await prisma.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
 
-  // Format timestamps for frontend
-  const formattedNotifications = notifications.map((n) => ({
-    ...n,
-    time: formatRelativeTime(n.createdAt),
-  }));
+    const formattedNotifications = notifications.map((n) => ({
+      ...n,
+      time: formatRelativeTime(n.createdAt),
+    }));
 
-  return NextResponse.json(formattedNotifications);
+    return NextResponse.json(formattedNotifications);
+  } catch {
+    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {
   const data = await req.json();
 
-  const notification = await prisma.notification.create({
-    data: {
-      userId: data.userId,
-      type: data.type,
-      title: data.title,
-      message: data.message,
-      eventId: data.eventId || null,
-      bookedByUserId: data.bookedByUserId || null,
-      bookedByName: data.bookedByName || null,
-      bookedByProfileUrl: data.bookedByProfileUrl || null,
-    },
-  });
-
-  return NextResponse.json(notification, { status: 201 });
+  try {
+    const notification = await prisma.notification.create({
+      data: {
+        userId: data.userId,
+        type: data.type,
+        title: data.title,
+        message: data.message,
+        eventId: data.eventId || null,
+        bookedByUserId: data.bookedByUserId || null,
+        bookedByName: data.bookedByName || null,
+        bookedByProfileUrl: data.bookedByProfileUrl || null,
+      },
+    });
+    return NextResponse.json(notification, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+  }
 }
 
 function formatRelativeTime(date: Date): string {

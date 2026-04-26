@@ -6,16 +6,16 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const data = await req.json();
-
-  const notification = await prisma.notification.update({
-    where: { id },
-    data: {
-      read: data.read ?? true,
-    },
-  });
-
-  return NextResponse.json(notification);
+  try {
+    const data = await req.json();
+    const notification = await prisma.notification.update({
+      where: { id },
+      data: { read: data.read ?? true },
+    });
+    return NextResponse.json(notification);
+  } catch {
+    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+  }
 }
 
 export async function DELETE(
@@ -23,8 +23,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-
-  await prisma.notification.delete({ where: { id } });
-
-  return NextResponse.json({ success: true });
+  try {
+    await prisma.notification.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+  }
 }

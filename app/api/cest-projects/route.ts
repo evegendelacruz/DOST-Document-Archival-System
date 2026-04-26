@@ -24,8 +24,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json(projects);
-  } catch (error) {
-    console.error('GET /api/cest-projects error:', error);
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 });
   }
 }
@@ -93,7 +92,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(project, { status: 201 });
   } catch (error) {
-    console.error('POST /api/cest-projects error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to create project';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }

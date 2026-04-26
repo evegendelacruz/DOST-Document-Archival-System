@@ -41,8 +41,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json(records);
-  } catch (error) {
-    console.error('[Time Records API] GET error:', error);
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch time records' }, { status: 500 });
   }
 }
@@ -74,8 +73,6 @@ export async function POST(req: NextRequest) {
         date: { gte: startOfDay, lte: endOfDay },
       },
     });
-
-    console.log('[Time Records API] Existing record:', record);
 
     const currentTime = new Date();
 
@@ -131,11 +128,9 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    console.log('[Time Records API] Saved:', record);
     return NextResponse.json(record);
 
   } catch (error) {
-    console.error('[Time Records API] POST error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ error: `Failed to record time: ${errorMessage}` }, { status: 500 });
   }

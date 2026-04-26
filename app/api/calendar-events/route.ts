@@ -125,10 +125,7 @@ export async function POST(req: NextRequest) {
           data: notifications,
         });
       }
-    } catch (notifError) {
-      console.error('Failed to create notifications:', notifError);
-      // Don't fail the request if notifications fail
-    }
+    } catch { /* notification failure is non-critical */ }
 
     // Log activity
     if (userId) {
@@ -143,8 +140,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ ...event, staffInvolvedNames, staffInvolvedUsers, bookedByUser, bookedPersonnelUser }, { status: 201 });
-  } catch (error) {
-    console.error('Failed to create calendar event:', error);
+  } catch {
     return NextResponse.json({ error: 'Failed to create event' }, { status: 500 });
   }
 }

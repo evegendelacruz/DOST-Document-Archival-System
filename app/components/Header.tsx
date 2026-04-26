@@ -109,9 +109,13 @@ export default function Header() {
   };
 
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsDropdownOpen(false);
     localStorage.removeItem('user');
+    sessionStorage.removeItem('birthdayPopupShown');
+    sessionStorage.removeItem('hasShownDeadlineToasts');
+    // Clear the auth cookie server-side
+    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
     router.push('/');
   };
 
@@ -136,7 +140,7 @@ export default function Header() {
 
         <MessengerDropdown />
         <NotificationDropdown />
-       
+
         {/* User Profile Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
@@ -181,4 +185,3 @@ export default function Header() {
     </header>
   );
 }
-

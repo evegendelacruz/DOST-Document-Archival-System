@@ -162,7 +162,6 @@ export async function POST(req: NextRequest) {
     }
 
   } catch (err: unknown) {
-    console.error('[db-sync]', err);
     const message = err instanceof Error ? err.message : 'Sync failed';
     return NextResponse.json({ error: message }, { status: 500 });
   }

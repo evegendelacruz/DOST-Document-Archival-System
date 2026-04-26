@@ -1,5 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import os from 'os';
+import { execSync } from 'child_process';
+
+function isWSL(): boolean {
+  try {
+    const version = require('fs').readFileSync('/proc/version', 'utf8');
+    return /microsoft/i.test(version);
+  } catch {
+    return false;
+  }
+}
+
+function getWindowsLanIP(): string | null {
+  try {
+    // Ask PowerShell for all IPv4 addresses and pick the first LAN one
+    const raw = execSync(
+      'powershell.exe -NoProfile -Command "(Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -match \'^(192\\.168\\.|10\\.|172\\.(1[6-9]|2[0-9]|3[01])\\.)\'}).IPAddress"',
+      { timeout: 3000 }
+    ).toString().trim();
+
+    // execSync returns \r\n on Windows; grab the first valid line
+    const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    return lines[0] ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(req: NextRequest) {
   const host = req.headers.get('host') ?? '';
@@ -11,8 +37,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ip: hostName, origin: `https://${hostName}` });
   }
 
-  // Local dev: find LAN IP so QR codes work on the same network
   const port = new URL(req.url).port || '3000';
+
+  // WSL2: the Node process sees only the virtual eth0 (172.x.x.x).
+  // Ask Windows for the real LAN IP so QR codes work on the same network.
+  if (isWSL()) {
+    const winIp = getWindowsLanIP();
+    if (winIp) {
+      return NextResponse.json({ ip: winIp, origin: `http://${winIp}:${port}` });
+    }
+  }
+
+  // Native Linux / macOS: walk network interfaces
   const nets = os.networkInterfaces();
   let localIp: string | null = null;
 

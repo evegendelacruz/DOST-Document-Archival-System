@@ -10,6 +10,10 @@
     "postinstall": "node scripts/fix-wsl-binaries.cjs"
   },
   "dependencies": {
+    "@iconify-json/bi": "^1.2.7",
+    "@iconify-json/game-icons": "^1.2.4",
+    "@iconify-json/lets-icons": "^1.2.2",
+    "@iconify-json/mdi": "^1.2.3",
     "@iconify/react": "^6.0.2",
     "@prisma/adapter-pg": "^7.4.0",
     "@prisma/client": "^7.4.0",
@@ -50,6 +54,6 @@
   },
   "optionalDependencies": {
     "@tailwindcss/oxide-win32-x64-msvc": "^4.1.18",
-    "lightningcss-win32-x64-msvc": "^1.31.1"
+    "lightningcss-win32-x64-msvc": "^1.32.0"
   }
 }

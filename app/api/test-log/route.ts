@@ -35,7 +35,6 @@ export async function GET() {
       }))
     });
   } catch (error) {
-    console.error('Test log error:', error);
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }
@@ -64,7 +63,6 @@ export async function POST(req: NextRequest) {
       log
     });
   } catch (error) {
-    console.error('Test log creation error:', error);
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }

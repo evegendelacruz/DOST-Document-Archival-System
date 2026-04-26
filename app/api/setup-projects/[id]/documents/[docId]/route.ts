@@ -6,8 +6,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const data = await req.json();
   const userId = req.headers.get('x-user-id');
 
-  console.log('[Documents API] PATCH - userId:', userId);
-
   // Get original document for logging
   const originalDocument = await prisma.projectDocument.findUnique({
     where: { id: docId },
@@ -36,10 +34,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           }),
         },
       });
-      console.log('[Documents API] Activity logged successfully for update');
-    } catch (error) {
-      console.error('[Documents API] Failed to log activity:', error);
-    }
+    } catch { /* activity log failure is non-critical */ }
   }
 
   return NextResponse.json(document);
@@ -48,8 +43,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string; docId: string }> }) {
   const { id, docId } = await params;
   const userId = req.headers.get('x-user-id');
-
-  console.log('[Documents API] DELETE - userId:', userId);
 
   // Get document before deletion for logging
   const document = await prisma.projectDocument.findUnique({
@@ -77,12 +70,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
           }),
         },
       });
-      console.log('[Documents API] Activity logged successfully for delete');
-    } catch (error) {
-      console.error('[Documents API] Failed to log activity:', error);
-    }
-  } else {
-    console.warn('[Documents API] No userId or document, skipping activity log');
+    } catch { /* activity log failure is non-critical */ }
   }
 
   return NextResponse.json({ success: true });

@@ -13,8 +13,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json(options);
-  } catch (error) {
-    console.error('GET /api/cest-dropdown-options error:', error);
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch options' }, { status: 500 });
   }
 }
@@ -41,8 +40,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(option, { status: 201 });
-  } catch (error) {
-    console.error('POST /api/cest-dropdown-options error:', error);
+  } catch {
     return NextResponse.json({ error: 'Failed to create option' }, { status: 500 });
   }
 }
@@ -61,8 +59,7 @@ export async function DELETE(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('DELETE /api/cest-dropdown-options error:', error);
+  } catch {
     return NextResponse.json({ error: 'Failed to delete option' }, { status: 500 });
   }
 }
